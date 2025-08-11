@@ -80,7 +80,8 @@ export const createRule = async (
   policyId: number,
   ruleS: string,
   foreignCallNameToID: FCNameToID[],
-  trackerNameToID: FCNameToID[]
+  trackerNameToID: FCNameToID[],
+  confirmationCount: number
 ): Promise<number> => {
   const validatedRuleSyntax = validateRuleJSON(ruleS);
   const validatedEffectSyntax = validateRuleJSON(ruleS);
@@ -263,6 +264,7 @@ export const createRule = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
 
@@ -294,7 +296,8 @@ export const updateRule = async (
   ruleId: number,
   ruleS: string,
   foreignCallNameToID: FCNameToID[],
-  trackerNameToID: FCNameToID[]
+  trackerNameToID: FCNameToID[],
+  confirmationCount: number
 ): Promise<number> => {
   const validatedRuleSyntax = validateRuleJSON(ruleS);
   if (isLeft(validatedRuleSyntax)) {
@@ -459,6 +462,7 @@ export const updateRule = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
 
@@ -483,7 +487,8 @@ export const deleteRule = async (
   config: Config,
   rulesEngineRulesContract: RulesEngineRulesContract,
   policyId: number,
-  ruleId: number
+  ruleId: number,
+  confirmationCount: number
 ): Promise<number> => {
   var addFC;
   try {
@@ -503,6 +508,7 @@ export const deleteRule = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }

@@ -61,7 +61,8 @@ export const createCallingFunction = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
   callingFunction: string,
-  encodedValues: string
+  encodedValues: string,
+  confirmationCount: number
 ): Promise<number> => {
   var argsRaw = parseFunctionArguments(callingFunction);
   var args: number[] = argsRaw.map((val) =>
@@ -94,6 +95,7 @@ export const createCallingFunction = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
 
@@ -117,7 +119,8 @@ export const deleteCallingFunction = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  callingFunctionId: number
+  callingFunctionId: number,
+  confirmationCount: number
 ): Promise<number> => {
   var addRule;
   try {
@@ -137,6 +140,7 @@ export const deleteCallingFunction = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
 

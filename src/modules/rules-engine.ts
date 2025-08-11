@@ -118,6 +118,7 @@ export class RulesEngine {
   private rulesEngineRulesContract: RulesEngineRulesContract;
   private rulesEngineAdminContract: RulesEngineAdminContract;
   private rulesEngineForeignCallContract: RulesEngineForeignCallContract;
+  private confirmationCount: number;
 
   /**
    * @constructor
@@ -125,7 +126,12 @@ export class RulesEngine {
    * @param {Config} localConfig - The configuration object containing network and wallet information.
    * @param {any} client - The client instance for interacting with the blockchain.
    */
-  constructor(rulesEngineAddress: Address, localConfig: Config, client: any) {
+  constructor(
+    rulesEngineAddress: Address,
+    localConfig: Config,
+    client: any,
+    localConfirmationCount: number
+  ) {
     this.rulesEnginePolicyContract = getContract({
       address: rulesEngineAddress,
       abi: RulesEnginePolicyABI,
@@ -152,6 +158,7 @@ export class RulesEngine {
       client,
     });
     config = localConfig;
+    this.confirmationCount = localConfirmationCount;
   }
   public getRulesEnginePolicyContract(): RulesEnginePolicyContract {
     return this.rulesEnginePolicyContract;
@@ -178,6 +185,7 @@ export class RulesEngine {
       this.rulesEngineRulesContract,
       this.rulesEngineComponentContract,
       this.rulesEngineForeignCallContract,
+      this.confirmationCount,
       policyJSON
     );
   }
@@ -221,7 +229,8 @@ export class RulesEngine {
       ids,
       ruleIds,
       name,
-      description
+      description,
+      this.confirmationCount
     );
   }
 
@@ -236,7 +245,8 @@ export class RulesEngine {
       config,
       this.rulesEnginePolicyContract,
       policyIds,
-      contractAddressForPolicy
+      contractAddressForPolicy,
+      this.confirmationCount
     );
   }
 
@@ -251,7 +261,8 @@ export class RulesEngine {
       config,
       this.rulesEnginePolicyContract,
       policyId,
-      contractAddressForPolicy
+      contractAddressForPolicy,
+      this.confirmationCount
     );
   }
 
@@ -265,7 +276,8 @@ export class RulesEngine {
     return deletePolicyInternal(
       config,
       this.rulesEnginePolicyContract,
-      policyId
+      policyId,
+      this.confirmationCount
     );
   }
 
@@ -337,7 +349,12 @@ export class RulesEngine {
    * @returns `0` if successful, `-1` if an error occurs.
    */
   openPolicy(policyId: number): Promise<number> {
-    return openPolicyInternal(config, this.rulesEnginePolicyContract, policyId);
+    return openPolicyInternal(
+      config,
+      this.rulesEnginePolicyContract,
+      policyId,
+      this.confirmationCount
+    );
   }
 
   /**
@@ -350,7 +367,8 @@ export class RulesEngine {
     return closePolicyInternal(
       config,
       this.rulesEnginePolicyContract,
-      policyId
+      policyId,
+      this.confirmationCount
     );
   }
 
@@ -386,7 +404,8 @@ export class RulesEngine {
       config,
       this.rulesEngineComponentContract,
       policyId,
-      subscriber
+      subscriber,
+      this.confirmationCount
     );
   }
 
@@ -405,7 +424,8 @@ export class RulesEngine {
       config,
       this.rulesEngineComponentContract,
       policyId,
-      subscriber
+      subscriber,
+      this.confirmationCount
     );
   }
 
@@ -437,7 +457,8 @@ export class RulesEngine {
       policyId,
       ruleS,
       foreignCallNameToID,
-      trackerNameToID
+      trackerNameToID,
+      this.confirmationCount
     );
   }
 
@@ -469,7 +490,8 @@ export class RulesEngine {
       ruleId,
       ruleS,
       foreignCallNameToID,
-      trackerNameToID
+      trackerNameToID,
+      this.confirmationCount
     );
   }
 
@@ -489,7 +511,8 @@ export class RulesEngine {
       config,
       this.rulesEngineRulesContract,
       policyId,
-      ruleId
+      ruleId,
+      this.confirmationCount
     );
   }
 
@@ -564,7 +587,8 @@ export class RulesEngine {
       this.rulesEngineComponentContract,
       this.rulesEnginePolicyContract,
       policyId,
-      fcSyntax
+      fcSyntax,
+      this.confirmationCount
     );
   }
 
@@ -596,7 +620,8 @@ export class RulesEngine {
       this.rulesEngineForeignCallContract,
       policyId,
       foreignCallId,
-      fcSyntax
+      fcSyntax,
+      this.confirmationCount
     );
   }
 
@@ -616,7 +641,8 @@ export class RulesEngine {
       config,
       this.rulesEngineForeignCallContract,
       policyId,
-      foreignCallId
+      foreignCallId,
+      this.confirmationCount
     );
   }
 
@@ -718,7 +744,8 @@ export class RulesEngine {
       this.rulesEngineForeignCallContract,
       foreignCallAddress,
       functionSelector,
-      policyAdminToAdd
+      policyAdminToAdd,
+      this.confirmationCount
     );
   }
 
@@ -744,7 +771,8 @@ export class RulesEngine {
       this.rulesEngineComponentContract,
       foreignCallAddress,
       functionSelector,
-      policyAdminsToAdd
+      policyAdminsToAdd,
+      this.confirmationCount
     );
   }
 
@@ -770,7 +798,8 @@ export class RulesEngine {
       this.rulesEngineForeignCallContract,
       foreignCallAddress,
       functionSelector,
-      policyAdminsToRemove
+      policyAdminsToRemove,
+      this.confirmationCount
     );
   }
 
@@ -793,7 +822,8 @@ export class RulesEngine {
       config,
       this.rulesEngineForeignCallContract,
       foreignCallAddress,
-      functionSelector
+      functionSelector,
+      this.confirmationCount
     );
   }
 
@@ -812,7 +842,8 @@ export class RulesEngine {
       config,
       this.rulesEngineComponentContract,
       policyId,
-      trSyntax
+      trSyntax,
+      this.confirmationCount
     );
   }
 
@@ -837,7 +868,8 @@ export class RulesEngine {
       this.rulesEngineComponentContract,
       policyId,
       trackerId,
-      trSyntax
+      trSyntax,
+      this.confirmationCount
     );
   }
 
@@ -857,7 +889,8 @@ export class RulesEngine {
       config,
       this.rulesEngineComponentContract,
       policyId,
-      trackerId
+      trackerId,
+      this.confirmationCount
     );
   }
 
@@ -941,7 +974,8 @@ export class RulesEngine {
       this.rulesEngineComponentContract,
       policyId,
       callingFunction,
-      encodedValues
+      encodedValues,
+      this.confirmationCount
     );
   }
 
@@ -982,7 +1016,8 @@ export class RulesEngine {
       config,
       this.rulesEngineAdminContract,
       policyId,
-      newAdminAddress
+      newAdminAddress,
+      this.confirmationCount
     );
   }
 
@@ -1000,7 +1035,8 @@ export class RulesEngine {
     confirmNewPolicyAdminInternal(
       config,
       this.rulesEngineAdminContract,
-      policyId
+      policyId,
+      this.confirmationCount
     );
   }
 
@@ -1042,7 +1078,8 @@ export class RulesEngine {
       config,
       this.rulesEngineAdminContract,
       callingContractAddress,
-      newAdminAddress
+      newAdminAddress,
+      this.confirmationCount
     );
   }
 
@@ -1060,7 +1097,8 @@ export class RulesEngine {
     confirmNewCallingContractAdminInternal(
       config,
       this.rulesEngineAdminContract,
-      callingContractAddress
+      callingContractAddress,
+      this.confirmationCount
     );
   }
 
@@ -1108,7 +1146,8 @@ export class RulesEngine {
       this.rulesEngineAdminContract,
       foreignCallAddress,
       newAdminAddress,
-      foreignCallSelector
+      foreignCallSelector,
+      this.confirmationCount
     );
   }
 
@@ -1131,7 +1170,8 @@ export class RulesEngine {
       config,
       this.rulesEngineAdminContract,
       foreignCallAddress,
-      foreignCallSelector
+      foreignCallSelector,
+      this.confirmationCount
     );
   }
 
@@ -1170,7 +1210,8 @@ export class RulesEngine {
     return cementPolicyInternal(
       config,
       this.rulesEnginePolicyContract,
-      policyId
+      policyId,
+      this.confirmationCount
     );
   }
 

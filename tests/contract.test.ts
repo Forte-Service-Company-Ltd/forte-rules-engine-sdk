@@ -142,6 +142,7 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineRulesContract(rulesEngineContract, client),
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
       emptyPolicyJSON
     );
     var callingFunction = "addValue(uint256 value)";
@@ -150,7 +151,8 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineComponentContract(rulesEngineContract, client),
       result.policyId,
       callingFunction,
-      "uint256 value"
+      "uint256 value",
+      1
     );
     var ruleStringA = `{
         "Name": "rule A",
@@ -172,7 +174,8 @@ describe("Rules Engine Interactions", async () => {
         { id: 1, name: "testCall", type: 0 },
         { id: 2, name: "testCallTwo", type: 0 },
       ],
-      []
+      [],
+      1
     );
     expect(ruleId).toBeGreaterThan(0);
     var selector = toFunctionSelector(callingFunction);
@@ -184,7 +187,8 @@ describe("Rules Engine Interactions", async () => {
       [fsId],
       [[ruleId]],
       "Test Policy",
-      "This is a test policy"
+      "This is a test policy",
+      1
     );
     var rules = await getAllRules(
       config,
@@ -200,6 +204,7 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineRulesContract(rulesEngineContract, client),
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
       emptyPolicyJSON
     );
     var callingFunction = "addValue(uint256 value)";
@@ -208,7 +213,8 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineComponentContract(rulesEngineContract, client),
       result.policyId,
       callingFunction,
-      "uint256 value"
+      "uint256 value",
+      1
     );
     var ruleStringA = `{
         "Name": "rule A",
@@ -230,7 +236,8 @@ describe("Rules Engine Interactions", async () => {
         { id: 1, name: "testCall", type: 0 },
         { id: 2, name: "testCallTwo", type: 0 },
       ],
-      []
+      [],
+      1
     );
     expect(ruleId).toBeGreaterThan(0);
     var selector = toFunctionSelector(callingFunction);
@@ -242,7 +249,8 @@ describe("Rules Engine Interactions", async () => {
       [fsId],
       [[ruleId]],
       "Test Policy",
-      "This is a test policy"
+      "This is a test policy",
+      1
     );
     var meta = await getRuleMetadata(
       config,
@@ -260,6 +268,7 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineRulesContract(rulesEngineContract, client),
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
       emptyPolicyJSON
     );
     var callingFunction = "addValue(uint256 value)";
@@ -268,7 +277,8 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineComponentContract(rulesEngineContract, client),
       result.policyId,
       callingFunction,
-      "uint256 value"
+      "uint256 value",
+      1
     );
     var ruleStringA = `{
                 "Name": "rule A",
@@ -290,7 +300,8 @@ describe("Rules Engine Interactions", async () => {
         { id: 1, name: "testCall", type: 0 },
         { id: 2, name: "testCallTwo", type: 0 },
       ],
-      []
+      [],
+      1
     );
     expect(ruleId).toBeGreaterThan(0);
     var selector = toFunctionSelector(callingFunction);
@@ -302,7 +313,8 @@ describe("Rules Engine Interactions", async () => {
       [fsId],
       [[ruleId]],
       "Test Policy",
-      "This is a test policy"
+      "This is a test policy",
+      1
     );
     var rules = await getAllRules(
       config,
@@ -314,7 +326,8 @@ describe("Rules Engine Interactions", async () => {
       config,
       getRulesEngineComponentContract(rulesEngineContract, client),
       result.policyId,
-      fsId
+      fsId,
+      1
     );
     var newRules = await getAllRules(
       config,
@@ -330,6 +343,7 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineRulesContract(rulesEngineContract, client),
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
       emptyPolicyJSON
     );
     var callingFunction = "addValue(uint256 value)";
@@ -338,7 +352,8 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineComponentContract(rulesEngineContract, client),
       result.policyId,
       callingFunction,
-      "uint256 value"
+      "uint256 value",
+      1
     );
     var ruleStringA = `{
             "Name": "rule A",
@@ -360,7 +375,8 @@ describe("Rules Engine Interactions", async () => {
       [
         { id: 1, name: "testCall", type: 0 },
         { id: 2, name: "testCallTwo", type: 0 },
-      ]
+      ],
+      1
     );
     expect(ruleId).toBeGreaterThan(0);
     var selector = toFunctionSelector(callingFunction);
@@ -372,7 +388,8 @@ describe("Rules Engine Interactions", async () => {
       [fsId],
       [[ruleId]],
       "Test Policy",
-      "This is a test policy"
+      "This is a test policy",
+      1
     );
     var rules = await getAllRules(
       config,
@@ -401,7 +418,8 @@ describe("Rules Engine Interactions", async () => {
         { id: 1, name: "testCall", type: 0 },
         { id: 2, name: "testCallTwo", type: 0 },
       ],
-      []
+      [],
+      1
     );
     expect(updatedRuleId).toEqual(ruleId);
   });
@@ -412,6 +430,7 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineRulesContract(rulesEngineContract, client),
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
       emptyPolicyJSON
     );
     var callingFunction = "addValue(uint256 value)";
@@ -420,7 +439,8 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineComponentContract(rulesEngineContract, client),
       result.policyId,
       callingFunction,
-      "uint256 value"
+      "uint256 value",
+      1
     );
     var ruleStringA = `{
             "Name": "rule A",
@@ -442,7 +462,8 @@ describe("Rules Engine Interactions", async () => {
         { id: 1, name: "testCall", type: 0 },
         { id: 2, name: "testCallTwo", type: 0 },
       ],
-      []
+      [],
+      1
     );
     expect(ruleId).toBeGreaterThan(0);
     var selector = toFunctionSelector(callingFunction);
@@ -454,7 +475,8 @@ describe("Rules Engine Interactions", async () => {
       [fsId],
       [[ruleId]],
       "Test Policy",
-      "This is a test policy"
+      "This is a test policy",
+      1
     );
 
     var rules = await getAllRules(
@@ -467,7 +489,8 @@ describe("Rules Engine Interactions", async () => {
       config,
       getRulesEngineRulesContract(rulesEngineContract, client),
       result.policyId,
-      ruleId
+      ruleId,
+      1
     );
     var rules = await getAllRules(
       config,
@@ -484,6 +507,7 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineRulesContract(rulesEngineContract, client),
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
       emptyPolicyJSON
     );
 
@@ -494,7 +518,8 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineComponentContract(rulesEngineContract, client),
       result.policyId,
       callingFunction,
-      "address to, string someString, uint256 value"
+      "address to, string someString, uint256 value",
+      1
     );
 
     var selector = toFunctionSelector(callingFunction);
@@ -506,7 +531,8 @@ describe("Rules Engine Interactions", async () => {
       [fsId],
       [[]],
       "Test Policy",
-      "This is a test policy"
+      "This is a test policy",
+      1
     );
 
     var fcSyntax = `{
@@ -524,7 +550,8 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEnginePolicyContract(rulesEngineContract, client),
       result.policyId,
-      fcSyntax
+      fcSyntax,
+      1
     );
     var fcRetrieve = await getForeignCall(
       config,
@@ -548,6 +575,7 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineRulesContract(rulesEngineContract, client),
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
       emptyPolicyJSON
     );
 
@@ -558,7 +586,8 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineComponentContract(rulesEngineContract, client),
       result.policyId,
       callingFunction,
-      "address to, string someString, uint256[] values"
+      "address to, string someString, uint256[] values",
+      1
     );
 
     var selector = toFunctionSelector(callingFunction);
@@ -570,7 +599,8 @@ describe("Rules Engine Interactions", async () => {
       [fsId],
       [[]],
       "Test Policy",
-      "This is a test policy"
+      "This is a test policy",
+      1
     );
 
     var fcSyntax = `{
@@ -588,7 +618,8 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEnginePolicyContract(rulesEngineContract, client),
       result.policyId,
-      fcSyntax
+      fcSyntax,
+      1
     );
     var fcRetrieve = await getForeignCall(
       config,
@@ -607,6 +638,7 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineRulesContract(rulesEngineContract, client),
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
       emptyPolicyJSON
     );
     var callingFunction =
@@ -616,7 +648,8 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineComponentContract(rulesEngineContract, client),
       result.policyId,
       callingFunction,
-      "address to, string someString, uint256 value"
+      "address to, string someString, uint256 value",
+      1
     );
 
     var selector = toFunctionSelector(callingFunction);
@@ -628,7 +661,8 @@ describe("Rules Engine Interactions", async () => {
       [fsId],
       [[]],
       "Test Policy",
-      "This is a test policy"
+      "This is a test policy",
+      1
     );
     var fcSyntax = `{
                     "name": "Simple Foreign Call",
@@ -645,7 +679,8 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEnginePolicyContract(rulesEngineContract, client),
       result.policyId,
-      fcSyntax
+      fcSyntax,
+      1
     );
     var fcRetrieve = await getForeignCall(
       config,
@@ -664,7 +699,8 @@ describe("Rules Engine Interactions", async () => {
       config,
       getRulesEngineForeignCallContract(rulesEngineContract, client),
       result.policyId,
-      fcId
+      fcId,
+      1
     );
     expect(ret).toEqual(0);
     fcAllRetrieve = await getAllForeignCalls(
@@ -682,6 +718,7 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineRulesContract(rulesEngineContract, client),
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
       emptyPolicyJSON
     );
     var callingFunction =
@@ -691,7 +728,8 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineComponentContract(rulesEngineContract, client),
       result.policyId,
       callingFunction,
-      "address to, string someString, uint256 value"
+      "address to, string someString, uint256 value",
+      1
     );
 
     var selector = toFunctionSelector(callingFunction);
@@ -703,7 +741,8 @@ describe("Rules Engine Interactions", async () => {
       [fsId],
       [[]],
       "Test Policy",
-      "This is a test policy"
+      "This is a test policy",
+      1
     );
     var fcSyntax = `{
                 "name": "Simple Foreign Call",
@@ -720,7 +759,8 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEnginePolicyContract(rulesEngineContract, client),
       result.policyId,
-      fcSyntax
+      fcSyntax,
+      1
     );
     var fcRetrieve = await getForeignCall(
       config,
@@ -751,7 +791,8 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineForeignCallContract(rulesEngineContract, client),
       result.policyId,
       fcId,
-      updatedSyntax
+      updatedSyntax,
+      1
     );
     expect(updatedId).toEqual(fcId);
   });
@@ -767,6 +808,7 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineRulesContract(rulesEngineContract, client),
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
       emptyPolicyJSON
     );
     expect(result.policyId).toBeGreaterThan(0);
@@ -774,7 +816,8 @@ describe("Rules Engine Interactions", async () => {
       config,
       getRulesEngineComponentContract(rulesEngineContract, client),
       result.policyId,
-      trSyntax
+      trSyntax,
+      1
     );
     var trAllRetrieve = await getAllTrackers(
       config,
@@ -804,6 +847,7 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineRulesContract(rulesEngineContract, client),
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
       emptyPolicyJSON
     );
     expect(result.policyId).toBeGreaterThan(0);
@@ -811,7 +855,8 @@ describe("Rules Engine Interactions", async () => {
       config,
       getRulesEngineComponentContract(rulesEngineContract, client),
       result.policyId,
-      trSyntax
+      trSyntax,
+      1
     );
     var trAllRetrieve = await getAllTrackers(
       config,
@@ -832,7 +877,8 @@ describe("Rules Engine Interactions", async () => {
       config,
       getRulesEngineComponentContract(rulesEngineContract, client),
       result.policyId,
-      trId
+      trId,
+      1
     );
     var trAllRetrieve = await getAllTrackers(
       config,
@@ -865,6 +911,7 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineRulesContract(rulesEngineContract, client),
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
       emptyPolicyJSON
     );
     expect(result.policyId).toBeGreaterThan(0);
@@ -872,7 +919,8 @@ describe("Rules Engine Interactions", async () => {
       config,
       getRulesEngineComponentContract(rulesEngineContract, client),
       result.policyId,
-      trSyntax
+      trSyntax,
+      1
     );
     var trAllRetrieve = await getAllTrackers(
       config,
@@ -899,7 +947,8 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineComponentContract(rulesEngineContract, client),
       result.policyId,
       trId,
-      updatedSyntax
+      updatedSyntax,
+      1
     );
     var updatedTRRetrieve = await getTracker(
       config,
@@ -945,13 +994,13 @@ describe("Rules Engine Interactions", async () => {
             ]
             }`;
 
-
     var result = await createPolicy(
       config,
       getRulesEnginePolicyContract(rulesEngineContract, client),
       getRulesEngineRulesContract(rulesEngineContract, client),
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
       policyJSON
     );
     expect(result.policyId).toBeGreaterThanOrEqual(0);
@@ -1144,6 +1193,7 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineRulesContract(rulesEngineContract, client),
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
       policyJSON
     );
     expect(result.policyId).toBeGreaterThanOrEqual(0);
@@ -1212,6 +1262,7 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineRulesContract(rulesEngineContract, client),
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
       policyJSON
     );
     var exists = await policyExists(
@@ -1272,6 +1323,7 @@ describe("Rules Engine Interactions", async () => {
         getRulesEngineRulesContract(rulesEngineContract, client),
         getRulesEngineComponentContract(rulesEngineContract, client),
         getRulesEngineForeignCallContract(rulesEngineContract, client),
+        1,
         policyJSON
       );
       expect(result.policyId).toBeGreaterThan(0);
@@ -1280,7 +1332,8 @@ describe("Rules Engine Interactions", async () => {
       await deletePolicy(
         config,
         getRulesEnginePolicyContract(rulesEngineContract, client),
-        result.policyId
+        result.policyId,
+        1
       );
       await sleep(4000);
       var rules = (await getAllRules(
@@ -1356,6 +1409,7 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineRulesContract(rulesEngineContract, client),
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
       policyJSON
     );
     var admin = await isPolicyAdmin(
@@ -1415,19 +1469,22 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineRulesContract(rulesEngineContract, client),
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
       policyJSON
     );
     proposeNewPolicyAdmin(
       config,
       getRulesEngineAdminContract(rulesEngineContract, client),
       result.policyId,
-      getAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
+      getAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+      1
     );
     await sleep(5000);
     await confirmNewPolicyAdmin(
       secondUserConfig,
       getRulesEngineAdminContract(rulesEngineContract, secondUserClient),
-      result.policyId
+      result.policyId,
+      1
     );
     await sleep(5000);
     var admin = await isPolicyAdmin(
@@ -1487,6 +1544,7 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineRulesContract(rulesEngineContract, client),
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
       policyJSON
     );
 
@@ -1506,7 +1564,8 @@ describe("Rules Engine Interactions", async () => {
     await cementPolicy(
       config,
       getRulesEnginePolicyContract(rulesEngineContract, client),
-      result.policyId
+      result.policyId,
+      1
     );
     await sleep(5000);
     isCemented = await isCementedPolicy(
@@ -1567,13 +1626,15 @@ describe("Rules Engine Interactions", async () => {
         getRulesEngineRulesContract(rulesEngineContract, client),
         getRulesEngineComponentContract(rulesEngineContract, client),
         getRulesEngineForeignCallContract(rulesEngineContract, client),
+        1,
         policyJSON
       );
 
       await closePolicy(
         config,
         getRulesEnginePolicyContract(rulesEngineContract, client),
-        result.policyId
+        result.policyId,
+        1
       );
       var isClosed = await isClosedPolicy(
         config,
@@ -1595,7 +1656,8 @@ describe("Rules Engine Interactions", async () => {
         config,
         getRulesEngineComponentContract(rulesEngineContract, client),
         result.policyId,
-        getAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8")
+        getAddress("0x70997970C51812dc3A010C7d01b50e0d17dc79C8"),
+        1
       );
 
       var isSubscriber = await isClosedPolicySubscriber(

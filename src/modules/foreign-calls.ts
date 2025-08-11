@@ -75,7 +75,8 @@ export const createForeignCall = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyId: number,
-  fcSyntax: string
+  fcSyntax: string,
+  confirmationCount: number
 ): Promise<number> => {
   var trackers: TrackerOnChain[] = await getAllTrackers(
     config,
@@ -208,6 +209,7 @@ export const createForeignCall = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
     return addFC.result;
@@ -239,7 +241,8 @@ export const updateForeignCall = async (
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   policyId: number,
   foreignCallId: number,
-  fcSyntax: string
+  fcSyntax: string,
+  confirmationCount: number
 ): Promise<number> => {
   var trackers: TrackerOnChain[] = await getAllTrackers(
     config,
@@ -365,6 +368,7 @@ export const updateForeignCall = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
     let foreignCallResult = addFC.result as any;
@@ -390,7 +394,8 @@ export const deleteForeignCall = async (
   config: Config,
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   policyId: number,
-  foreignCallId: number
+  foreignCallId: number,
+  confirmationCount: number
 ): Promise<number> => {
   var addFC;
   try {
@@ -410,6 +415,7 @@ export const deleteForeignCall = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -566,7 +572,8 @@ export const addAdminToPermissionList = async (
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   foreignCallAddress: Address,
   functionSelector: string,
-  policyAdminToAdd: Address
+  policyAdminToAdd: Address,
+  confirmationCount: number
 ): Promise<number> => {
   var addFC;
   try {
@@ -587,6 +594,7 @@ export const addAdminToPermissionList = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -613,7 +621,8 @@ export const addMultipleAdminsToPermissionList = async (
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   foreignCallAddress: Address,
   functionSelector: string,
-  policyAdminsToAdd: Address[]
+  policyAdminsToAdd: Address[],
+  confirmationCount: number
 ): Promise<number> => {
   var addFC;
 
@@ -642,6 +651,7 @@ export const addMultipleAdminsToPermissionList = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -668,7 +678,8 @@ export const removeMultipleAdminsFromPermissionList = async (
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   foreignCallAddress: Address,
   functionSelector: string,
-  policyAdminsToRemove: Address[]
+  policyAdminsToRemove: Address[],
+  confirmationCount: number
 ): Promise<number> => {
   var addFC;
 
@@ -697,6 +708,7 @@ export const removeMultipleAdminsFromPermissionList = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -721,7 +733,8 @@ export const removeAllFromPermissionList = async (
   config: Config,
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   foreignCallAddress: Address,
-  functionSelector: string
+  functionSelector: string,
+  confirmationCount: number
 ): Promise<number> => {
   var addFC;
   try {
@@ -742,6 +755,7 @@ export const removeAllFromPermissionList = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }

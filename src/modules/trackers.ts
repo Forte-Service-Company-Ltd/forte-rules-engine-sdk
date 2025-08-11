@@ -44,7 +44,8 @@ export const createMappedTracker = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  mappedTrackerSyntax: string
+  mappedTrackerSyntax: string,
+  confirmationCount: number
 ): Promise<number> => {
   const json = validateMappedTrackerJSON(mappedTrackerSyntax);
   if (isLeft(json)) {
@@ -87,6 +88,7 @@ export const createMappedTracker = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
 
@@ -112,7 +114,8 @@ export const createTracker = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  trSyntax: string
+  trSyntax: string,
+  confirmationCount: number
 ): Promise<number> => {
   const json = validateTrackerJSON(trSyntax);
   if (isLeft(json)) {
@@ -148,6 +151,7 @@ export const createTracker = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
 
@@ -174,7 +178,8 @@ export const updateTracker = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
   trackerId: number,
-  trSyntax: string
+  trSyntax: string,
+  confirmationCount: number
 ): Promise<number> => {
   const json = validateTrackerJSON(trSyntax);
   if (isLeft(json)) {
@@ -210,6 +215,7 @@ export const updateTracker = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
     return trackerId;
@@ -234,7 +240,8 @@ export const deleteTracker = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  trackerId: number
+  trackerId: number,
+  confirmationCount: number
 ): Promise<number> => {
   var addFC;
   try {
@@ -254,6 +261,7 @@ export const deleteTracker = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -294,7 +302,7 @@ export const getTracker = async (
       trackerKeyType: 0,
       trackerValue: "",
       trackerIndex: -1,
-      mapped: false
+      mapped: false,
     };
   }
 };
