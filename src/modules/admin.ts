@@ -7,7 +7,7 @@ import {
   Config,
   readContract,
 } from "@wagmi/core";
-import { confirmationCount, RulesEngineAdminContract } from "./types";
+import { RulesEngineAdminContract } from "./types";
 import { sleep } from "./contract-interaction-utils";
 
 /**
@@ -48,7 +48,8 @@ export const proposeNewPolicyAdmin = async (
   config: Config,
   rulesEngineAdminContract: RulesEngineAdminContract,
   policyId: number,
-  newAdminAddress: Address
+  newAdminAddress: Address,
+  confirmationCount: number
 ): Promise<void> => {
   var proposeAdmin;
   while (true) {
@@ -90,7 +91,8 @@ export const proposeNewPolicyAdmin = async (
 export const confirmNewPolicyAdmin = async (
   config: Config,
   rulesEngineAdminContract: RulesEngineAdminContract,
-  policyId: number
+  policyId: number,
+  confirmationCount: number
 ): Promise<void> => {
   var confirmAdmin;
   while (true) {
@@ -166,7 +168,8 @@ export const proposeNewCallingContractAdmin = async (
   config: Config,
   rulesEngineAdminContract: RulesEngineAdminContract,
   callingContractAddress: Address,
-  newAdminAddress: Address
+  newAdminAddress: Address,
+  confirmationCount: number // = 3
 ): Promise<void> => {
   var proposeAdmin;
   while (true) {
@@ -209,7 +212,8 @@ export const proposeNewCallingContractAdmin = async (
 export const confirmNewCallingContractAdmin = async (
   config: Config,
   rulesEngineAdminContract: RulesEngineAdminContract,
-  callingContractAddress: Address
+  callingContractAddress: Address,
+  confirmationCount: number
 ) => {
   var confirmAdmin;
   while (true) {
@@ -322,7 +326,8 @@ export const proposeNewForeignCallAdmin = async (
   rulesEngineAdminContract: RulesEngineAdminContract,
   foreignCallAddress: Address,
   newAdminAddress: Address,
-  functionSelector: string
+  functionSelector: string,
+  confirmationCount: number
 ): Promise<void> => {
   var proposeAdmin;
   var selector = toFunctionSelector(functionSelector);
@@ -368,7 +373,8 @@ export const confirmNewForeignCallAdmin = async (
   config: Config,
   rulesEngineAdminContract: RulesEngineAdminContract,
   foreignCallAddress: Address,
-  functionSelector: string
+  functionSelector: string,
+  confirmationCount: number
 ) => {
   var confirmAdmin;
   var selector = toFunctionSelector(functionSelector);

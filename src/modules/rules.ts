@@ -23,7 +23,6 @@ import {
   RulesEnginePolicyContract,
   RulesEngineForeignCallContract,
   RuleMetadataStruct,
-  confirmationCount,
 } from "./types";
 import { getCallingFunctionMetadata } from "./calling-functions";
 import { buildForeignCallList } from "../parsing/parser";
@@ -81,7 +80,8 @@ export const createRule = async (
   policyId: number,
   ruleS: string,
   foreignCallNameToID: FCNameToID[],
-  trackerNameToID: FCNameToID[]
+  trackerNameToID: FCNameToID[],
+  confirmationCount: number
 ): Promise<number> => {
   const validatedRuleSyntax = validateRuleJSON(ruleS);
   const validatedEffectSyntax = validateRuleJSON(ruleS);
@@ -296,7 +296,8 @@ export const updateRule = async (
   ruleId: number,
   ruleS: string,
   foreignCallNameToID: FCNameToID[],
-  trackerNameToID: FCNameToID[]
+  trackerNameToID: FCNameToID[],
+  confirmationCount: number
 ): Promise<number> => {
   const validatedRuleSyntax = validateRuleJSON(ruleS);
   if (isLeft(validatedRuleSyntax)) {
@@ -486,7 +487,8 @@ export const deleteRule = async (
   config: Config,
   rulesEngineRulesContract: RulesEngineRulesContract,
   policyId: number,
-  ruleId: number
+  ruleId: number,
+  confirmationCount: number
 ): Promise<number> => {
   var addFC;
   try {

@@ -20,7 +20,6 @@ import {
   FCNameToID,
   RulesEnginePolicyContract,
   RulesEngineForeignCallContract,
-  confirmationCount,
 } from "./types";
 import { getAllTrackers, getTrackerMetadata } from "./trackers";
 import { getCallingFunctionMetadata } from "./calling-functions";
@@ -76,7 +75,8 @@ export const createForeignCall = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyId: number,
-  fcSyntax: string
+  fcSyntax: string,
+  confirmationCount: number
 ): Promise<number> => {
   var trackers: TrackerOnChain[] = await getAllTrackers(
     config,
@@ -241,7 +241,8 @@ export const updateForeignCall = async (
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   policyId: number,
   foreignCallId: number,
-  fcSyntax: string
+  fcSyntax: string,
+  confirmationCount: number
 ): Promise<number> => {
   var trackers: TrackerOnChain[] = await getAllTrackers(
     config,
@@ -393,7 +394,8 @@ export const deleteForeignCall = async (
   config: Config,
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   policyId: number,
-  foreignCallId: number
+  foreignCallId: number,
+  confirmationCount: number
 ): Promise<number> => {
   var addFC;
   try {
@@ -570,7 +572,8 @@ export const addAdminToPermissionList = async (
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   foreignCallAddress: Address,
   functionSelector: string,
-  policyAdminToAdd: Address
+  policyAdminToAdd: Address,
+  confirmationCount: number
 ): Promise<number> => {
   var addFC;
   try {
@@ -618,7 +621,8 @@ export const addMultipleAdminsToPermissionList = async (
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   foreignCallAddress: Address,
   functionSelector: string,
-  policyAdminsToAdd: Address[]
+  policyAdminsToAdd: Address[],
+  confirmationCount: number
 ): Promise<number> => {
   var addFC;
 
@@ -674,7 +678,8 @@ export const removeMultipleAdminsFromPermissionList = async (
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   foreignCallAddress: Address,
   functionSelector: string,
-  policyAdminsToRemove: Address[]
+  policyAdminsToRemove: Address[],
+  confirmationCount: number
 ): Promise<number> => {
   var addFC;
 
@@ -728,7 +733,8 @@ export const removeAllFromPermissionList = async (
   config: Config,
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   foreignCallAddress: Address,
-  functionSelector: string
+  functionSelector: string,
+  confirmationCount: number
 ): Promise<number> => {
   var addFC;
   try {

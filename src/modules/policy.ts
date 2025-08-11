@@ -29,7 +29,6 @@ import {
   RulesEngineForeignCallContract,
   PolicyMetadataStruct,
   Maybe,
-  confirmationCount,
 } from "./types";
 import {
   createForeignCall,
@@ -99,6 +98,7 @@ export const createPolicy = async (
   rulesEngineRulesContract: RulesEngineRulesContract,
   rulesEngineComponentContract: RulesEngineComponentContract,
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
+  confirmationCount: number,
   policySyntax?: string
 ): Promise<{ policyId: number }> => {
   var fcIds: FCNameToID[] = [];
@@ -148,7 +148,8 @@ export const createPolicy = async (
           rulesEngineComponentContract,
           policyId,
           callingFunction,
-          callingFunctionJSON.encodedValues
+          callingFunctionJSON.encodedValues,
+          confirmationCount
         );
         callingFunctionIds.push(fsId);
         callingFunctionParamSets.push(
@@ -174,7 +175,8 @@ export const createPolicy = async (
       fsIds,
       emptyRules,
       policyJSON.Policy,
-      policyJSON.Description
+      policyJSON.Description,
+      confirmationCount
     );
     if (policyJSON.Trackers != null) {
       for (var tracker of policyJSON.Trackers) {
@@ -184,7 +186,8 @@ export const createPolicy = async (
           config,
           rulesEngineComponentContract,
           policyId,
-          JSON.stringify(tracker)
+          JSON.stringify(tracker),
+          confirmationCount
         );
         var struc: FCNameToID = {
           id: trId,
@@ -201,7 +204,8 @@ export const createPolicy = async (
           config,
           rulesEngineComponentContract,
           policyId,
-          JSON.stringify(mTracker)
+          JSON.stringify(mTracker),
+          confirmationCount
         );
         var struc: FCNameToID = {
           id: trId,
@@ -234,7 +238,8 @@ export const createPolicy = async (
           rulesEngineComponentContract,
           rulesEnginePolicyContract,
           policyId,
-          JSON.stringify(foreignCall)
+          JSON.stringify(foreignCall),
+          confirmationCount
         );
         var struc: FCNameToID = {
           id: fcId,
@@ -254,7 +259,8 @@ export const createPolicy = async (
         policyId,
         JSON.stringify(rule),
         fcIds,
-        trackerIds
+        trackerIds,
+        confirmationCount
       );
       if (ruleId == -1) {
         return { policyId: -1 };
@@ -282,7 +288,8 @@ export const createPolicy = async (
       callingFunctionIds,
       rulesDoubleMapping,
       policyJSON.Policy,
-      policyJSON.Description
+      policyJSON.Description,
+      confirmationCount
     );
   }
   return { policyId };
@@ -307,7 +314,8 @@ export const updatePolicy = async (
   ids: number[],
   ruleIds: any[],
   policyName: string,
-  policyDescription: string
+  policyDescription: string,
+  confirmationCount: number
 ): Promise<number> => {
   var updatePolicy;
   while (true) {
@@ -360,7 +368,8 @@ export const setPolicies = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyIds: [number],
-  contractAddressForPolicy: Address
+  contractAddressForPolicy: Address,
+  confirmationCount: number
 ): Promise<void> => {
   var applyPolicy;
   while (true) {
@@ -402,7 +411,8 @@ export const appendPolicy = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyId: number,
-  contractAddressForPolicy: Address
+  contractAddressForPolicy: Address,
+  confirmationCount: number
 ): Promise<void> => {
   const retrievePolicies = await simulateContract(config, {
     address: rulesEnginePolicyContract.address,
@@ -418,7 +428,8 @@ export const appendPolicy = async (
     config,
     rulesEnginePolicyContract,
     policyResult,
-    contractAddressForPolicy
+    contractAddressForPolicy,
+    confirmationCount
   );
 };
 
@@ -433,7 +444,8 @@ export const appendPolicy = async (
 export const deletePolicy = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
-  policyId: number
+  policyId: number,
+  confirmationCount: number
 ): Promise<number> => {
   var addFC;
   try {
@@ -767,7 +779,8 @@ export async function isClosedPolicy(
 export const closePolicy = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
-  policyId: number
+  policyId: number,
+  confirmationCount: number
 ): Promise<number> => {
   var addFC;
   try {
@@ -806,7 +819,8 @@ export const closePolicy = async (
 export const openPolicy = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
-  policyId: number
+  policyId: number,
+  confirmationCount: number
 ): Promise<number> => {
   var addFC;
   try {
@@ -873,7 +887,8 @@ export const addClosedPolicySubscriber = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  subscriber: Address
+  subscriber: Address,
+  confirmationCount: number
 ): Promise<number> => {
   var addFC;
   try {
@@ -914,7 +929,8 @@ export const removeClosedPolicySubscriber = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  subscriber: Address
+  subscriber: Address,
+  confirmationCount: number
 ): Promise<number> => {
   var addFC;
   try {
@@ -953,7 +969,8 @@ export const removeClosedPolicySubscriber = async (
 export const cementPolicy = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
-  policyId: number
+  policyId: number,
+  confirmationCount: number
 ): Promise<number> => {
   var addFC;
   try {

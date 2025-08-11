@@ -14,7 +14,6 @@ import {
 } from "../parsing/parser";
 import {
   CallingFunctionHashMapping,
-  confirmationCount,
   PT,
   RulesEngineComponentContract,
 } from "./types";
@@ -62,7 +61,8 @@ export const createCallingFunction = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
   callingFunction: string,
-  encodedValues: string
+  encodedValues: string,
+  confirmationCount: number
 ): Promise<number> => {
   var argsRaw = parseFunctionArguments(callingFunction);
   var args: number[] = argsRaw.map((val) =>
@@ -119,7 +119,8 @@ export const deleteCallingFunction = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  callingFunctionId: number
+  callingFunctionId: number,
+  confirmationCount: number
 ): Promise<number> => {
   var addRule;
   try {

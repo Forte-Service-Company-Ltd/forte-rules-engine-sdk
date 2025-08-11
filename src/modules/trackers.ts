@@ -11,12 +11,7 @@ import {
   parseMappedTrackerSyntax,
   parseTrackerSyntax,
 } from "../parsing/parser";
-import {
-  confimrationCount,
-  confirmationCount,
-  RulesEngineComponentContract,
-  TrackerOnChain,
-} from "./types";
+import { RulesEngineComponentContract, TrackerOnChain } from "./types";
 import { isLeft, isRight, unwrapEither } from "./utils";
 import {
   getRulesErrorMessages,
@@ -49,7 +44,8 @@ export const createMappedTracker = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  mappedTrackerSyntax: string
+  mappedTrackerSyntax: string,
+  confirmationCount: number
 ): Promise<number> => {
   const json = validateMappedTrackerJSON(mappedTrackerSyntax);
   if (isLeft(json)) {
@@ -118,7 +114,8 @@ export const createTracker = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  trSyntax: string
+  trSyntax: string,
+  confirmationCount: number
 ): Promise<number> => {
   const json = validateTrackerJSON(trSyntax);
   if (isLeft(json)) {
@@ -181,7 +178,8 @@ export const updateTracker = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
   trackerId: number,
-  trSyntax: string
+  trSyntax: string,
+  confirmationCount: number
 ): Promise<number> => {
   const json = validateTrackerJSON(trSyntax);
   if (isLeft(json)) {
@@ -242,7 +240,8 @@ export const deleteTracker = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  trackerId: number
+  trackerId: number,
+  confirmationCount: number
 ): Promise<number> => {
   var addFC;
   try {

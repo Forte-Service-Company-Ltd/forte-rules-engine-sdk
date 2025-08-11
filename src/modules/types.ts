@@ -318,5 +318,3 @@ export type ASTAccumulator = {
   mem: any[];
   iterator: { value: number };
 };
-
-export const confirmationCount = 3;
