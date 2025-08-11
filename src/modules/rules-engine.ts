@@ -754,7 +754,7 @@ export class RulesEngine {
    *
    * @param foreignCallAddress - the address of the contract the foreign call belongs to.
    * @param functionSelector - The selector for the specific foreign call
-   * @param policyAdminsToAdd - The address of the admins to add to the list
+   * @param policyAdminsToAdd - The addresses of the admins to add to the list
    * @returns A promise that resolves to a number:
    *          - `0` if the operation is successful.
    *          - `-1` if an error occurs during the simulation of the contract interaction.
