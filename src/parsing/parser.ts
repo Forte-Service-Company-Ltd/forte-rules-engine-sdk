@@ -345,11 +345,7 @@ export function parseTrackerSyntax(syntax: TrackerJSON): TrackerDefinition {
     trackerInitialValue = encodePacked(["uint256"], [BigInt(interim)]);
   }
   var trackerTypeEnum = 0;
-  for (var parameterType of PT) {
-    if (parameterType.name == trackerType) {
-      trackerTypeEnum = parameterType.enumeration;
-    }
-  }
+  trackerTypeEnum = PT.find(pt => pt.name === trackerType)?.enumeration ?? 4;
   return {
     name: syntax.name,
     type: trackerTypeEnum,
@@ -451,7 +447,7 @@ export function parseForeignCallDefinition(
 }
 
 export function determinePTEnumeration(name: string): number {
-  return PT.find((pt) => name == pt.name)?.enumeration ?? 0;
+  return PT.find(pt => name === pt.name)?.enumeration ?? 4;
 }
 
 export function parseCallingFunction(syntax: CallingFunctionJSON): string[] {

@@ -1037,7 +1037,6 @@ describe("Rules Engine Interactions", async () => {
     expect(retVal).toEqual(JSON.stringify(input, null, 2));
   });
 
-
   test("Can retrieve a full policy", async () => {
     var policyJSON = `
              {
@@ -1093,6 +1092,7 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineRulesContract(rulesEngineContract, client),
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
       policyJSON
     );
     expect(result.policyId).toBeGreaterThanOrEqual(0);
