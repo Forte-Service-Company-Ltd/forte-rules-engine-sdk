@@ -1092,6 +1092,7 @@ describe("Rules Engine Interactions", async () => {
       getRulesEngineRulesContract(rulesEngineContract, client),
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
       policyJSON
     );
     expect(result.policyId).toBeGreaterThanOrEqual(0);
