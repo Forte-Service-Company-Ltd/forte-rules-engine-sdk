@@ -1037,7 +1037,6 @@ describe("Rules Engine Interactions", async () => {
     expect(retVal).toEqual(JSON.stringify(input, null, 2));
   });
 
-
   test("Can retrieve a full policy", async () => {
     var policyJSON = `
              {
