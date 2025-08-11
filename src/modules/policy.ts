@@ -29,10 +29,12 @@ import {
   RulesEngineForeignCallContract,
   PolicyMetadataStruct,
   Maybe,
+  ForeignCallEncodedIndex,
 } from "./types";
 import {
   createForeignCall,
   getAllForeignCalls,
+  getForeignCall,
   getForeignCallMetadata,
 } from "./foreign-calls";
 import { createRule, getRuleMetadata } from "./rules";
@@ -61,6 +63,7 @@ import {
   validatePolicyJSON,
 } from "./validation";
 import { isLeft, isRight, unwrapEither } from "./utils";
+import { reverse } from "dns";
 
 /**
  * @file policy.ts
@@ -110,7 +113,7 @@ export const createPolicy = async (
   let callingFunctionIds: number[] = [];
   let rulesDoubleMapping = [];
   let callingFunctionSelectors = [];
-  let callingFunctionMappings: hexToFunctionString[] = [];
+  let allFunctionMappings: hexToFunctionString[] = [];
 
   var policyId = -1;
   if (policySyntax !== undefined) {
@@ -155,7 +158,7 @@ export const createPolicy = async (
         callingFunctionParamSets.push(
           parseCallingFunction(callingFunctionJSON)
         );
-        callingFunctionMappings.push({
+        allFunctionMappings.push({
           hex: toFunctionSelector(callingFunction),
           functionString: callingFunction,
           encodedValues: callingFunctionJSON.encodedValues,
@@ -249,6 +252,7 @@ export const createPolicy = async (
         fcIds.push(struc);
       }
     }
+
     for (var rule of policyJSON.Rules) {
       const ruleId = await createRule(
         config,
@@ -473,6 +477,38 @@ export const deletePolicy = async (
   return 0;
 };
 
+const getFunctionArgument = (encodedArgs: string, index: number): string => {
+  const args = encodedArgs.split(", ");
+  const arg = args[index];
+  if (!arg) throw new Error(`No argument found at index ${index}`);
+  return arg.split(" ")[1]; // Remove type information
+};
+
+const getForeignCallArgument = (foreignCallNames: string[], index: number): string => {
+  const name = foreignCallNames[Number(BigInt(index) - 1n)];
+  if (!name) throw new Error(`No argument found at index ${index}`);
+  return `FC:${name}`;
+};
+
+const reverseParseEncodedArg = (encodedArgs: string, foreignCallNames: string[], encoded: ForeignCallEncodedIndex): string => {
+  switch (encoded.eType) {
+    case 0:
+      // return getFunctionArgument(encodedArgs, encoded.index);
+      return "placeholder";
+    case 1:
+      return getForeignCallArgument(foreignCallNames, encoded.index);
+    case 2:
+      // TODO handle trackers
+      return ""
+    default:
+      throw new Error(`Unknown encoded argument type: ${encoded.eType}`);
+  }
+}
+
+const reverseParseEncodedArgs = (callingArgs: string, foreignCallNames: string[], encoded: ForeignCallEncodedIndex[]): string => {
+  return encoded.map(enc => reverseParseEncodedArg(callingArgs, foreignCallNames, enc)).join(", ");
+}
+
 /**
  * Retrieves the full policy, including rules, trackers, and foreign calls, as a JSON string.
  *
@@ -492,7 +528,7 @@ export const getPolicy = async (
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   policyId: number
 ): Promise<string> => {
-  var callingFunctionMappings: hexToFunctionString[] = [];
+  var allFunctionMappings: hexToFunctionString[] = [];
   const callingFunctionJSONs: CallingFunctionJSON[] = [];
   try {
     const retrievePolicy = await simulateContract(config, {
@@ -534,7 +570,7 @@ export const getPolicy = async (
         encodedValues: mapp.encodedValues,
         index: -1,
       };
-      callingFunctionMappings.push(newMapping);
+      allFunctionMappings.push(newMapping);
       const callingFunctionJSON = {
         name: mapp.callingFunction,
         functionSignature: mapp.callingFunction,
@@ -558,19 +594,19 @@ export const getPolicy = async (
         fc.foreignCallIndex
       );
       foreignCallNames.push(name);
+      const encodedValues = reverseParseEncodedArgs("", foreignCallNames, fc.encodedIndices)
       var newMapping: hexToFunctionString = {
         hex: fc.signature,
         functionString: name,
-        encodedValues: "",
+        encodedValues,
         index: -1,
       };
-      callingFunctionMappings.push(newMapping);
+      allFunctionMappings.push(newMapping);
     }
 
     const callStrings: ForeignCallJSON[] = convertForeignCallStructsToStrings(
       foreignCalls,
-      callingFunctionMappings,
-      foreignCallNames
+      allFunctionMappings
     );
 
     var trackers: TrackerOnChain[] = await getAllTrackers(
@@ -594,7 +630,7 @@ export const getPolicy = async (
         encodedValues: "",
         index: tracker.trackerIndex,
       };
-      callingFunctionMappings.push(newMapping);
+      allFunctionMappings.push(newMapping);
     }
 
     const trackerJSONs = convertTrackerStructsToStrings(trackers, trackerNames);
@@ -605,7 +641,7 @@ export const getPolicy = async (
       var functionString = "";
       var encodedValues: string = "";
       var fs = callingFunctions[iter];
-      for (var mapping of callingFunctionMappings) {
+      for (var mapping of allFunctionMappings) {
         if (mapping.hex == fs) {
           functionString = mapping.functionString;
           encodedValues = mapping.encodedValues;
@@ -635,7 +671,7 @@ export const getPolicy = async (
               ruleM!,
               foreignCalls,
               trackers,
-              callingFunctionMappings
+              allFunctionMappings
             )
           );
         }
@@ -652,7 +688,7 @@ export const getPolicy = async (
       ...trackerJSONs,
       Rules: ruleJSONObjs,
     };
-    return JSON.stringify(jsonObj);
+    return JSON.stringify(jsonObj, null, 2);
   } catch (error) {
     console.error(error);
     return "";

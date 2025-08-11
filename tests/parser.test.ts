@@ -24,11 +24,7 @@ import {
   parseForeignCallDefinition,
   parseMappedTrackerSyntax,
 } from "../src/parsing/parser.js";
-import { reverseParseRule } from "../src/parsing/reverse-parsing-logic.js";
-import { removeExtraParenthesis } from "../src/parsing/parsing-utilities.js";
-import { unwrapEither } from "../src/modules/utils.js";
-import { removeArrayWrappers } from "../src/parsing/internal-parsing-logic.js";
-import { removeFlag } from "typedoc/dist/lib/utils/enum.js";
+import { reverseParseInstructionSet } from "../src/parsing/reverse-parsing-logic.js";
 
 test("Evaluates a simple syntax string (using only values and operators)", () => {
   /**
@@ -377,7 +373,7 @@ test('Reverse Interpretation for the: "Evaluates a simple syntax string (using o
   var expectedString = "3 + 4 > 5 AND ( 1 == 1 AND 2 == 2 )";
   const cleanedInstructionSet = cleanInstructionSet(instructionSet);
   var placeholderArray = ["value", "info", "addr"];
-  var retVal = reverseParseRule(
+  var retVal = reverseParseInstructionSet(
     cleanedInstructionSet as number[],
     placeholderArray,
     []
@@ -390,7 +386,7 @@ test('Reverse Interpretation for the: "Evaluates a simple syntax string involvin
   var expectedString = "TR:trackerOne(to) == 1";
   const cleanedInstructionSet = cleanInstructionSet(instructionSet);
   var placeholderArray = ["to", "TR:trackerOne"];
-  var retVal = reverseParseRule(
+  var retVal = reverseParseInstructionSet(
     cleanedInstructionSet as number[],
     placeholderArray,
     []
@@ -419,7 +415,7 @@ test('Reverse Interpretation for the: "Evaluates a simple effect involving a map
   var expectedString = "TRU:testOne(to) -= 1";
   const cleanedInstructionSet = cleanInstructionSet(instructionSet);
   var placeholderArray = ["to", "TR:testOne"];
-  var retVal = reverseParseRule(
+  var retVal = reverseParseInstructionSet(
     cleanedInstructionSet as number[],
     placeholderArray,
     []
@@ -473,7 +469,7 @@ test("Evaluates a complex effect involving a mapped tracker update (TRUM))", () 
 
   const cleanedInstructionSet = cleanInstructionSet(instructionSet);
   var placeholderArray = ["to", "TR:testOne", "TR:testTwo"];
-  var retVal = reverseParseRule(
+  var retVal = reverseParseInstructionSet(
     cleanedInstructionSet as number[],
     placeholderArray,
     []
@@ -486,7 +482,7 @@ test('Reverse Interpretation for the: "Evaluates a simple effect involving a tra
   var expectedString = "TRU:testOne -= 1";
   const cleanedInstructionSet = cleanInstructionSet(instructionSet);
   var placeholderArray = ["value", "TR:testOne"];
-  var retVal = reverseParseRule(
+  var retVal = reverseParseInstructionSet(
     cleanedInstructionSet as number[],
     placeholderArray,
     []
@@ -499,7 +495,7 @@ test('Reverse Interpretation for the: "Evaluates a second effect involving a tra
   var expectedString = "TRU:testOne = value";
   const cleanedInstructionSet = cleanInstructionSet(instructionSet);
   var placeholderArray = ["value", "TR:testOne"];
-  var retVal = reverseParseRule(
+  var retVal = reverseParseInstructionSet(
     cleanedInstructionSet as number[],
     placeholderArray,
     []
@@ -669,7 +665,7 @@ test('Reverse Interpretation for the: "Evaluates a complex syntax string (using 
     "1 + 1 == 2 AND ( ( 3 + 4 > 5 AND ( 1 == 1 AND 2 == 2 ) ) AND 4 == 4 )";
   const cleanedInstructionSet = cleanInstructionSet(instructionSet);
   var placeholderArray: any[] = [];
-  var retVal = reverseParseRule(
+  var retVal = reverseParseInstructionSet(
     cleanedInstructionSet as number[],
     placeholderArray,
     []
@@ -813,7 +809,7 @@ test('Reverse Interpretation for the: "Evaluates a simple syntax string (using A
   var expectedString = "( 3 + 4 > 5 AND 5 == 5 ) OR ( 1 == 1 OR 2 == 3 )";
   const cleanedInstructionSet = cleanInstructionSet(instructionSet);
   var placeholderArray: any[] = [];
-  var retVal = reverseParseRule(
+  var retVal = reverseParseInstructionSet(
     cleanedInstructionSet as number[],
     placeholderArray,
     []
@@ -1046,7 +1042,7 @@ test('Reverse Interpretation for the: "Evaluates a simple syntax string (using A
     "( value + 4 > 5 AND 5 == 5 ) OR ( info == test OR addr == 0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC )";
   const cleanedInstructionSet = cleanInstructionSet(instructionSet);
   var placeholderArray = ["value", "info", "addr"];
-  var retVal = reverseParseRule(
+  var retVal = reverseParseInstructionSet(
     cleanedInstructionSet as number[],
     placeholderArray,
     [{ instructionSetIndex: 25, originalData: "test" }]
@@ -1260,7 +1256,7 @@ test('Reverse Interpretation for the: "Evaluates a simple syntax string with a F
   var expectedString = "FC:leaderboard > 100 AND value == 100";
   const cleanedInstructionSet = cleanInstructionSet(instructionSet);
   var placeholderArray = ["FC:leaderboard", "value"];
-  var retVal = reverseParseRule(
+  var retVal = reverseParseInstructionSet(
     cleanedInstructionSet as number[],
     placeholderArray,
     []
@@ -1427,7 +1423,7 @@ test('Reverse Interpretation for the: "Evaluates a simple syntax string with a F
     "FC:isRich",
     "FC:creditRisk",
   ];
-  var retVal = reverseParseRule(
+  var retVal = reverseParseInstructionSet(
     cleanedInstructionSet as number[],
     placeholderArray,
     []
@@ -1591,7 +1587,7 @@ test('Reverse Interpretation for the: "Evaluate complex expression with placehol
     "( to == 1 AND sender == 0xdeadbeefdeadbeef ) OR ( ( value == 1 AND to == 1 ) AND value < 500 )";
   const cleanedInstructionSet = cleanInstructionSet(instructionSet);
   var placeholderArray = ["to", "sender", "value", "to", "value"];
-  var retVal = reverseParseRule(
+  var retVal = reverseParseInstructionSet(
     cleanedInstructionSet as number[],
     placeholderArray,
     []
@@ -1749,7 +1745,7 @@ test('Reverse Interpretation for the: "Evaluates a simple syntax string (using A
     "TR:testTwo",
     "TR:testOne",
   ];
-  var retVal = reverseParseRule(
+  var retVal = reverseParseInstructionSet(
     cleanedInstructionSet as number[],
     placeholderArray,
     []
@@ -1964,7 +1960,7 @@ test("Simple Reverse Interpretation", () => {
     0, 1, 0, 2, 5, 0, 1, 0, 3, 11, 2, 3, 0, 1, 2, 0, 11, 5, 6, 12, 4, 7,
   ];
   var placeholderArray = ["value"];
-  var retVal = reverseParseRule(numbers, placeholderArray, []);
+  var retVal = reverseParseInstructionSet(numbers, placeholderArray, []);
   expect(retVal).toEqual("1 + 2 == 3 AND 1 == value");
 });
 

@@ -42,7 +42,7 @@ import { isRight, unwrapEither } from "../modules/utils";
  * @param stringReplacements - An array of string replacements for specific instructions.
  * @returns A human-readable rule condition string.
  */
-export function reverseParseRule(
+export function reverseParseInstructionSet(
   instructionSet: number[],
   placeHolderArray: string[],
   stringReplacements: stringReplacement[]
@@ -157,6 +157,7 @@ export function reverseParseRule(
           });
           keyIndex = instruction;
           currentMemAddress += 1;
+          retVal = placeHolderArray[instruction]
           break;
         case 3:
           retVal = arithmeticOperatorReverseInterpretation(
@@ -436,7 +437,7 @@ export const reverseParseEffect = (effect: any, placeholders: string[]): string 
   } else if (effect.effectType == 1) {
     return "emit " + effect.text;
   } else {
-    return reverseParseRule(effect.instructionSet, placeholders, [])
+    return reverseParseInstructionSet(effect.instructionSet, placeholders, [])
   }
 }
 
@@ -486,7 +487,7 @@ export function convertRuleStructToString(
     mappings
   ));
 
-  rJSON.condition = reverseParseRule(ruleS!.instructionSet, plhArray, []);
+  rJSON.condition = reverseParseInstructionSet(ruleS!.instructionSet, plhArray, []);
   rJSON.callingFunction = functionString;
 
   const effectPlhArray = ruleS.effectPlaceHolders.map((placeholder) => reverseParsePlaceholder(
@@ -530,22 +531,21 @@ export function convertRuleStructToString(
  */
 export function convertForeignCallStructsToStrings(
   foreignCallsOnChain: ForeignCallOnChain[],
-  callingFunctionMappings: hexToFunctionString[],
-  names: string[]
+  callingFunctionMappings: hexToFunctionString[]
 ): ForeignCallJSONReversed[] {
   const foreignCalls: ForeignCallJSONReversed[] = foreignCallsOnChain.map((call, iter) => {
-    const callingFunction = callingFunctionMappings.find(mapping => mapping.hex === call.signature);
+    const functionMeta = callingFunctionMappings.find(mapping => mapping.hex === call.signature);
 
     const returnTypeString = PT.find(pType => pType.enumeration == call.returnType)?.name;
 
     const inputs = {
-      "name": names[iter],
+      "name": functionMeta?.functionString || "",
       "address": call.foreignCallAddress as Address,
       "function": call.signature,
       "returnType": returnTypeString || "",
-      "valuesToPass": call.signature,
+      "valuesToPass": functionMeta?.encodedValues || "",
       "mappedTrackerKeyValues": "",
-      "callingFunction": callingFunction ? callingFunction.functionString : "",
+      "callingFunction": "",
     };
 
     return inputs
