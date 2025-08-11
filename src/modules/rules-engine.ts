@@ -658,7 +658,7 @@ export class RulesEngine {
   getForeignCall(policyId: number, foreignCallId: number): Promise<Maybe<any>> {
     return getForeignCallInternal(
       config,
-      this.rulesEngineComponentContract,
+      this.rulesEngineForeignCallContract,
       policyId,
       foreignCallId
     );
@@ -754,7 +754,7 @@ export class RulesEngine {
    *
    * @param foreignCallAddress - the address of the contract the foreign call belongs to.
    * @param functionSelector - The selector for the specific foreign call
-   * @param policyAdminsToAdd - The address of the admins to remove from the list
+   * @param policyAdminsToAdd - The addresses of the admins to add to the list
    * @returns A promise that resolves to a number:
    *          - `0` if the operation is successful.
    *          - `-1` if an error occurs during the simulation of the contract interaction.
@@ -768,7 +768,7 @@ export class RulesEngine {
   ): Promise<number> {
     return addMultipleAdminsToPermissionListInternal(
       config,
-      this.rulesEngineComponentContract,
+      this.rulesEngineForeignCallContract,
       foreignCallAddress,
       functionSelector,
       policyAdminsToAdd,
