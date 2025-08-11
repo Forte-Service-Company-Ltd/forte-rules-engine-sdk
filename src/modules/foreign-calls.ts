@@ -129,14 +129,14 @@ export const createForeignCall = async (
   );
   fcMap = [...fcMap, ...fcMapAdditions];
 
-  const retrievePolicy = await simulateContract(config, {
+  const retrievePolicy = await readContract(config, {
     address: rulesEnginePolicyContract.address,
     abi: rulesEnginePolicyContract.abi,
     functionName: "getPolicy",
     args: [policyId],
   });
 
-  let policyResult = retrievePolicy.result;
+  let policyResult = retrievePolicy as any;
   let callingFunctionIds: number[] = policyResult[1];
   const callingFunctionsMetadataCalls = callingFunctionIds.map((cfId) =>
     getCallingFunctionMetadata(
@@ -288,14 +288,14 @@ export const updateForeignCall = async (
   );
   fcMap = [...fcMap, ...fcMapAdditions];
 
-  const retrievePolicy = await simulateContract(config, {
+  const retrievePolicy = await readContract(config, {
     address: rulesEnginePolicyContract.address,
     abi: rulesEnginePolicyContract.abi,
     functionName: "getPolicy",
     args: [policyId],
   });
 
-  let policyResult = retrievePolicy.result;
+  let policyResult = retrievePolicy as any;
   let callingFunctionIds: number[] = policyResult[1];
   const callingFunctionsMetadataCalls = callingFunctionIds.map((cfId) =>
     getCallingFunctionMetadata(

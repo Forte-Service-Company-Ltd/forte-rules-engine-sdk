@@ -139,13 +139,13 @@ export const isPolicyAdmin = async (
   adminAddress: Address
 ): Promise<boolean> => {
   try {
-    let policyExists = await simulateContract(config, {
+    let policyExists = await readContract(config, {
       address: rulesEngineAdminContract.address,
       abi: rulesEngineAdminContract.abi,
       functionName: "isPolicyAdmin",
       args: [policyId, adminAddress],
     });
-    return policyExists.result as boolean;
+    return policyExists as boolean;
   } catch (error) {
     return false;
   }
@@ -261,13 +261,13 @@ export const isCallingContractAdmin = async (
   account: Address
 ): Promise<boolean> => {
   try {
-    let policyExists = await simulateContract(config, {
+    let policyExists = await readContract(config, {
       address: rulesEngineAdminContract.address,
       abi: rulesEngineAdminContract.abi,
       functionName: "isCallingContractAdmin",
       args: [callingContract, account],
     });
-    return policyExists.result as boolean;
+    return policyExists as boolean;
   } catch (error) {
     return false;
   }
@@ -295,13 +295,13 @@ export const isForeignCallAdmin = async (
 ): Promise<boolean> => {
   var selector = toFunctionSelector(functionSelector);
   try {
-    let isForeignCallAdmin = await simulateContract(config, {
+    let isForeignCallAdmin = await readContract(config, {
       address: rulesEngineAdminContract.address,
       abi: rulesEngineAdminContract.abi,
       functionName: "isForeignCallAdmin",
       args: [foreignCallContract, account, selector],
     });
-    return isForeignCallAdmin.result as boolean;
+    return isForeignCallAdmin as boolean;
   } catch (error) {
     return false;
   }
