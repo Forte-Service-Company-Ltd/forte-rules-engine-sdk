@@ -29,6 +29,7 @@ import {
   RulesEngineForeignCallContract,
   PolicyMetadataStruct,
   Maybe,
+  confirmationCount,
 } from "./types";
 import {
   createForeignCall,
@@ -53,7 +54,13 @@ import {
   convertForeignCallStructsToStrings,
   convertTrackerStructsToStrings,
 } from "../parsing/reverse-parsing-logic";
-import { CallingFunctionJSON, ForeignCallJSON, getRulesErrorMessages, PolicyJSON, validatePolicyJSON } from "./validation";
+import {
+  CallingFunctionJSON,
+  ForeignCallJSON,
+  getRulesErrorMessages,
+  PolicyJSON,
+  validatePolicyJSON,
+} from "./validation";
 import { isLeft, isRight, unwrapEither } from "./utils";
 
 /**
@@ -124,6 +131,7 @@ export const createPolicy = async (
       account: config.getClient().account,
     });
     const transactionReceipt = await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
 
@@ -330,6 +338,7 @@ export const updatePolicy = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
 
@@ -375,6 +384,7 @@ export const setPolicies = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -443,6 +453,7 @@ export const deletePolicy = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -494,7 +505,7 @@ export const getPolicy = async (
       config,
       rulesEnginePolicyContract,
       policyId
-    )
+    );
 
     var iter = 1;
 
@@ -574,10 +585,7 @@ export const getPolicy = async (
       callingFunctionMappings.push(newMapping);
     }
 
-    const trackerJSONs = convertTrackerStructsToStrings(
-      trackers,
-      trackerNames
-    );
+    const trackerJSONs = convertTrackerStructsToStrings(trackers, trackerNames);
 
     var iter = 0;
     var ruleJSONObjs = [];
@@ -779,6 +787,7 @@ export const closePolicy = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -817,6 +826,7 @@ export const openPolicy = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -883,6 +893,7 @@ export const addClosedPolicySubscriber = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -923,6 +934,7 @@ export const removeClosedPolicySubscriber = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -961,6 +973,7 @@ export const cementPolicy = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }

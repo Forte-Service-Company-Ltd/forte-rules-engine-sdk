@@ -14,6 +14,7 @@ import {
 } from "../parsing/parser";
 import {
   CallingFunctionHashMapping,
+  confirmationCount,
   PT,
   RulesEngineComponentContract,
 } from "./types";
@@ -94,6 +95,7 @@ export const createCallingFunction = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
 
@@ -137,6 +139,7 @@ export const deleteCallingFunction = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
 

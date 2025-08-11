@@ -11,7 +11,12 @@ import {
   parseMappedTrackerSyntax,
   parseTrackerSyntax,
 } from "../parsing/parser";
-import { RulesEngineComponentContract, TrackerOnChain } from "./types";
+import {
+  confimrationCount,
+  confirmationCount,
+  RulesEngineComponentContract,
+  TrackerOnChain,
+} from "./types";
 import { isLeft, isRight, unwrapEither } from "./utils";
 import {
   getRulesErrorMessages,
@@ -87,6 +92,7 @@ export const createMappedTracker = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
 
@@ -148,6 +154,7 @@ export const createTracker = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
 
@@ -210,6 +217,7 @@ export const updateTracker = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
     return trackerId;
@@ -254,6 +262,7 @@ export const deleteTracker = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -294,7 +303,7 @@ export const getTracker = async (
       trackerKeyType: 0,
       trackerValue: "",
       trackerIndex: -1,
-      mapped: false
+      mapped: false,
     };
   }
 };

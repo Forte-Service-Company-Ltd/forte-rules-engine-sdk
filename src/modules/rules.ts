@@ -23,6 +23,7 @@ import {
   RulesEnginePolicyContract,
   RulesEngineForeignCallContract,
   RuleMetadataStruct,
+  confirmationCount,
 } from "./types";
 import { getCallingFunctionMetadata } from "./calling-functions";
 import { buildForeignCallList } from "../parsing/parser";
@@ -263,6 +264,7 @@ export const createRule = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
 
@@ -459,6 +461,7 @@ export const updateRule = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
 
@@ -503,6 +506,7 @@ export const deleteRule = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }

@@ -20,6 +20,7 @@ import {
   FCNameToID,
   RulesEnginePolicyContract,
   RulesEngineForeignCallContract,
+  confirmationCount,
 } from "./types";
 import { getAllTrackers, getTrackerMetadata } from "./trackers";
 import { getCallingFunctionMetadata } from "./calling-functions";
@@ -208,6 +209,7 @@ export const createForeignCall = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
     return addFC.result;
@@ -365,6 +367,7 @@ export const updateForeignCall = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
     let foreignCallResult = addFC.result as any;
@@ -410,6 +413,7 @@ export const deleteForeignCall = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -587,6 +591,7 @@ export const addAdminToPermissionList = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -642,6 +647,7 @@ export const addMultipleAdminsToPermissionList = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -697,6 +703,7 @@ export const removeMultipleAdminsFromPermissionList = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -742,6 +749,7 @@ export const removeAllFromPermissionList = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }

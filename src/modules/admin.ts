@@ -7,7 +7,7 @@ import {
   Config,
   readContract,
 } from "@wagmi/core";
-import { RulesEngineAdminContract } from "./types";
+import { confirmationCount, RulesEngineAdminContract } from "./types";
 import { sleep } from "./contract-interaction-utils";
 
 /**
@@ -70,6 +70,7 @@ export const proposeNewPolicyAdmin = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -112,6 +113,7 @@ export const confirmNewPolicyAdmin = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -186,6 +188,7 @@ export const proposeNewCallingContractAdmin = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -229,6 +232,7 @@ export const confirmNewCallingContractAdmin = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -341,6 +345,7 @@ export const proposeNewForeignCallAdmin = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -387,6 +392,7 @@ export const confirmNewForeignCallAdmin = async (
       account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
