@@ -104,14 +104,14 @@ export const createRule = async (
     return -1;
   }
 
-  const retrievePolicy = await simulateContract(config, {
+  const retrievePolicy = await readContract(config, {
     address: rulesEnginePolicyContract.address,
     abi: rulesEnginePolicyContract.abi,
     functionName: "getPolicy",
     args: [policyId],
   });
 
-  let policyResult = retrievePolicy.result;
+  let policyResult = retrievePolicy as any;
 
   let callingFunctionIds: number[] = policyResult[1];
   const callingFunctionsMetadataCalls = callingFunctionIds.map((cfId) =>
@@ -306,14 +306,14 @@ export const updateRule = async (
 
   const ruleSyntax = unwrapEither(validatedRuleSyntax);
 
-  const retrievePolicy = await simulateContract(config, {
+  const retrievePolicy = await readContract(config, {
     address: rulesEnginePolicyContract.address,
     abi: rulesEnginePolicyContract.abi,
     functionName: "getPolicy",
     args: [policyId],
   });
 
-  let policyResult = retrievePolicy.result;
+  let policyResult = retrievePolicy as any;
   let callingFunctionIds: number[] = policyResult[1];
   const callingFunctionsMetadataCalls = callingFunctionIds.map((cfId) =>
     getCallingFunctionMetadata(

@@ -418,14 +418,14 @@ export const appendPolicy = async (
   contractAddressForPolicy: Address,
   confirmationCount: number
 ): Promise<void> => {
-  const retrievePolicies = await simulateContract(config, {
+  const retrievePolicies = await readContract(config, {
     address: rulesEnginePolicyContract.address,
     abi: rulesEnginePolicyContract.abi,
     functionName: "getAppliedPolicyIds",
     args: [contractAddressForPolicy],
   });
 
-  let policyResult = retrievePolicies.result as [number];
+  let policyResult = retrievePolicies as [number];
   policyResult.push(policyId);
 
   setPolicies(
@@ -531,7 +531,7 @@ export const getPolicy = async (
   var allFunctionMappings: hexToFunctionString[] = [];
   const callingFunctionJSONs: CallingFunctionJSON[] = [];
   try {
-    const retrievePolicy = await simulateContract(config, {
+    const retrievePolicy = await readContract(config, {
       address: rulesEnginePolicyContract.address,
       abi: rulesEnginePolicyContract.abi,
       functionName: "getPolicy",
@@ -546,7 +546,7 @@ export const getPolicy = async (
     if (policyMeta == null) {
       throw new Error(`Policy with ID ${policyId} does not exist.`);
     }
-    let policyResult = retrievePolicy.result;
+    let policyResult = retrievePolicy as any;
     let callingFunctions: any = policyResult[0];
     let ruleIds2DArray: any = policyResult[2];
     const PolicyType = await isClosedPolicy(
@@ -739,13 +739,13 @@ export async function policyExists(
   policyId: number
 ): Promise<boolean> {
   try {
-    let policyExists = await simulateContract(config, {
+    let policyExists = await readContract(config, {
       address: rulesEnginePolicyContract.address,
       abi: rulesEnginePolicyContract.abi,
       functionName: "getPolicy",
       args: [policyId],
     });
-    if (policyExists.result[0] != null && policyExists.result[2] != null) {
+    if ((policyExists as any)[0] != null && (policyExists as any)[2] != null) {
       return true;
     }
     return false;
@@ -767,13 +767,13 @@ export async function getAppliedPolicyIds(
   address: string
 ): Promise<number[]> {
   try {
-    let appliedPolicies = await simulateContract(config, {
+    let appliedPolicies = await readContract(config, {
       address: rulesEnginePolicyContract.address,
       abi: rulesEnginePolicyContract.abi,
       functionName: "getAppliedPolicyIds",
       args: [getAddress(address)],
     });
-    return appliedPolicies.result;
+    return appliedPolicies as number[];
   } catch (error) {
     return [];
   }
@@ -792,13 +792,13 @@ export async function isClosedPolicy(
   policyId: number
 ): Promise<boolean> {
   try {
-    let isClosed = await simulateContract(config, {
+    let isClosed = await readContract(config, {
       address: rulesEnginePolicyContract.address,
       abi: rulesEnginePolicyContract.abi,
       functionName: "isClosedPolicy",
       args: [policyId],
     });
-    return isClosed.result;
+    return isClosed as boolean;
   } catch (error) {
     return false;
   }
@@ -899,13 +899,13 @@ export async function isClosedPolicySubscriber(
   subscriber: Address
 ): Promise<boolean> {
   try {
-    let isClosed = await simulateContract(config, {
+    let isClosed = await readContract(config, {
       address: rulesEngineComponentContract.address,
       abi: rulesEngineComponentContract.abi,
       functionName: "isClosedPolicySubscriber",
       args: [policyId, subscriber],
     });
-    return isClosed.result;
+    return isClosed as boolean;
   } catch (error) {
     return false;
   }
@@ -1047,14 +1047,14 @@ export const isCementedPolicy = async (
   policyId: number
 ): Promise<boolean> => {
   try {
-    const retrievePolicy = await simulateContract(config, {
+    const retrievePolicy = await readContract(config, {
       address: rulesEnginePolicyContract.address,
       abi: rulesEnginePolicyContract.abi,
       functionName: "isCementedPolicy",
       args: [policyId],
     });
 
-    return retrievePolicy.result;
+    return retrievePolicy as boolean;
   } catch (err) {
     return false;
   }
