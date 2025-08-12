@@ -1,4 +1,4 @@
-export const SOLIDITY_TEMPLATE = `import "@thrackle-io/forte-rules-engine/src/client/RulesEngineClient.sol";
+export const SOLIDITY_TEMPLATE = `import "@fortefoundation/forte-rules-engine/src/client/RulesEngineClient.sol";
 
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;

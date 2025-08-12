@@ -1,15 +1,19 @@
 {
-  "author": "Thrackle",
-  "homepage": "https://github.com/thrackle-io/forte-rules-engine-sdk#readme",
-  "name": "@thrackle-io/forte-rules-engine-sdk",
+  "author": "Forte",
+  "homepage": "https://github.com/Forte-Service-Company-Ltd/forte-rules-engine-sdk#readme",
+  "name": "@fortefoundation/forte-rules-engine-sdk",
   "license": "BSL 1.1",
   "keywords": [
-    "rules",
     "sdk",
-    "thrackle"
+    "evm",
+    "solidity",
+    "ethereum",
+    "smart contracts",
+    "forte",
+    "rules engine"
   ],
   "bugs": {
-    "url": "https://github.com/thrackle-io/forte-rules-engine-sdk/issues"
+    "url": "https://github.com/Forte-Service-Company-Ltd/forte-rules-engine-sdk/issues"
   },
   "version": "0.2.0",
   "description": "",
@@ -33,7 +37,7 @@
     "test": "vitest"
   },
   "dependencies": {
-    "@thrackle-io/forte-rules-engine": "^0.2.0",
+    "@fortefoundation/forte-rules-engine": "^0.3.1",
     "@wagmi/connectors": "^5.7.13",
     "@wagmi/core": "^2.17.0",
     "diff": "^7.0.0",
@@ -62,6 +66,6 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/thrackle-io/forte-rules-engine-sdk.git"
+    "url": "git+https://github.com/Forte-Service-Company-Ltd/forte-rules-engine-sdk.git"
   }
 }
