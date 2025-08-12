@@ -37,7 +37,7 @@ jobs:
         npm install
     - name: Build
       run: |
-        npx run build
+        npm run build
     - name: Start Anvil with State File
       run: |
         anvil -p 8545 --load-state tests/diamondDeployedAnvilState.json &
