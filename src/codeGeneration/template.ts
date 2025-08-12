@@ -14,7 +14,7 @@ abstract contract RulesEngineClientCustom is RulesEngineClient {
     /**
      * @notice This function overrides a function in the RulesEngineClient and must be updated for successful compilation.
      */
-    function setCallingContractAdmin(address callingContractAdmin) external {}
+    function setCallingContractAdmin(address callingContractAdmin) public {}
 
     // Modifier Here
 }`
