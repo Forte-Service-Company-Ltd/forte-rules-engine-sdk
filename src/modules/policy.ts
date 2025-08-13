@@ -30,6 +30,7 @@ import {
   PolicyMetadataStruct,
   Maybe,
   ForeignCallEncodedIndex,
+  TrackerMetadataStruct,
 } from "./types";
 import {
   createForeignCall,
@@ -484,30 +485,46 @@ const getFunctionArgument = (encodedArgs: string, index: number): string => {
   return arg.split(" ")[1]; // Remove type information
 };
 
-const getForeignCallArgument = (foreignCallNames: string[], index: number): string => {
-  const name = foreignCallNames[Number(BigInt(index) - 1n)];
+const getForeignCallArgument = (
+  foreignCallNames: string[],
+  index: number
+): string => {
+  let name = foreignCallNames[Number(BigInt(index) - 1n)];
+  name = name.split("(")[0];
   if (!name) throw new Error(`No argument found at index ${index}`);
   return `FC:${name}`;
 };
 
-const reverseParseEncodedArg = (encodedArgs: string, foreignCallNames: string[], encoded: ForeignCallEncodedIndex): string => {
+const reverseParseEncodedArg = (
+  encodedArgs: string,
+  foreignCallNames: string[],
+  encoded: ForeignCallEncodedIndex
+): string => {
   switch (encoded.eType) {
     case 0:
-      // return getFunctionArgument(encodedArgs, encoded.index);
-      return "placeholder";
+      console.log("HERE", encodedArgs);
+      console.log("index", encoded.index);
+      return getFunctionArgument(encodedArgs, encoded.index);
+    // return "placeholder";
     case 1:
       return getForeignCallArgument(foreignCallNames, encoded.index);
     case 2:
       // TODO handle trackers
-      return ""
+      return "";
     default:
       throw new Error(`Unknown encoded argument type: ${encoded.eType}`);
   }
-}
+};
 
-const reverseParseEncodedArgs = (callingArgs: string, foreignCallNames: string[], encoded: ForeignCallEncodedIndex[]): string => {
-  return encoded.map(enc => reverseParseEncodedArg(callingArgs, foreignCallNames, enc)).join(", ");
-}
+const reverseParseEncodedArgs = (
+  callingArgs: string,
+  foreignCallNames: string[],
+  encoded: ForeignCallEncodedIndex[]
+): string => {
+  return encoded
+    .map((enc) => reverseParseEncodedArg(callingArgs, foreignCallNames, enc))
+    .join(", ");
+};
 
 /**
  * Retrieves the full policy, including rules, trackers, and foreign calls, as a JSON string.
@@ -568,7 +585,7 @@ export const getPolicy = async (
         hex: mapp.signature,
         functionString: mapp.callingFunction,
         encodedValues: mapp.encodedValues,
-        index: -1,
+        index: iter,
       };
       allFunctionMappings.push(newMapping);
       const callingFunctionJSON = {
@@ -593,8 +610,20 @@ export const getPolicy = async (
         policyId,
         fc.foreignCallIndex
       );
+
+      var daData = getCallingFunctionMetadata(
+        config,
+        rulesEngineComponentContract,
+        policyId,
+        fc.callingFunctionIndex
+      );
+
       foreignCallNames.push(name);
-      const encodedValues = reverseParseEncodedArgs("", foreignCallNames, fc.encodedIndices)
+      const encodedValues = reverseParseEncodedArgs(
+        (await daData).encodedValues,
+        foreignCallNames,
+        fc.encodedIndices
+      );
       var newMapping: hexToFunctionString = {
         hex: fc.signature,
         functionString: name,
@@ -603,7 +632,8 @@ export const getPolicy = async (
       };
       allFunctionMappings.push(newMapping);
     }
-
+    console.log("ALL DEM MAPPINGS", allFunctionMappings);
+    console.log("fo cos", foreignCalls);
     const callStrings: ForeignCallJSON[] = convertForeignCallStructsToStrings(
       foreignCalls,
       allFunctionMappings
@@ -615,25 +645,34 @@ export const getPolicy = async (
       policyId
     );
 
-    var trackerNames: string[] = [];
+    var trackerNames: TrackerMetadataStruct[] = [];
+    var mappedTrackerNames: TrackerMetadataStruct[] = [];
     for (var tracker of trackers) {
-      var name = await getTrackerMetadata(
+      var meta = await getTrackerMetadata(
         config,
         rulesEngineComponentContract,
         policyId,
         tracker.trackerIndex
       );
-      trackerNames.push(name);
+      if (tracker.mapped) {
+        mappedTrackerNames.push(meta);
+      } else {
+        trackerNames.push(meta);
+      }
       var newMapping: hexToFunctionString = {
         hex: "",
-        functionString: name,
+        functionString: meta.trackerName,
         encodedValues: "",
         index: tracker.trackerIndex,
       };
       allFunctionMappings.push(newMapping);
     }
 
-    const trackerJSONs = convertTrackerStructsToStrings(trackers, trackerNames);
+    const trackerJSONs = convertTrackerStructsToStrings(
+      trackers,
+      trackerNames,
+      mappedTrackerNames
+    );
 
     var iter = 0;
     var ruleJSONObjs = [];

@@ -140,6 +140,7 @@ export type ForeignCallOnChain = {
   parameterTypes: number[];
   encodedIndices: ForeignCallEncodedIndex[];
   mappedTrackerKeyIndices: ForeignCallEncodedIndex[];
+  callingFunctionIndex: number;
 };
 
 export type TrackerOnChain = {
@@ -149,6 +150,13 @@ export type TrackerOnChain = {
   trackerKeyType: number;
   trackerValue: string;
   trackerIndex: number;
+};
+
+export type TrackerMetadataStruct = {
+  trackerName: string;
+  initialValue: string;
+  initialKeys: string[];
+  initialValues: string[];
 };
 
 export type ForeignCallDefinition = {

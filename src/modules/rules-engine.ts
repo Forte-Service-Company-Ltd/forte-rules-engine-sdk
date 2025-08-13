@@ -39,6 +39,7 @@ import {
   RulesEngineForeignCallABI,
   RuleMetadataStruct,
   PolicyMetadataStruct,
+  TrackerMetadataStruct,
 } from "./types";
 import {
   createPolicy as createPolicyInternal,
@@ -941,7 +942,7 @@ export class RulesEngine {
   getTrackerMetadata(
     policyId: number,
     trackerId: number
-  ): Promise<Maybe<string>> {
+  ): Promise<Maybe<TrackerMetadataStruct>> {
     return getTrackerMetadataInternal(
       config,
       this.rulesEngineComponentContract,
