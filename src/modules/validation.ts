@@ -55,16 +55,225 @@ export const getRulesErrorMessages = (errors: RulesError[]): string => {
   return errors.map((err) => `${err.message}`).join("\n");
 };
 
+
+const validateLogicalOperatorGroup = (operator: string, condition: string[]): boolean => condition.join(" ").split(operator).length == 2;
+
+
+/**
+ * Accepts an array of RulesError objects and returns a formatted message string
+ *
+ * @param condition - A condition group represented as an array of strings.
+ * @returns boolean, true if the groups 3 terms and 1 is AND or OR, false otherwise.
+ */
+export const validateConditionGroup = (condition: string[]): boolean => {
+  const andOperator = "AND";
+  const orOperator = "OR";
+
+  const andTerms = validateLogicalOperatorGroup(andOperator, condition);
+  const orTerms = validateLogicalOperatorGroup(orOperator, condition);
+
+  return (andTerms || orTerms) && !(andTerms && orTerms);
+}
+
+export const handleCloseParenthesis = (acc: ConditionGroups, term: string, coreGroup: boolean) => {
+  if (acc.groups.length === 0) {
+    acc.groups.push(["PAREN_GROUP"]); // If no groups left, push a placeholder group
+  } else if (coreGroup) {
+    acc.finalGroups.push(acc.groups.pop() as string[]);
+    acc.groups[acc.groups.length - 1].push("PAREN_GROUP");
+    acc.finalGroups.push(acc.groups.pop() as string[]);
+  } else {
+    acc.groups[acc.groups.length - 1].push("PAREN_GROUP");
+    acc.finalGroups.push(acc.groups.pop() as string[]);
+  }
+}
+
+type ConditionGroups = {
+  groups: string[][];
+  finalGroups: string[][];
+  invalid: boolean;
+};
+
+const replaceMappedTrackers = (condition: string): string => {
+  return condition.replace(/TR:[a-zA-Z]+\([^()]+\)/g, "MAPPED_TRACKER");
+}
+
+const addParensPadding = (condition: string): string => {
+  return condition.replace(/([()])/g, " $1 ").replace(/\s+/g, " ").trim();
+}
+
+/**
+ * Parses a a rule condition and returns groups formatted based on parenthesis.
+ *
+ * @param condition - string representing the rule condition.
+ * @returns ConditionGroups the formatted groups and whether the condition is valid syntax.
+ */
+export const formatParenConditionGroups = (condition: string): ConditionGroups => {
+  const formattedCondition = addParensPadding(replaceMappedTrackers(condition));
+  return formattedCondition.split(" ").reduce((acc: ConditionGroups, term, index, terms) => {
+    if (acc.invalid) return acc; // If already invalid, skip further processing
+
+    const currentGroup = acc.groups[acc.groups.length - 1];
+
+    if (term === ")") {
+      handleCloseParenthesis(acc, term, term !== terms[index - 1]);
+    } else if (term === "(") {
+      acc.groups.push([]); // Start a new group
+
+      // if it is the first term, create a new group
+      // if the first term is an open parenthesis it is handled above
+    } else if (index === 0) {
+      acc.groups.push([term]);
+
+      // if is the the last term push it to the current group
+      // then finalize the current group
+      // if it is a close paren it is handled above
+    } else if (index === terms.length - 1) {
+      currentGroup.push(term);
+      acc.finalGroups.push(acc.groups.pop() as string[]); // Push the last group to final groups
+
+      // the remaining case is a regular string term, add it to the current group
+    } else {
+      // if there is no current group the condition is invalid
+      if (currentGroup == undefined) {
+        acc.invalid = true; // If no current group, mark as invalid
+      } else {
+        currentGroup.push(term); // Add term to the current group
+      }
+    }
+
+    return acc;
+  }, { groups: [], finalGroups: [], invalid: false })
+}
+
+const validateInputReferencedCalls = (foreignCallNames: string[], trackerNames: string[], mappedTrackerNames: string[], input: string): boolean => {
+
+  const fcRegex = /FC:[a-zA-Z]+[^\s]+/g;
+  const trRegex = /(TR|TRU):[a-zA-Z]+ /g;
+  const trMappedRegex = /(TR|TRU):[a-zA-Z]+\([^()]+\)/g;
+
+  const fcMatches = input.match(fcRegex) || [];
+  const trMatches = input.match(trRegex) || [];
+  const trMappedMatches = input.match(trMappedRegex) || [];
+
+  const [mappedTrackers, mappedTrackerParams] = trMappedMatches.reduce((acc: [string[], string[]], match) => {
+    const [name, params] = match.split("(");
+    acc[0].push(name.replace(/^(TR|TRU):/, "").trim());
+    acc[1].push(params.replace(")", "").trim());
+    return acc;
+  }, [[], []]);
+
+
+  const validateForeignCalls = fcMatches.every((match) => foreignCallNames.includes(match.replace("FC:", "").trim()));
+  const validateTrackers = trMatches.every((match) => trackerNames.includes(match.replace(/^(TR|TRU):/, "").trim()));
+  const validateMappedTrackers = mappedTrackers.every((match) => mappedTrackerNames.includes(match));
+
+  return validateForeignCalls && validateTrackers && validateMappedTrackers;
+}
+
+const validateValuesToPass = (
+  callingFunctionEncodedValues: string,
+  foreignCallNames: string[],
+  trackerNames: string[],
+  mappedTrackerNames: string[],
+  valuesToPass: string): boolean => {
+
+  return valuesToPass.split(",").map((value) => {
+    value = value.trim()
+    if (value.startsWith("FC:")) {
+      return foreignCallNames.includes(value.replace("FC:", "").trim());
+    } else if (value.startsWith("TR:") || value.startsWith("TRU:")) {
+      value = value.replace(/^(TR|TRU):/, "").trim()
+      if (valuesToPass.includes("(")) {
+        value = value.split("(")[0].trim();
+        return mappedTrackerNames.includes(value);
+      } else {
+        return trackerNames.includes(value);
+      }
+    } else if (callingFunctionEncodedValues.includes(value)) {
+      return true; // If it is a calling function value, it is valid
+    }
+    return false;
+  }).every((isValid) => isValid);
+}
+
+/**
+ * Validates referenced calls, Foreign Calls, Trackers, and Mapped Trackers and Calling Functions args
+ *
+ * @param condition - string representing the rule condition.
+ * @returns boolean, true if all referenced calls are valid, otherwise false.
+ */
+const validateReferencedCalls = (input: any): boolean => {
+
+  const callingFunctionNames = input.CallingFunctions.map((call: any) => call.name);
+  const fcCallingFunctions: string[] = input.ForeignCalls.map((fc: any) => fc.callingFunction);
+  if (!fcCallingFunctions.every((fcName) => callingFunctionNames.includes(fcName))) {
+    return false;
+  }
+  const callingFunctionEncodedValues = input.CallingFunctions.map(
+    (call: any) => call.encodedValues.split(" ")[1].replace(",", "").trim()
+  );
+  const foreignCallNames = input.ForeignCalls.map((call: any) => call.name);
+  const trackerNames = input.Trackers.map((tracker: any) => tracker.name);
+  const mappedTrackerNames = input.MappedTrackers.map((tracker: any) => tracker.name);
+
+  const testInputs = input.Rules.map((rule: any) => [rule.condition, rule.positiveEffects, rule.negativeEffects]).flat(2);
+
+  const validatedInputs = testInputs.map((input: string) => {
+    return validateInputReferencedCalls(foreignCallNames, trackerNames, mappedTrackerNames, input);
+  }).every((isValid: boolean) => isValid);
+
+  const validatedForeignCallValuesToPass = input.ForeignCalls.map((call: any) => {
+    return validateValuesToPass(callingFunctionEncodedValues, foreignCallNames, trackerNames, mappedTrackerNames, call.valuesToPass);
+  }).every((isValid: boolean) => isValid);
+  return validatedInputs && validatedForeignCallValuesToPass; // If any input is invalid, return false
+
+}
+
+/**
+ * Validates a rule condition.
+ *
+ * @param condition - string representing the rule condition.
+ * @returns boolean, true if the condition has properly formatted paren
+ *          groups, otherwise false.
+ */
+export const validateCondition = (condition: string): boolean => {
+  const grouped = formatParenConditionGroups(condition);
+  if (grouped.invalid) {
+    return false; // If the condition is invalid, return false
+  }
+
+  // if there are non finalized groups, or no finalized groups it is invalid
+  if (grouped.groups.length > 0 || grouped.finalGroups.length === 0) {
+    return false;
+  }
+
+  // if there is a single groups that does not include a logical operator, it is valid
+  if (grouped.finalGroups.length === 1 && !["AND", "OR"].includes(grouped.finalGroups[0].join(" "))) {
+    return true; // If no groups, condition is valid
+  }
+
+  const validatedOperators = grouped.finalGroups
+    .map(validateConditionGroup)
+    .every((isValid) => isValid);
+
+  if (!validatedOperators) return false; // If any group is invalid, return false
+
+
+  return true;
+}
+
+
 export const ruleValidator = z.object({
   Name: z.string(),
   Description: z.string(),
-
-  condition: z.string(),
+  condition: z.string()
+    .refine((val) => validateCondition(val), { error: "Invalid logical operators in condition" }),
   positiveEffects: z.array(z.string()),
   negativeEffects: z.array(z.string()),
   callingFunction: z.string(),
 });
-export interface RuleJSON extends z.infer<typeof ruleValidator> {}
+export interface RuleJSON extends z.infer<typeof ruleValidator> { }
 
 /**
  * Parses a JSON string and returns Either a RuleJSON object or an error.
@@ -130,7 +339,7 @@ export const foreignCallValidator = z.object({
   callingFunction: z.string().trim(),
 });
 
-export interface ForeignCallJSON extends z.infer<typeof foreignCallValidator> {}
+export interface ForeignCallJSON extends z.infer<typeof foreignCallValidator> { }
 
 /**
  * Parses a JSON string and returns Either a ForeignCallJSON object or an error.
@@ -164,7 +373,7 @@ export const foreignCallReverseValidator = foreignCallValidator.extend({
 });
 
 export interface ForeignCallJSONReversed
-  extends z.infer<typeof foreignCallValidator> {}
+  extends z.infer<typeof foreignCallValidator> { }
 
 export const supportedTrackerTypes: string[] = [
   "uint256",
@@ -211,10 +420,10 @@ export const trackerValidator = z
     message: "Initial Value doesn't match type",
   });
 
-export interface TrackerJSON extends z.infer<typeof trackerValidator> {}
+export interface TrackerJSON extends z.infer<typeof trackerValidator> { }
 
 export interface MappedTrackerJSON
-  extends z.infer<typeof mappedTrackerValidator> {}
+  extends z.infer<typeof mappedTrackerValidator> { }
 
 const SupportedValues = [
   z.object({
@@ -317,7 +526,7 @@ export const callingFunctionValidator = z.object({
 });
 
 export interface CallingFunctionJSON
-  extends z.infer<typeof callingFunctionValidator> {}
+  extends z.infer<typeof callingFunctionValidator> { }
 
 /**
  * Parses a JSON string and returns Either a CallingFunctionJSON object or an error.
@@ -353,7 +562,7 @@ export const policyJSONValidator = z.object({
   MappedTrackers: z.array(mappedTrackerValidator),
   Rules: z.array(ruleValidator),
 });
-export interface PolicyJSON extends z.infer<typeof policyJSONValidator> {}
+export interface PolicyJSON extends z.infer<typeof policyJSONValidator> { }
 
 /**
  * Parses a JSON string and returns Either a PolicyJSON object or an error.
@@ -375,7 +584,7 @@ export const validatePolicyJSON = (
   } else {
     const errors: RulesError[] = parsed.error.issues.map((err) => ({
       errorType: "INPUT",
-      message: `${err.message}: Field ${err.path.join(".")}`,
+      message: `${err.message}${err.path.length ? `: Field ${err.path.join(".")}` : ""}`,
       state: { input: policy },
     }));
     return makeLeft(errors);
