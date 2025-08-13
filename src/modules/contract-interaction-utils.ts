@@ -20,17 +20,19 @@ import {
   EffectStruct,
   EffectStructs,
   FCNameToID,
-  ruleJSON,
   RulesEngineAdminABI,
   RulesEngineAdminContract,
   RulesEngineComponentABI,
   RulesEngineComponentContract,
+  RulesEngineForeignCallABI,
+  RulesEngineForeignCallContract,
   RulesEnginePolicyABI,
   RulesEnginePolicyContract,
   RulesEngineRulesABI,
   RulesEngineRulesContract,
   RuleStruct,
 } from "./types";
+import { RuleJSON } from "./validation";
 
 /**
  * @file ContractInteractionUtils.ts
@@ -98,6 +100,16 @@ export const getRulesEngineAdminContract = (
     client,
   });
 
+export const getRulesEngineForeignCallContract = (
+  address: Address,
+  client: any
+): RulesEngineForeignCallContract =>
+  getContract({
+    address,
+    abi: RulesEngineForeignCallABI,
+    client,
+  });
+
 /**
  * Pauses the execution of an asynchronous function for a specified duration.
  *
@@ -119,7 +131,6 @@ export async function sleep(ms: number): Promise<void> {
  * effect data, and tracker mappings. This function processes the rule syntax to generate a structured
  * representation of the rule, including placeholders, effects, and associated metadata.
  *
- * @param policyId - The unique identifier for the policy associated with the rule.
  * @param ruleSyntax - The JSON representation of the rule syntax, including conditions and effects.
  * @param foreignCallNameToID - An array of mappings between foreign call names and their corresponding IDs.
  * @param effect - An object containing the positive and negative effects of the rule.
@@ -129,13 +140,16 @@ export async function sleep(ms: number): Promise<void> {
  *          effect placeholders, and associated effects.
  */
 export function buildARuleStruct(
-  policyId: number,
-  ruleSyntax: ruleJSON,
+  ruleSyntax: RuleJSON,
   foreignCallNameToID: FCNameToID[],
   effect: EffectStructs,
-  trackerNameToID: FCNameToID[]
+  trackerNameToID: FCNameToID[],
+  encodedValues: string,
+  additionalForeignCalls: string[],
+  additionalEffectForeignCalls: string[]
 ): RuleStruct {
   var fcList = buildForeignCallList(ruleSyntax.condition);
+
   if (ruleSyntax.positiveEffects != null) {
     for (var eff of ruleSyntax.positiveEffects) {
       fcList.push(...buildForeignCallList(eff));
@@ -146,12 +160,15 @@ export function buildARuleStruct(
       fcList.push(...buildForeignCallList(eff));
     }
   }
-
   var output = parseRuleSyntax(
     ruleSyntax,
     trackerNameToID,
-    foreignCallNameToID
+    foreignCallNameToID,
+    encodedValues,
+    additionalForeignCalls,
+    additionalEffectForeignCalls
   );
+
   var trList = buildTrackerList(ruleSyntax.condition);
   if (ruleSyntax.positiveEffects != null) {
     for (var eff of ruleSyntax.positiveEffects) {
@@ -221,7 +238,6 @@ export function buildARuleStruct(
     negEffects: effect.negativeEffects,
   };
   console.log(rule);
-
   return rule;
 }
 
@@ -230,6 +246,7 @@ export function buildARuleStruct(
  *
  * @param ruleSyntax - The JSON representation of the rule syntax to parse.
  * @param trackerNameToID - An array mapping tracker names to their corresponding IDs.
+ * @param foreignCallNameToID - An array mapping foreign call names to their corresponding IDs.
  * @returns An object containing arrays of positive and negative effects, each represented as structured objects.
  *
  * The returned object has the following structure:
@@ -247,14 +264,20 @@ export function buildARuleStruct(
  * - `instructionSet`: The cleaned instruction set for the effect.
  */
 export function buildAnEffectStruct(
-  ruleSyntax: ruleJSON,
+  ruleSyntax: RuleJSON,
   trackerNameToID: FCNameToID[],
-  foreignCallNameToID: FCNameToID[]
+  foreignCallNameToID: FCNameToID[],
+  encodedValues: string,
+  additionalForeignCalls: string[],
+  additionalEffectForeignCalls: string[]
 ): EffectStructs {
   var output = parseRuleSyntax(
     ruleSyntax,
     trackerNameToID,
-    foreignCallNameToID
+    foreignCallNameToID,
+    encodedValues,
+    additionalForeignCalls,
+    additionalEffectForeignCalls
   );
   var pEffects: EffectStruct[] = [];
   var nEffects: EffectStruct[] = [];
@@ -299,7 +322,6 @@ export function buildAnEffectStruct(
   }
   for (var nEffect of output.negativeEffects) {
     var param: any;
-
     if (nEffect.pType == 0) {
       // address
       param = encodeAbiParameters(parseAbiParameters("address"), [
@@ -321,7 +343,6 @@ export function buildAnEffectStruct(
         BigInt(nEffect.parameterValue),
       ]);
     }
-
     const instructionSet = cleanInstructionSet(nEffect.instructionSet);
     const effect = {
       valid: true,

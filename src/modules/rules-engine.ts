@@ -35,6 +35,10 @@ import {
   RulesEngineRulesABI,
   RulesEngineAdminContract,
   RulesEngineAdminABI,
+  RulesEngineForeignCallContract,
+  RulesEngineForeignCallABI,
+  RuleMetadataStruct,
+  PolicyMetadataStruct,
 } from "./types";
 import {
   createPolicy as createPolicyInternal,
@@ -53,6 +57,7 @@ import {
   removeClosedPolicySubscriber as removeClosedPolicySubscriberInternal,
   cementPolicy as cementPolicyInternal,
   isCementedPolicy as isCementedPolicyInternal,
+  getPolicyMetadata as getPolicyMetadataInternal,
 } from "./policy";
 
 import {
@@ -61,6 +66,7 @@ import {
   deleteRule as deleteRuleInternal,
   getRule as getRuleInternal,
   getAllRules as getAllRulesInternal,
+  getRuleMetadata as getRuleMetadataInternal,
 } from "./rules";
 
 import {
@@ -70,6 +76,11 @@ import {
   getForeignCall as getForeignCallInternal,
   getAllForeignCalls as getAllForeignCallsInternal,
   getForeignCallMetadata as getForeignCallMetadataInternal,
+  getForeignCallPermissionList as getForeignCallPermissionListInternal,
+  addAdminToPermissionList as addAdminToPermissionListInternal,
+  addMultipleAdminsToPermissionList as addMultipleAdminsToPermissionListInternal,
+  removeMultipleAdminsFromPermissionList as removeMultipleAdminsFromPermissionListInternal,
+  removeAllFromPermissionList as removeAllFromPermissionListInternal,
 } from "./foreign-calls";
 
 import {
@@ -88,6 +99,9 @@ import {
   proposeNewCallingContractAdmin as proposeCallingContractAdminInternal,
   confirmNewCallingContractAdmin as confirmNewCallingContractAdminInternal,
   isCallingContractAdmin as isCallingContractAdminInternal,
+  proposeNewForeignCallAdmin as proposeNewForeignCallAdminInternal,
+  confirmNewForeignCallAdmin as confirmNewForeignCallAdminInternal,
+  isForeignCallAdmin as isForeignCallAdminInternal,
 } from "./admin";
 
 import {
@@ -103,13 +117,21 @@ export class RulesEngine {
   private rulesEngineComponentContract: RulesEngineComponentContract;
   private rulesEngineRulesContract: RulesEngineRulesContract;
   private rulesEngineAdminContract: RulesEngineAdminContract;
+  private rulesEngineForeignCallContract: RulesEngineForeignCallContract;
+  private confirmationCount: number;
 
   /**
    * @constructor
    * @param {Address} rulesEngineAddress - The address of the deployed Rules Engine smart contract.
+   * @param {Config} localConfig - The configuration object containing network and wallet information.
    * @param {any} client - The client instance for interacting with the blockchain.
    */
-  constructor(rulesEngineAddress: Address, localConfig: Config, client: any) {
+  constructor(
+    rulesEngineAddress: Address,
+    localConfig: Config,
+    client: any,
+    localConfirmationCount: number
+  ) {
     this.rulesEnginePolicyContract = getContract({
       address: rulesEngineAddress,
       abi: RulesEnginePolicyABI,
@@ -130,7 +152,13 @@ export class RulesEngine {
       abi: RulesEngineAdminABI,
       client,
     });
+    this.rulesEngineForeignCallContract = getContract({
+      address: rulesEngineAddress,
+      abi: RulesEngineForeignCallABI,
+      client,
+    });
     config = localConfig;
+    this.confirmationCount = localConfirmationCount;
   }
   public getRulesEnginePolicyContract(): RulesEnginePolicyContract {
     return this.rulesEnginePolicyContract;
@@ -140,6 +168,9 @@ export class RulesEngine {
   }
   public getRulesEngineRulesContract(): RulesEngineRulesContract {
     return this.rulesEngineRulesContract;
+  }
+  public getRulesEngineForeignCallContract(): RulesEngineForeignCallContract {
+    return this.rulesEngineForeignCallContract;
   }
   /**
    * Creates a policy in the Rules Engine.
@@ -153,6 +184,8 @@ export class RulesEngine {
       this.rulesEnginePolicyContract,
       this.rulesEngineRulesContract,
       this.rulesEngineComponentContract,
+      this.rulesEngineForeignCallContract,
+      this.confirmationCount,
       policyJSON
     );
   }
@@ -167,7 +200,6 @@ export class RulesEngine {
     return policyExistsInternal(
       config,
       this.rulesEnginePolicyContract,
-      this.rulesEngineComponentContract,
       policyId
     );
   }
@@ -185,7 +217,9 @@ export class RulesEngine {
     policyId: number,
     callingFunctions: any[],
     ids: number[],
-    ruleIds: any[]
+    ruleIds: any[],
+    name: string,
+    description: string
   ): Promise<number> {
     return updatePolicyInternal(
       config,
@@ -193,14 +227,16 @@ export class RulesEngine {
       policyId,
       callingFunctions,
       ids,
-      ruleIds
+      ruleIds,
+      name,
+      description,
+      this.confirmationCount
     );
   }
 
   /**
    * Sets the policies appled to a specific contract address.
    *
-   * @param rulesEnginePolicyContract - The contract instance for interacting with the Rules Engine Policy.
    * @param policyIds - The list of IDs of all of the policies that will be applied to the contract
    * @param contractAddressForPolicy - The address of the contract to which the policy will be applied.
    */
@@ -209,7 +245,8 @@ export class RulesEngine {
       config,
       this.rulesEnginePolicyContract,
       policyIds,
-      contractAddressForPolicy
+      contractAddressForPolicy,
+      this.confirmationCount
     );
   }
 
@@ -224,7 +261,8 @@ export class RulesEngine {
       config,
       this.rulesEnginePolicyContract,
       policyId,
-      contractAddressForPolicy
+      contractAddressForPolicy,
+      this.confirmationCount
     );
   }
 
@@ -238,7 +276,8 @@ export class RulesEngine {
     return deletePolicyInternal(
       config,
       this.rulesEnginePolicyContract,
-      policyId
+      policyId,
+      this.confirmationCount
     );
   }
 
@@ -254,9 +293,28 @@ export class RulesEngine {
       this.rulesEnginePolicyContract,
       this.rulesEngineRulesContract,
       this.rulesEngineComponentContract,
+      this.rulesEngineForeignCallContract,
       policyId
     );
   }
+
+  /**
+   * Retrieves the metadata for a policy from the Rules Engine Policy Contract based on the provided policy ID.
+   *
+   * @param policyId - The ID of the policy.
+   * @returns A promise that resolves to the policy metadata result if successful, or `null` if an error occurs.
+   *
+   * @throws Will log an error to the console if the contract interaction fails.
+   */
+  getPolicyMetadata = async (
+    policyId: number
+  ): Promise<Maybe<PolicyMetadataStruct>> => {
+    return getPolicyMetadataInternal(
+      config,
+      this.rulesEnginePolicyContract,
+      policyId
+    );
+  };
 
   /**
    * Retrieves the IDs of all of the policies that have been applied to a contract address.
@@ -291,7 +349,12 @@ export class RulesEngine {
    * @returns `0` if successful, `-1` if an error occurs.
    */
   openPolicy(policyId: number): Promise<number> {
-    return openPolicyInternal(config, this.rulesEnginePolicyContract, policyId);
+    return openPolicyInternal(
+      config,
+      this.rulesEnginePolicyContract,
+      policyId,
+      this.confirmationCount
+    );
   }
 
   /**
@@ -304,7 +367,8 @@ export class RulesEngine {
     return closePolicyInternal(
       config,
       this.rulesEnginePolicyContract,
-      policyId
+      policyId,
+      this.confirmationCount
     );
   }
 
@@ -329,6 +393,7 @@ export class RulesEngine {
   /** Adds a subscriber to the closed policy.
    *
    * @param policyId - The ID of the policy to add to.
+   * @param subscriber - The address of the subscriber to add.
    * @returns `0` if successful, `-1` if an error occurs.
    */
   addClosedPolicySubscriber(
@@ -339,7 +404,8 @@ export class RulesEngine {
       config,
       this.rulesEngineComponentContract,
       policyId,
-      subscriber
+      subscriber,
+      this.confirmationCount
     );
   }
 
@@ -347,6 +413,7 @@ export class RulesEngine {
    * Removes a subscriber from the closed policy.
    *
    * @param policyId - The ID of the policy to remove from.
+   * @param subscriber - The address of the subscriber to remove.
    * @returns `0` if successful, `-1` if an error occurs.
    */
   removeClosedPolicySubscriber(
@@ -357,7 +424,8 @@ export class RulesEngine {
       config,
       this.rulesEngineComponentContract,
       policyId,
-      subscriber
+      subscriber,
+      this.confirmationCount
     );
   }
 
@@ -369,8 +437,6 @@ export class RulesEngine {
    * @param foreignCallNameToID - An array mapping foreign call names to their corresponding IDs.
    * @param trackerNameToID - An array mapping tracker names to their corresponding IDs.
    * @returns A promise that resolves to the result of the rule creation operation. Returns the rule ID if successful, or -1 if the operation fails.
-   *
-   * @throws Will log errors to the console if the contract simulation fails and retry the operation after a delay.
    *
    * @remarks
    * - The function parses the rule JSON string to build the rule and effect structures.
@@ -384,11 +450,15 @@ export class RulesEngine {
   ): Promise<number> {
     return createRuleInternal(
       config,
+      this.rulesEnginePolicyContract,
       this.rulesEngineRulesContract,
+      this.rulesEngineComponentContract,
+      this.rulesEngineForeignCallContract,
       policyId,
       ruleS,
       foreignCallNameToID,
-      trackerNameToID
+      trackerNameToID,
+      this.confirmationCount
     );
   }
 
@@ -402,7 +472,6 @@ export class RulesEngine {
    * @param trackerNameToID - A mapping of tracker names to their corresponding IDs.
    * @returns A promise that resolves to the result of the rule update operation. Returns the result ID if successful, or -1 if the operation fails.
    *
-   * @throws Will retry indefinitely if the contract simulation fails, with a 1-second delay between retries.
    */
   updateRule(
     policyId: number,
@@ -413,12 +482,16 @@ export class RulesEngine {
   ): Promise<number> {
     return updateRuleInternal(
       config,
+      this.rulesEnginePolicyContract,
       this.rulesEngineRulesContract,
+      this.rulesEngineComponentContract,
+      this.rulesEngineForeignCallContract,
       policyId,
       ruleId,
       ruleS,
       foreignCallNameToID,
-      trackerNameToID
+      trackerNameToID,
+      this.confirmationCount
     );
   }
 
@@ -438,7 +511,8 @@ export class RulesEngine {
       config,
       this.rulesEngineRulesContract,
       policyId,
-      ruleId
+      ruleId,
+      this.confirmationCount
     );
   }
 
@@ -451,6 +525,27 @@ export class RulesEngine {
    */
   getRule(policyId: number, ruleId: number): Promise<Maybe<RuleStruct>> {
     return getRuleInternal(
+      config,
+      this.rulesEngineRulesContract,
+      policyId,
+      ruleId
+    );
+  }
+
+  /**
+   * Retrieves the metadata for a rule from the Rules Engine Rules Contract based on the provided policy ID and rule ID.
+   *
+   * @param policyId - The ID of the policy associated with the rule.
+   * @param ruleId - The ID of the rule to retrieve.
+   * @returns A promise that resolves to the rule metadata result if successful, or `null` if an error occurs.
+   *
+   * @throws Will log an error to the console if the contract interaction fails.
+   */
+  getRuleMetadata(
+    policyId: number,
+    ruleId: number
+  ): Promise<Maybe<RuleMetadataStruct>> {
+    return getRuleMetadataInternal(
       config,
       this.rulesEngineRulesContract,
       policyId,
@@ -488,9 +583,12 @@ export class RulesEngine {
   createForeignCall(policyId: number, fcSyntax: string): Promise<number> {
     return createForeignCallInternal(
       config,
+      this.rulesEngineForeignCallContract,
       this.rulesEngineComponentContract,
+      this.rulesEnginePolicyContract,
       policyId,
-      fcSyntax
+      fcSyntax,
+      this.confirmationCount
     );
   }
 
@@ -517,10 +615,13 @@ export class RulesEngine {
   ): Promise<number> {
     return updateForeignCallInternal(
       config,
+      this.rulesEnginePolicyContract,
       this.rulesEngineComponentContract,
+      this.rulesEngineForeignCallContract,
       policyId,
       foreignCallId,
-      fcSyntax
+      fcSyntax,
+      this.confirmationCount
     );
   }
 
@@ -538,9 +639,10 @@ export class RulesEngine {
   deleteForeignCall(policyId: number, foreignCallId: number): Promise<number> {
     return deleteForeignCallInternal(
       config,
-      this.rulesEngineComponentContract,
+      this.rulesEngineForeignCallContract,
       policyId,
-      foreignCallId
+      foreignCallId,
+      this.confirmationCount
     );
   }
 
@@ -556,7 +658,7 @@ export class RulesEngine {
   getForeignCall(policyId: number, foreignCallId: number): Promise<Maybe<any>> {
     return getForeignCallInternal(
       config,
-      this.rulesEngineComponentContract,
+      this.rulesEngineForeignCallContract,
       policyId,
       foreignCallId
     );
@@ -573,7 +675,7 @@ export class RulesEngine {
   getAllForeignCalls(policyId: number): Promise<Maybe<any[]>> {
     return getAllForeignCallsInternal(
       config,
-      this.rulesEngineComponentContract,
+      this.rulesEngineForeignCallContract,
       policyId
     );
   }
@@ -593,9 +695,135 @@ export class RulesEngine {
   ): Promise<Maybe<any>> {
     return getForeignCallMetadataInternal(
       config,
-      this.rulesEngineComponentContract,
+      this.rulesEngineForeignCallContract,
       policyId,
       foreignCallId
+    );
+  }
+
+  /**
+   * Retrieves the permission list for a permissioned foreign call.
+   *
+   * @param foreignCallAddress - the address of the contract the foreign call belongs to.
+   * @param functionSelector - The selector for the specific foreign call
+   * @returns Array of addresses that make up the permission list
+   *
+   * @throws Will log an error to the console if the operation fails.
+   */
+  getForeignCallPermissionList(
+    foreignCallAddress: Address,
+    functionSelector: string
+  ): Promise<Address[]> {
+    return getForeignCallPermissionListInternal(
+      config,
+      this.rulesEngineForeignCallContract,
+      foreignCallAddress,
+      functionSelector
+    );
+  }
+
+  /**
+   * Adds a new address to the permission list for a foreign call.
+   *
+   * @param foreignCallAddress - the address of the contract the foreign call belongs to.
+   * @param functionSelector - The selector for the specific foreign call
+   * @param policyAdminToAdd - The address of the admin to add to the list
+   * @returns A promise that resolves to a number:
+   *          - `0` if the operation is successful.
+   *          - `-1` if an error occurs during the simulation of the contract interaction.
+   *
+   * @throws Will log an error to the console if the operation fails.
+   */
+  addAdminToPermissionList(
+    foreignCallAddress: Address,
+    functionSelector: string,
+    policyAdminToAdd: Address
+  ): Promise<number> {
+    return addAdminToPermissionListInternal(
+      config,
+      this.rulesEngineForeignCallContract,
+      foreignCallAddress,
+      functionSelector,
+      policyAdminToAdd,
+      this.confirmationCount
+    );
+  }
+
+  /**
+   * Adds multiple addresses to the permission list for a foreign call.
+   *
+   * @param foreignCallAddress - the address of the contract the foreign call belongs to.
+   * @param functionSelector - The selector for the specific foreign call
+   * @param policyAdminsToAdd - The addresses of the admins to add to the list
+   * @returns A promise that resolves to a number:
+   *          - `0` if the operation is successful.
+   *          - `-1` if an error occurs during the simulation of the contract interaction.
+   *
+   * @throws Will log an error to the console if the operation fails.
+   */
+  addMultipleAdminsToPermissionList(
+    foreignCallAddress: Address,
+    functionSelector: string,
+    policyAdminsToAdd: Address[]
+  ): Promise<number> {
+    return addMultipleAdminsToPermissionListInternal(
+      config,
+      this.rulesEngineForeignCallContract,
+      foreignCallAddress,
+      functionSelector,
+      policyAdminsToAdd,
+      this.confirmationCount
+    );
+  }
+
+  /**
+   * Removes multiple addresses from the permission list for a foreign call.
+   *
+   * @param foreignCallAddress - the address of the contract the foreign call belongs to.
+   * @param functionSelector - The selector for the specific foreign call
+   * @param policyAdminsToRemove - The address of the admins to remove from the list
+   * @returns A promise that resolves to a number:
+   *          - `0` if the operation is successful.
+   *          - `-1` if an error occurs during the simulation of the contract interaction.
+   *
+   * @throws Will log an error to the console if the operation fails.
+   */
+  removeMultipleAdminsFromPermissionList(
+    foreignCallAddress: Address,
+    functionSelector: string,
+    policyAdminsToRemove: Address[]
+  ): Promise<number> {
+    return removeMultipleAdminsFromPermissionListInternal(
+      config,
+      this.rulesEngineForeignCallContract,
+      foreignCallAddress,
+      functionSelector,
+      policyAdminsToRemove,
+      this.confirmationCount
+    );
+  }
+
+  /**
+   * Removes all addresses from the permission list for a foreign call.
+   *
+   * @param foreignCallAddress - the address of the contract the foreign call belongs to.
+   * @param functionSelector - The selector for the specific foreign call
+   * @returns A promise that resolves to a number:
+   *          - `0` if the operation is successful.
+   *          - `-1` if an error occurs during the simulation of the contract interaction.
+   *
+   * @throws Will log an error to the console if the operation fails.
+   */
+  removeAllFromPermissionList(
+    foreignCallAddress: Address,
+    functionSelector: string
+  ): Promise<number> {
+    return removeAllFromPermissionListInternal(
+      config,
+      this.rulesEngineForeignCallContract,
+      foreignCallAddress,
+      functionSelector,
+      this.confirmationCount
     );
   }
 
@@ -614,7 +842,8 @@ export class RulesEngine {
       config,
       this.rulesEngineComponentContract,
       policyId,
-      trSyntax
+      trSyntax,
+      this.confirmationCount
     );
   }
 
@@ -639,7 +868,8 @@ export class RulesEngine {
       this.rulesEngineComponentContract,
       policyId,
       trackerId,
-      trSyntax
+      trSyntax,
+      this.confirmationCount
     );
   }
 
@@ -659,7 +889,8 @@ export class RulesEngine {
       config,
       this.rulesEngineComponentContract,
       policyId,
-      trackerId
+      trackerId,
+      this.confirmationCount
     );
   }
 
@@ -743,14 +974,14 @@ export class RulesEngine {
       this.rulesEngineComponentContract,
       policyId,
       callingFunction,
-      encodedValues
+      encodedValues,
+      this.confirmationCount
     );
   }
 
   /**
    * retrieves the metadata for a calling function from the rules engine component contract.
    *
-   * @param rulesEngineComponentContract - The contract instance containing the address and ABI
    * @param policyId - The ID of the policy which the calling function belongs to.
    * @param callingFunctionId - The Calling Function ID.
    * @returns A promise that resolves to the result of the contract interaction.
@@ -785,7 +1016,8 @@ export class RulesEngine {
       config,
       this.rulesEngineAdminContract,
       policyId,
-      newAdminAddress
+      newAdminAddress,
+      this.confirmationCount
     );
   }
 
@@ -803,7 +1035,8 @@ export class RulesEngine {
     confirmNewPolicyAdminInternal(
       config,
       this.rulesEngineAdminContract,
-      policyId
+      policyId,
+      this.confirmationCount
     );
   }
 
@@ -831,7 +1064,6 @@ export class RulesEngine {
    *
    * This function proposes a new admin for a specific calling contract.
    *
-   * @param rulesEngineAdminContract - The contract instance containing the address and ABI
    * @param callingContractAddress - The address of the calling contract to set the admin for.
    * @param newAdminAddress - The address to propose as the new admin
    * @returns A promise that resolves to the result of the contract interaction, or -1 if unsuccessful.
@@ -846,16 +1078,16 @@ export class RulesEngine {
       config,
       this.rulesEngineAdminContract,
       callingContractAddress,
-      newAdminAddress
+      newAdminAddress,
+      this.confirmationCount
     );
   }
 
   /**
    * Confirm a new calling contract admin in the rules engine admin contract.
    *
-   * This function confirms a new admin for a specific callng contract.
+   * This function confirms a new admin for a specific calling contract.
    *
-   * @param rulesEngineAdminContract - The contract instance containing the address and ABI
    * @param callingContractAddress - The address of the calling contract to set the admin for.
    * @returns A promise that resolves to the result of the contract interaction, or -1 if unsuccessful.
    *
@@ -865,7 +1097,8 @@ export class RulesEngine {
     confirmNewCallingContractAdminInternal(
       config,
       this.rulesEngineAdminContract,
-      callingContractAddress
+      callingContractAddress,
+      this.confirmationCount
     );
   }
 
@@ -874,9 +1107,8 @@ export class RulesEngine {
    *
    * This function determines whether or not an address is the admin for a specific calling contract.
    *
-   * @param rulesEngineAdminContract - The contract instance containing the address and ABI
    * @param callingContract - The address of the contract to check the admin for.
-   * @param adminAddress - The address to check
+   * @param account - The address to check
    * @returns whether or not the address is the calling contract admin.
    *
    */
@@ -893,6 +1125,82 @@ export class RulesEngine {
   }
 
   /**
+   * Propose a new foreign call admin in the rules engine admin contract.
+   *
+   * This function proposes a new admin for a specific foreign call.
+   *
+   * @param foreignCallAddress - The address of the foreign call contract to set the admin for.
+   * @param newAdminAddress - The address to propose as the new admin
+   * @param functionSelector - The selector for the specific foreign call
+   * @returns A promise.
+   *
+   * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+   */
+  proposeForeignCallAdmin(
+    foreignCallAddress: Address,
+    newAdminAddress: Address,
+    foreignCallSelector: string
+  ) {
+    proposeNewForeignCallAdminInternal(
+      config,
+      this.rulesEngineAdminContract,
+      foreignCallAddress,
+      newAdminAddress,
+      foreignCallSelector,
+      this.confirmationCount
+    );
+  }
+
+  /**
+   * Confirm a new foreign call admin in the rules engine admin contract.
+   *
+   * This function confirms a new admin for a specific foreign call.
+   *
+   * @param foreignCallAddress - The address of the foreign call to set the admin for.
+   * @param functionSelector - The selector for the specific foreign call
+   * @returns A promise.
+   *
+   * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+   */
+  confirmNewForeignCallAdmin(
+    foreignCallAddress: Address,
+    foreignCallSelector: string
+  ) {
+    confirmNewForeignCallAdminInternal(
+      config,
+      this.rulesEngineAdminContract,
+      foreignCallAddress,
+      foreignCallSelector,
+      this.confirmationCount
+    );
+  }
+
+  /**
+   * Determine if address is the foreign call admin.
+   *
+   * This function determines whether or not an address is the admin for a specific foreign call.
+   *
+   * @param foreignCallAdress - The address of the contract to check the admin for.
+   * @param account - The address to check
+   * @param functionSelector - The selector for the specific foreign call
+   * @returns whether or not the address is the foreign call admin.
+   *
+   */
+  isForeignCallAdmin(
+    foreignCallAddress: Address,
+    account: Address,
+    foreignCallSelector: string
+  ): Promise<boolean> {
+    return isForeignCallAdminInternal(
+      config,
+      this.rulesEngineAdminContract,
+      foreignCallAddress,
+      account,
+      foreignCallSelector
+    );
+  }
+
+  /**
    * Cements a policy on the Rules Engine.
    *
    * @param policyId - The ID of the policy to cement.
@@ -902,7 +1210,8 @@ export class RulesEngine {
     return cementPolicyInternal(
       config,
       this.rulesEnginePolicyContract,
-      policyId
+      policyId,
+      this.confirmationCount
     );
   }
 

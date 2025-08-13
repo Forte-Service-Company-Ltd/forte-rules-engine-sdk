@@ -29,7 +29,7 @@ export const secondaryAccount: PrivateKeyAccount = privateKeyToAccount(
 const secondaryFoundAccountAddress: `0x${string}` =
   "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
 
-export const DiamondAddress: `0x${string}` = `0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6`;
+export const DiamondAddress: `0x${string}` = `0x8A791620dd6260079BF849Dc5567aDC3F2FdC318`;
 //-------------------------------------------------------------------------------------------------------------
 
 export type Init = {

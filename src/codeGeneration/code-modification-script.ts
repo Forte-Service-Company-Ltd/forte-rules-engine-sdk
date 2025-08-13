@@ -3,35 +3,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { generateModifier } from './generate-solidity';
 import { injectModifier } from './inject-modifier';
-
-interface ForeignCall {
-    name: string;
-    address: string;
-    function: string;
-    returnType: string;
-    valuesToPass: string;
-}
-
-interface Tracker {
-    name: string;
-    type: string;
-    initialValue: any;
-}
-
-interface Rule {
-    condition: string;
-    positiveEffects: string[];
-    negativeEffects: string[];
-    callingFunction: string;
-    encodedValues: string;
-}
-
-interface PolicyConfig {
-    Policy: string;
-    ForeignCalls: ForeignCall[];
-    Trackers: Tracker[];
-    Rules: Rule[];
-}
+import { getRulesErrorMessages, validatePolicyJSON } from '../modules/validation';
+import { isLeft, unwrapEither } from '../modules/utils';
 
 /**
  * Validates a list of file paths to ensure they exist and have .sol extension
@@ -39,25 +12,25 @@ interface PolicyConfig {
  * @returns Array of valid Solidity file paths
  */
 function validateSolidityFiles(filePaths: string[]): string[] {
-    const validFiles: string[] = [];
-    
-    for (const filePath of filePaths) {
-        // Check if file exists
-        if (!fs.existsSync(filePath)) {
-            console.warn(`Warning: File does not exist: ${filePath}`);
-            continue;
-        }
-        
-        // Check if file has .sol extension
-        if (path.extname(filePath).toLowerCase() !== '.sol') {
-            console.warn(`Warning: File is not a Solidity file: ${filePath}`);
-            continue;
-        }
-        
-        validFiles.push(filePath);
+  const validFiles: string[] = [];
+
+  for (const filePath of filePaths) {
+    // Check if file exists
+    if (!fs.existsSync(filePath)) {
+      console.warn(`Warning: File does not exist: ${filePath}`);
+      continue;
     }
-    
-    return validFiles;
+
+    // Check if file has .sol extension
+    if (path.extname(filePath).toLowerCase() !== '.sol') {
+      console.warn(`Warning: File is not a Solidity file: ${filePath}`);
+      continue;
+    }
+
+    validFiles.push(filePath);
+  }
+
+  return validFiles;
 }
 
 /**
@@ -67,20 +40,20 @@ function validateSolidityFiles(filePaths: string[]): string[] {
  * @returns True if the calling function is found in the file
  */
 function fileContainsFunction(filePath: string, callingFunction: string): boolean {
-    const fileContent = fs.readFileSync(filePath, 'utf-8');
-    
-    // Extract function name and parameters from the signature
-    const functionNameMatch = callingFunction.match(/^([^(]+)\s*\(/);
-    if (!functionNameMatch) return false;
-    
-    const functionName = functionNameMatch[1].trim();
-    
-    // Create a regex pattern that looks for the function name followed by parameters
-    // This is a simplified approach and might need refinement for complex cases
-    const regexPattern = `function\\s+${functionName}\\s*\\([^)]*\\)`;
-    const regex = new RegExp(regexPattern, 'i');
-    
-    return regex.test(fileContent);
+  const fileContent = fs.readFileSync(filePath, 'utf-8');
+
+  // Extract function name and parameters from the signature
+  const functionNameMatch = callingFunction.match(/^([^(]+)\s*\(/);
+  if (!functionNameMatch) return false;
+
+  const functionName = functionNameMatch[1].trim();
+
+  // Create a regex pattern that looks for the function name followed by parameters
+  // This is a simplified approach and might need refinement for complex cases
+  const regexPattern = `function\\s+${functionName}\\s*\\([^)]*\\)`;
+  const regex = new RegExp(regexPattern, 'i');
+
+  return regex.test(fileContent);
 }
 
 /**
@@ -90,81 +63,68 @@ function fileContainsFunction(filePath: string, callingFunction: string): boolea
  * @param filePaths Array of Solidity file paths to process
  */
 export function policyModifierGeneration(configPath: string, outputFile: string, filePaths: string[]): void {
-    // Validate Solidity files
-    const validFiles = validateSolidityFiles(filePaths);
-    if (validFiles.length === 0) {
-        console.error('Error: No valid Solidity files provided');
-        return;
-    }
-    
-    console.log(`Found ${validFiles.length} valid Solidity files to process`);
-    
-    // Read and parse the policy configuration
-    const configData = fs.readFileSync(configPath, 'utf-8');
-    const policyConfig: PolicyConfig = JSON.parse(configData);
-    
-    console.log(`Processing policy: ${policyConfig.Policy}`);
-    console.log(`Found ${policyConfig.Rules.length} rules to process`);
-    
-    // Create a temporary directory for modifier files
-    const tempDir = path.join(process.cwd(), '.temp-modifiers');
-    if (!fs.existsSync(tempDir)) {
-        fs.mkdirSync(tempDir, { recursive: true });
-    }
-    generateModifier(configData, outputFile)
-    // Process each rule
-    policyConfig.Rules.forEach((rule, index) => {
-        const functionName = rule.callingFunction.split('(')[0].trim();
-        
-        // Find files that contain the calling function and inject the modifier
-        let injectionCount = 0;
-        for (const filePath of validFiles) {
-            if (fileContainsFunction(filePath, rule.callingFunction)) {
-                console.log(`Found matching function in ${filePath}`);
-                
-                // Inject the modifier (without creating a diff file)
-                injectModifier(
-                    functionName,
-                    rule.encodedValues,
-                    filePath,
-                    'diff.diff', // Empty string means no diff file will be created
-                    outputFile
-                );
-                
-                injectionCount++;
-            }
-        }
-        
-        if (injectionCount === 0) {
-            console.warn(`Warning: No files found containing function ${rule.callingFunction}`);
-        } else {
-            console.log(`Injected modifier for ${functionName} into ${injectionCount} files`);
-        }
-    });
-    
-    // Clean up temporary directory
-    fs.rmSync(tempDir, { recursive: true, force: true });
-    
-    console.log('Policy processing complete!');
-}
+  // Validate Solidity files
+  const validFiles = validateSolidityFiles(filePaths);
+  if (validFiles.length === 0) {
+    console.error('Error: No valid Solidity files provided');
+    return;
+  }
 
-/**
- * Command-line entry point
- */
-if (require.main === module) {
-    // Parse command line arguments
-    const args = process.argv.slice(3);
-    
-    if (args.length < 3) {
-        console.error('Usage: node codeModificationScript.js <config-path> < > <file-path-1> [file-path-2] ...');
-        process.exit(1);
-    }
-    
-    const configPath = args[0];
-    const outputFile = args[1]
-    const filePaths = args.slice(2); // All remaining arguments are file paths
-    
-    policyModifierGeneration(configPath, outputFile, filePaths);
+  console.log(`Found ${validFiles.length} valid Solidity files to process ${configPath}`);
 
+  // Read and parse the policy configuration
+  const configData = fs.readFileSync(configPath, 'utf-8');
+  console.log(`Reading policy configuration from ${configPath} - ${configData} bytes`);
+  const policyJson = validatePolicyJSON(configData);
+  if (isLeft(policyJson)) {
+    throw new Error(getRulesErrorMessages(policyJson.left));
+  }
+  const policyConfig = unwrapEither(policyJson);
+
+  console.log(`Processing policy: ${policyConfig.Policy}`);
+  console.log(`Found ${policyConfig.Rules.length} rules to process`);
+
+  // Create a temporary directory for modifier files
+  const tempDir = path.join(process.cwd(), '.temp-modifiers');
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+  }
+  generateModifier(configData, outputFile)
+  console.log(`Generated modifier and saved to ${outputFile}`);
+  // Process each rule
+  policyConfig.Rules.forEach((rule, index) => {
+    const functionName = rule.callingFunction.split('(')[0].trim();
+
+    // Find files that contain the calling function and inject the modifier
+    let injectionCount = 0;
+    for (const filePath of validFiles) {
+      if (fileContainsFunction(filePath, rule.callingFunction)) {
+        console.log(`Found matching function in ${filePath}`);
+        const encodedValues = policyConfig.CallingFunctions.find(cf => cf.name === rule.callingFunction)?.encodedValues || '';
+
+        // Inject the modifier (without creating a diff file)
+        injectModifier(
+          functionName,
+          encodedValues,
+          filePath,
+          'diff.diff', // Empty string means no diff file will be created
+          outputFile
+        );
+
+        injectionCount++;
+      }
+    }
+
+    if (injectionCount === 0) {
+      console.warn(`Warning: No files found containing function ${rule.callingFunction}`);
+    } else {
+      console.log(`Injected modifier for ${functionName} into ${injectionCount} files`);
+    }
+  });
+
+  // Clean up temporary directory
+  fs.rmSync(tempDir, { recursive: true, force: true });
+
+  console.log('Policy processing complete!');
 }
 

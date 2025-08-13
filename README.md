@@ -4,7 +4,7 @@
 
 [![Project Version][version-image]][version-url]
 
-This is a Typescript based SDK for interacting with the [Forte Rules Engine](https://github.com/thrackle-io/forte-rules-engine).
+This is a Typescript based SDK for interacting with the [Forte Rules Engine](https://github.com/Forte-Service-Company-Ltd/forte-rules-engine).
 
 ## Documentation
 
@@ -20,15 +20,11 @@ npx typedoc --entryPointStrategy Expand src
 
 Please visit our [Contributor Guide](./CONTRIBUTING.md).
 
-## Forte x Thrackle
-
-Forte’s work is aided and supported by our ecosystem partner, Thrackle, a team of industry experts, including PhD-level engineers specializing in computer science, math, engineering, economics, and finance. Thrackle leverages its deep technical expertise to develop purpose-built, customizable products that enable the creation, growth, and stability of thriving digital asset economies. Together, Forte and Thrackle are driving innovation to build healthy, sustainable blockchain economies.
-
 ## Licensing
 
 The primary license for Forte Protocol Rules Engine SDK is the Business Source License 1.1 (`BUSL-1.1`), see [`LICENSE`](./LICENSE). However, some files are dual licensed under `GPL-2.0-or-later`:
 
 ### Other Exceptions
 
-[version-image]: https://img.shields.io/badge/Version-0.0.3-brightgreen?style=for-the-badge&logo=appveyor
-[version-url]: https://github.com/thrackle-io/forte-rules-engine-sdk
+[version-image]: https://img.shields.io/badge/Version-0.3.0-brightgreen?style=for-the-badge&logo=appveyor
+[version-url]: https://github.com/Forte-Service-Company-Ltd/forte-rules-engine-sdk

@@ -37,7 +37,7 @@ jobs:
           node-version: "22.4.0"
           registry-url: "https://registry.npmjs.org"
           # Defaults to the user or organization that owns the workflow file
-          scope: "@thrackle-io"
+          scope: "@fortefoundation"
           always-auth: true
       - name: Install dependencies
         run: npm install
@@ -55,6 +55,10 @@ jobs:
           else
             npm version prerelease --preid=rc
           fi
+          version=$(npm view $(npm pkg get name | tr -d '"') version)
+          export newVersion="[version-image]: https://img.shields.io/badge/Version-${version}-brightgreen?style=for-the-badge&logo=appveyor"
+          perl -i -pe's/^\[version-image\]:.*$/$ENV{newVersion}/g' README.md
+
       - name: Push changes to the repository
         if: github.event.inputs.versionUpdateSignificance != 'current'
         uses: ad-m/github-push-action@master
@@ -68,6 +72,6 @@ jobs:
       - name: Publish the NPM package
         if: github.event.inputs.publish
         run: |
-          npm publish
+          npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

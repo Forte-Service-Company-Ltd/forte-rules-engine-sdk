@@ -36,10 +36,11 @@ import { sleep } from "./contract-interaction-utils";
  *
  * This function proposes a new admin for a specific policy.
  *
+ * @param config - The configuration object containing network and wallet information.
  * @param rulesEngineAdminContract - The contract instance containing the address and ABI
  * @param policyId - The ID of the policy to set the admin for.
  * @param newAdminAddress - The address to propose as the new admin
- * @returns A promise that resolves to the result of the contract interaction, or -1 if unsuccessful.
+ * @returns A promise
  *
  * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
  */
@@ -47,8 +48,9 @@ export const proposeNewPolicyAdmin = async (
   config: Config,
   rulesEngineAdminContract: RulesEngineAdminContract,
   policyId: number,
-  newAdminAddress: Address
-) => {
+  newAdminAddress: Address,
+  confirmationCount: number
+): Promise<void> => {
   var proposeAdmin;
   while (true) {
     try {
@@ -66,8 +68,10 @@ export const proposeNewPolicyAdmin = async (
   if (proposeAdmin != null) {
     const returnHash = await writeContract(config, {
       ...proposeAdmin.request,
+      account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -80,15 +84,16 @@ export const proposeNewPolicyAdmin = async (
  *
  * @param rulesEngineAdminContract - The contract instance containing the address and ABI
  * @param policyId - The ID of the policy to set the admin for.
- * @returns A promise that resolves to the result of the contract interaction, or -1 if unsuccessful.
+ * @returns A promise
  *
  * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
  */
 export const confirmNewPolicyAdmin = async (
   config: Config,
   rulesEngineAdminContract: RulesEngineAdminContract,
-  policyId: number
-) => {
+  policyId: number,
+  confirmationCount: number
+): Promise<void> => {
   var confirmAdmin;
   while (true) {
     try {
@@ -107,8 +112,10 @@ export const confirmNewPolicyAdmin = async (
   if (confirmAdmin != null) {
     const returnHash = await writeContract(config, {
       ...confirmAdmin.request,
+      account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -132,53 +139,15 @@ export const isPolicyAdmin = async (
   adminAddress: Address
 ): Promise<boolean> => {
   try {
-    let policyExists = await simulateContract(config, {
+    let policyExists = await readContract(config, {
       address: rulesEngineAdminContract.address,
       abi: rulesEngineAdminContract.abi,
       functionName: "isPolicyAdmin",
       args: [policyId, adminAddress],
     });
-    return policyExists.result as boolean;
+    return policyExists as boolean;
   } catch (error) {
     return false;
-  }
-};
-
-/**
- * UTILITY FUNCTION - used to mimic the contract setting the initial calling contract admin (used for testing purposes)
- *
- * @param rulesEngineAdminContract - The contract instance containing the address and ABI
- * @param contractAddress - address of the "contract" must also be the address calling this function
- * @param adminAddress - The address to make the initial calling contract admin
- */
-export const grantCallingContractRole_Utility = async (
-  config: Config,
-  rulesEngineAdminContract: RulesEngineAdminContract,
-  contractAddress: Address,
-  adminAddress: Address
-) => {
-  var confirmAdmin;
-  while (true) {
-    try {
-      confirmAdmin = await simulateContract(config, {
-        address: rulesEngineAdminContract.address,
-        abi: rulesEngineAdminContract.abi,
-        functionName: "grantCallingContractRole",
-        args: [contractAddress, adminAddress],
-      });
-      break;
-    } catch (err) {
-      console.log(err);
-      await sleep(1000);
-    }
-  }
-  if (confirmAdmin != null) {
-    const returnHash = await writeContract(config, {
-      ...confirmAdmin.request,
-    });
-    await waitForTransactionReceipt(config, {
-      hash: returnHash,
-    });
   }
 };
 
@@ -187,10 +156,11 @@ export const grantCallingContractRole_Utility = async (
  *
  * This function proposes a new admin for a specific calling contract.
  *
+ * @param config - The configuration object containing network and wallet information.
  * @param rulesEngineAdminContract - The contract instance containing the address and ABI
  * @param callingContractAddress - The address of the calling contract to set the admin for.
  * @param newAdminAddress - The address to propose as the new admin
- * @returns A promise that resolves to the result of the contract interaction, or -1 if unsuccessful.
+ * @returns A promise.
  *
  * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
  */
@@ -198,8 +168,9 @@ export const proposeNewCallingContractAdmin = async (
   config: Config,
   rulesEngineAdminContract: RulesEngineAdminContract,
   callingContractAddress: Address,
-  newAdminAddress: Address
-) => {
+  newAdminAddress: Address,
+  confirmationCount: number // = 3
+): Promise<void> => {
   var proposeAdmin;
   while (true) {
     try {
@@ -217,8 +188,10 @@ export const proposeNewCallingContractAdmin = async (
   if (proposeAdmin != null) {
     const returnHash = await writeContract(config, {
       ...proposeAdmin.request,
+      account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -229,16 +202,18 @@ export const proposeNewCallingContractAdmin = async (
  *
  * This function confirms a new admin for a specific callng contract.
  *
+ * @param config - The configuration object containing network and wallet information.
  * @param rulesEngineAdminContract - The contract instance containing the address and ABI
  * @param callingContractAddress - The address of the calling contract to set the admin for.
- * @returns A promise that resolves to the result of the contract interaction, or -1 if unsuccessful.
+ * @returns A promise.
  *
  * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
  */
 export const confirmNewCallingContractAdmin = async (
   config: Config,
   rulesEngineAdminContract: RulesEngineAdminContract,
-  callingContractAddress: Address
+  callingContractAddress: Address,
+  confirmationCount: number
 ) => {
   var confirmAdmin;
   while (true) {
@@ -258,8 +233,10 @@ export const confirmNewCallingContractAdmin = async (
   if (confirmAdmin != null) {
     const returnHash = await writeContract(config, {
       ...confirmAdmin.request,
+      account: config.getClient().account,
     });
     await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
       hash: returnHash,
     });
   }
@@ -270,9 +247,10 @@ export const confirmNewCallingContractAdmin = async (
  *
  * This function determines whether or not an address is the admin for a specific calling contract.
  *
+ * @param config - The configuration object containing network and wallet information.
  * @param rulesEngineAdminContract - The contract instance containing the address and ABI
  * @param callingContract - The address of the contract to check the admin for.
- * @param adminAddress - The address to check
+ * @param account - The address to check
  * @returns whether or not the address is the calling contract admin.
  *
  */
@@ -283,14 +261,145 @@ export const isCallingContractAdmin = async (
   account: Address
 ): Promise<boolean> => {
   try {
-    let policyExists = await simulateContract(config, {
+    let policyExists = await readContract(config, {
       address: rulesEngineAdminContract.address,
       abi: rulesEngineAdminContract.abi,
       functionName: "isCallingContractAdmin",
       args: [callingContract, account],
     });
-    return policyExists.result as boolean;
+    return policyExists as boolean;
   } catch (error) {
     return false;
+  }
+};
+
+/**
+ * Determine if address is the foreign call admin.
+ *
+ * This function determines whether or not an address is the admin for a specific foreign call.
+ *
+ * @param config - The configuration object containing network and wallet information.
+ * @param rulesEngineAdminContract - The contract instance containing the address and ABI
+ * @param foreignCallContract - The address of the contract to check the admin for.
+ * @param account - The address to check
+ * @param functionSelector - The selector for the specific foreign call
+ * @returns whether or not the address is the foreign call admin.
+ *
+ */
+export const isForeignCallAdmin = async (
+  config: Config,
+  rulesEngineAdminContract: RulesEngineAdminContract,
+  foreignCallContract: Address,
+  account: Address,
+  functionSelector: string
+): Promise<boolean> => {
+  var selector = toFunctionSelector(functionSelector);
+  try {
+    let isForeignCallAdmin = await readContract(config, {
+      address: rulesEngineAdminContract.address,
+      abi: rulesEngineAdminContract.abi,
+      functionName: "isForeignCallAdmin",
+      args: [foreignCallContract, account, selector],
+    });
+    return isForeignCallAdmin as boolean;
+  } catch (error) {
+    return false;
+  }
+};
+
+/**
+ * Propose a new foreign call admin in the rules engine admin contract.
+ *
+ * This function proposes a new admin for a specific foreign call.
+ *
+ * @param config - The configuration object containing network and wallet information.
+ * @param rulesEngineAdminContract - The contract instance containing the address and ABI
+ * @param foreignCallAddress - The address of the foreign call contract to set the admin for.
+ * @param newAdminAddress - The address to propose as the new admin
+ * @param functionSelector - The selector for the specific foreign call
+ * @returns A promise.
+ *
+ * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+ */
+export const proposeNewForeignCallAdmin = async (
+  config: Config,
+  rulesEngineAdminContract: RulesEngineAdminContract,
+  foreignCallAddress: Address,
+  newAdminAddress: Address,
+  functionSelector: string,
+  confirmationCount: number
+): Promise<void> => {
+  var proposeAdmin;
+  var selector = toFunctionSelector(functionSelector);
+  while (true) {
+    try {
+      proposeAdmin = await simulateContract(config, {
+        address: rulesEngineAdminContract.address,
+        abi: rulesEngineAdminContract.abi,
+        functionName: "proposeNewForeignCallAdmin",
+        args: [foreignCallAddress, newAdminAddress, selector],
+      });
+      break;
+    } catch (err) {
+      await sleep(1000);
+    }
+  }
+  if (proposeAdmin != null) {
+    const returnHash = await writeContract(config, {
+      ...proposeAdmin.request,
+      account: config.getClient().account,
+    });
+    await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
+      hash: returnHash,
+    });
+  }
+};
+
+/**
+ * Confirm a new foreign call admin in the rules engine admin contract.
+ *
+ * This function confirms a new admin for a specific foreign call.
+ *
+ * @param config - The configuration object containing network and wallet information.
+ * @param rulesEngineAdminContract - The contract instance containing the address and ABI
+ * @param foreignCallAddress - The address of the foreign call to set the admin for.
+ * @param functionSelector - The selector for the specific foreign call
+ * @returns A promise.
+ *
+ * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+ */
+export const confirmNewForeignCallAdmin = async (
+  config: Config,
+  rulesEngineAdminContract: RulesEngineAdminContract,
+  foreignCallAddress: Address,
+  functionSelector: string,
+  confirmationCount: number
+) => {
+  var confirmAdmin;
+  var selector = toFunctionSelector(functionSelector);
+  while (true) {
+    try {
+      confirmAdmin = await simulateContract(config, {
+        address: rulesEngineAdminContract.address,
+        abi: rulesEngineAdminContract.abi,
+        functionName: "confirmNewForeignCallAdmin",
+        args: [foreignCallAddress, selector],
+      });
+      break;
+    } catch (err) {
+      console.log(err);
+      await sleep(1000);
+    }
+  }
+  if (confirmAdmin != null) {
+    const returnHash = await writeContract(config, {
+      ...confirmAdmin.request,
+      account: config.getClient().account,
+    });
+    await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
+      hash: returnHash,
+    });
   }
 };

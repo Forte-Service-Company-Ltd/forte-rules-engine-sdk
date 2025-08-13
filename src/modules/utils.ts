@@ -1,5 +1,5 @@
 import { Either, Left, Right, RulesError, UnwrapEither } from "./types";
-import { getAddress as _getAddress, Address, ethAddress } from 'viem';
+import { getAddress as _getAddress, isAddress as _isAddress } from 'viem';
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -50,18 +50,5 @@ export const isRight = <T, U>(e: Either<T, U>): e is Right<U> => {
 export const makeLeft = <T>(value: T): Left<T> => ({ left: value });
 
 export const makeRight = <U>(value: U): Right<U> => ({ right: value });
-
-export const getAddress = (address: string): Either<RulesError, Address> => {
-    try {
-        return makeRight(_getAddress(address));
-    } catch (error) {
-        const message = `Address "${address}" is invalid`
-        return makeLeft({
-            errorType: "INPUT",
-            state: { address },
-            message
-        });
-    }
-}
 
 export const getRandom = () => uuidv4();

@@ -35,6 +35,9 @@ jobs:
     - name: Install NPM Dependencies
       run: |
         npm install
+    - name: Build
+      run: |
+        npm run build
     - name: Start Anvil with State File
       run: |
         anvil -p 8545 --load-state tests/diamondDeployedAnvilState.json &
@@ -42,4 +45,4 @@ jobs:
     - name: Run Tests
       run: npm run test
     - name: Run Typedoc Check
-      run: npx typedoc --entryPointStrategy Expand src --tsconfig tsconfig.json
+      run: npx typedoc --options typedoc.json

@@ -1,7 +1,9 @@
 /// SPDX-License-Identifier: BUSL-1.1
 import * as fs from "fs";
 import * as path from "path";
-import { PolicyJSON, ruleJSON } from "../modules/types";
+import { getRulesErrorMessages, validatePolicyJSON } from "../modules/validation";
+import { isLeft, unwrapEither } from "../modules/utils";
+import { SOLIDITY_TEMPLATE } from './template'
 
 /**
  * @file generateSolidity.ts
@@ -54,70 +56,73 @@ export function generateModifier(
   policyS: string,
   outputFileName: string
 ): void {
-  var functionNames: String[] = [];
-  let policySyntax: PolicyJSON = JSON.parse(policyS);
+  var functionNames: String[] = []
+  const validatedPolicySyntax = validatePolicyJSON(policyS)
+  if (isLeft(validatedPolicySyntax)) {
+    throw new Error(getRulesErrorMessages(unwrapEither(validatedPolicySyntax)))
+  }
+  const policySyntax = unwrapEither(validatedPolicySyntax)
 
-  var iter = 0;
-  var count = 0;
-  var countArray: string[] = [];
+  var iter = 0
+  var count = 0
+  var countArray: string[] = []
   for (var rule of policySyntax.Rules) {
     if (!countArray.includes(rule.callingFunction)) {
-      count += 1;
-      countArray.push(rule.callingFunction);
+      count += 1
+      countArray.push(rule.callingFunction)
     }
   }
-  var absPath = path.join(__dirname, "Template.sol");
-  var overallModifiedData = fs.readFileSync(absPath, "utf-8");
+
+  // Use the imported template instead of reading from file
+  var overallModifiedData = SOLIDITY_TEMPLATE
 
   if (!fs.existsSync(path.dirname(outputFileName))) {
-    fs.mkdirSync(path.dirname(outputFileName), { recursive: true });
+    fs.mkdirSync(path.dirname(outputFileName), { recursive: true })
   }
-  const filePathOutput = outputFileName;
+  const filePathOutput = outputFileName
   for (var syntax of policySyntax.Rules) {
-    var argList = syntax.encodedValues;
-    var callingFunction = syntax.callingFunction.split("(")[0];
-    if (functionNames.includes(callingFunction)) {
-      continue;
-    } else {
-      functionNames.push(callingFunction);
-      var modifierNameStr =
-        "modifier checkRulesBefore" + callingFunction + "([]) {\n";
-      var modifierNameAfterStr =
-        "\tmodifier checkRulesAfter" + callingFunction + "([]) {\n";
-
-      var argListUpdate = argList.replace(/address /g, "");
-      argListUpdate = argListUpdate.replace(/uint256 /g, "");
-      argListUpdate = argListUpdate.replace(/string /g, "");
-      argListUpdate = argListUpdate.replace(/bool /g, "");
-      argListUpdate = argListUpdate.replace(/bytes /g, "");
-
-      modifierNameStr = modifierNameStr.replace("[]", argList.trim());
-      modifierNameAfterStr = modifierNameAfterStr.replace("[]", argList.trim());
-      var encodeStr =
-        "\t\tbytes memory encoded = abi.encodeWithSelector(msg.sig,[]);\n";
-      encodeStr = encodeStr.replace("[]", argListUpdate);
-      var thirdLine = "\t\t_invokeRulesEngine(encoded);\n";
-      var fourthLine = "\t\t_;\n";
-      var finalLine = "\t}";
-      var outputString =
-        modifierNameStr + encodeStr + thirdLine + fourthLine + finalLine;
-      var outputStringTwo =
-        modifierNameAfterStr + encodeStr + fourthLine + thirdLine + finalLine;
-      var replaceStr = outputString + "\n\n" + outputStringTwo;
-
-      iter += 1;
-      if (iter < count) {
-        replaceStr += "\n\n";
-        replaceStr += "\t// Modifier Here";
-        replaceStr += "\n";
+    var argList = ''
+    for (var fCall of policySyntax.CallingFunctions) {
+      if (fCall.functionSignature.trim() == syntax.callingFunction.trim()) {
+        argList = fCall.encodedValues
+        break
       }
-      var modifiedData = overallModifiedData.replace(
-        "// Modifier Here",
-        replaceStr
-      );
-      overallModifiedData = modifiedData;
+    }
+    var callingFunction = syntax.callingFunction.split('(')[0]
+    if (functionNames.includes(callingFunction)) {
+      continue
+    } else {
+      functionNames.push(callingFunction)
+      var modifierNameStr = 'modifier checkRulesBefore' + callingFunction + '([]) {\n'
+      var modifierNameAfterStr = '\tmodifier checkRulesAfter' + callingFunction + '([]) {\n'
+
+      var argListUpdate = argList.replace(/address /g, '')
+      argListUpdate = argListUpdate.replace(/uint256 /g, '')
+      argListUpdate = argListUpdate.replace(/string /g, '')
+      argListUpdate = argListUpdate.replace(/bool /g, '')
+      argListUpdate = argListUpdate.replace(/bytes /g, '')
+
+      modifierNameStr = modifierNameStr.replace('[]', argList.trim())
+      modifierNameAfterStr = modifierNameAfterStr.replace('[]', argList.trim())
+      var encodeStr = '\t\tbytes memory encoded = abi.encodeWithSelector(msg.sig,[]);\n'
+      encodeStr = encodeStr.replace('[]', argListUpdate)
+      var thirdLine = '\t\t_invokeRulesEngine(encoded);\n'
+      var fourthLine = '\t\t_;\n'
+      var finalLine = '\t}'
+      var outputString = modifierNameStr + encodeStr + thirdLine + fourthLine + finalLine
+      var outputStringTwo = modifierNameAfterStr + encodeStr + fourthLine + thirdLine + finalLine
+      var replaceStr = outputString + '\n\n' + outputStringTwo
+
+      iter += 1
+      if (iter < count) {
+        replaceStr += '\n\n'
+        replaceStr += '\t// Modifier Here'
+        replaceStr += '\n'
+      }
+      var modifiedData = overallModifiedData.replace('// Modifier Here', replaceStr)
+      overallModifiedData = modifiedData
     }
   }
   // Write the modified data back to the file
-  fs.writeFileSync(filePathOutput, overallModifiedData, "utf-8");
+  fs.writeFileSync(filePathOutput, overallModifiedData, 'utf-8')
 }

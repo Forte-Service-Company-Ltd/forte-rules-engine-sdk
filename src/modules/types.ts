@@ -1,10 +1,11 @@
 /// SPDX-License-Identifier: BUSL-1.1
 import { Abi, Address, ByteArray, GetContractReturnType, Hex } from "viem";
 
-import RulesEnginePolicyLogicArtifact from "../abis/RulesEnginePolicyFacet.json";
-import RulesEngineComponentLogicArtifact from "../abis/RulesEngineComponentFacet.json";
-import RulesEngineRuleLogicArtifact from "../abis/RulesEngineRuleFacet.json";
-import RulesEngineAdminLogicArtifact from "../abis/RulesEngineAdminRolesFacet.json";
+import RulesEnginePolicyLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEnginePolicyFacet.sol/RulesEnginePolicyFacet.json";
+import RulesEngineComponentLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineComponentFacet.sol/RulesEngineComponentFacet.json";
+import RulesEngineRuleLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineRuleFacet.sol/RulesEngineRuleFacet.json";
+import RulesEngineAdminLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineAdminRolesFacet.sol/RulesEngineAdminRolesFacet.json";
+import RulesEngineForeignCallLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineForeignCallFacet.sol/RulesEngineForeignCallFacet.json";
 
 /**
  * @file types.ts
@@ -27,6 +28,8 @@ export const RulesEnginePolicyABI = RulesEnginePolicyLogicArtifact.abi;
 export const RulesEngineComponentABI = RulesEngineComponentLogicArtifact.abi;
 export const RulesEngineRulesABI = RulesEngineRuleLogicArtifact.abi;
 export const RulesEngineAdminABI = RulesEngineAdminLogicArtifact.abi;
+export const RulesEngineForeignCallABI =
+  RulesEngineForeignCallLogicArtifact.abi;
 
 export type RulesEnginePolicyContract = GetContractReturnType<
   typeof RulesEnginePolicyABI
@@ -39,6 +42,10 @@ export type RulesEngineRulesContract = GetContractReturnType<
 >;
 export type RulesEngineAdminContract = GetContractReturnType<
   typeof RulesEngineAdminABI
+>;
+
+export type RulesEngineForeignCallContract = GetContractReturnType<
+  typeof RulesEngineForeignCallABI
 >;
 
 export type FCNameToID = {
@@ -65,36 +72,6 @@ export type CallingFunctionHashMapping = {
   encodedValues: string;
 };
 
-export interface PolicyJSON {
-  Policy: string;
-  PolicyType: string;
-  ForeignCalls: foreignCallJSON[];
-  Trackers: trackerJSON[];
-  Rules: ruleJSON[];
-}
-
-export interface foreignCallJSON {
-  name: string;
-  function: string;
-  address: string;
-  returnType: string;
-  valuesToPass: string;
-}
-
-export interface trackerJSON {
-  name: string;
-  type: string;
-  initialValue: string;
-}
-
-export interface ruleJSON {
-  condition: string;
-  positiveEffects: string[];
-  negativeEffects: string[];
-  callingFunction: string;
-  encodedValues: string;
-}
-
 export type Tuple = {
   i: string;
   s: string;
@@ -118,9 +95,9 @@ export type EffectStruct = {
   valid: boolean;
   dynamicParam: boolean;
   effectType: EffectType;
-  text: Hex;
   pType: number;
   param: any;
+  text: Hex;
   errorMessage: string;
   instructionSet: any[];
 };
@@ -144,6 +121,16 @@ export type RuleStruct = RuleBase & {
   negEffects: any[];
 };
 
+export type RuleMetadataStruct = {
+  ruleName: string;
+  ruleDescription: string;
+};
+
+export type PolicyMetadataStruct = {
+  policyName: string;
+  policyDescription: string;
+};
+
 export type ForeignCallOnChain = {
   set: boolean;
   foreignCallAddress: string;
@@ -151,12 +138,15 @@ export type ForeignCallOnChain = {
   returnType: number;
   foreignCallIndex: number;
   parameterTypes: number[];
-  typeSpecificIndices: number[];
+  encodedIndices: ForeignCallEncodedIndex[];
+  mappedTrackerKeyIndices: ForeignCallEncodedIndex[];
 };
 
 export type TrackerOnChain = {
   set: boolean;
   pType: number;
+  mapped: boolean;
+  trackerKeyType: number;
   trackerValue: string;
   trackerIndex: number;
 };
@@ -167,46 +157,51 @@ export type ForeignCallDefinition = {
   function: string;
   returnType: number;
   parameterTypes: number[];
-  valuesToPass: number[];
+  encodedIndices: ForeignCallEncodedIndex[];
+  mappedTrackerKeyIndices: ForeignCallEncodedIndex[];
+};
+
+export type ForeignCallEncodedIndex = {
+  eType: number;
+  index: number;
 };
 
 export type PlaceholderStruct = {
   pType: number;
   typeSpecificIndex: number;
-  trackerValue: boolean;
-  foreignCall: boolean;
+  mappedTrackerKey: any;
+  flags: number;
 };
 
-export type IndividualArugmentMapping = {
+export type IndividualArgumentMapping = {
   functionCallArgumentType: number;
   callingFunctionArg: PlaceholderStruct;
 };
 
 export type ForeignCallArgumentMappings = {
   foreignCallIndex: number;
-  mappings: IndividualArugmentMapping[];
+  mappings: IndividualArgumentMapping[];
 };
 
 export type FunctionArgument = {
   name: string;
   tIndex: number;
   rawType: string;
-  fcPlaceholder?: PlaceholderStruct;
 };
 
 export type ForeignCall = {
-  name: string,
-  tIndex: number,
-  rawType: "foreign call",
-  fcPlaceholder: string,
-}
+  name: string;
+  tIndex: number;
+  rawType: "foreign call";
+  fcPlaceholder: string;
+};
 
 export type Tracker = {
-  name: string,
-  tIndex: number,
-  rawType: "tracker",
-  rawTypeTwo?: string,
-}
+  name: string;
+  tIndex: number;
+  rawType: "tracker";
+  rawTypeTwo?: string;
+};
 
 export type RuleComponent = FunctionArgument | ForeignCall | Tracker;
 
@@ -225,6 +220,14 @@ export type TrackerDefinition = {
   name: string;
   type: number;
   initialValue: any;
+};
+
+export type MappedTrackerDefinition = {
+  name: string;
+  keyType: number;
+  valueType: number;
+  initialKeys: any[];
+  initialValues: any[];
 };
 
 export type InstructionSet = (number | string | BigInt)[];
@@ -256,14 +259,8 @@ export const matchArray: string[] = [
   "!=",
 ];
 export const truMatchArray: string[] = ["+=", "-=", "*=", "/=", "="];
-export const operandArray: string[] = ["PLH", "N"];
-export const supportedTrackerTypes: string[] = [
-  "uint256",
-  "string",
-  "address",
-  "bytes",
-  "bool",
-];
+export const operandArray: string[] = ["PLH", "N", "PLHM", "TRU", "TRUM"];
+
 export enum pTypeEnum {
   ADDRESS = 0,
   STRING = 1,
@@ -271,6 +268,8 @@ export enum pTypeEnum {
   BOOL = 3,
   VOID = 4,
   BYTES = 5,
+  STATIC_TYPE_ARRAY = 6,
+  DYNAMIC_TYPE_ARRAY = 7,
 }
 export const PT = [
   { name: "address", enumeration: pTypeEnum.ADDRESS },
@@ -279,15 +278,24 @@ export const PT = [
   { name: "bool", enumeration: pTypeEnum.BOOL },
   { name: "void", enumeration: pTypeEnum.VOID },
   { name: "bytes", enumeration: pTypeEnum.BYTES },
+  { name: "address[]", enumeration: pTypeEnum.STATIC_TYPE_ARRAY },
+  { name: "uint256[]", enumeration: pTypeEnum.STATIC_TYPE_ARRAY },
+  { name: "bool[]", enumeration: pTypeEnum.STATIC_TYPE_ARRAY },
+  { name: "string[]", enumeration: pTypeEnum.DYNAMIC_TYPE_ARRAY },
+  { name: "bytes[]", enumeration: pTypeEnum.DYNAMIC_TYPE_ARRAY },
 ];
 
-export type ErrorType = "INPUT" | "CONTRACT_READ" | "CONTRACT_WRITE" | "COMPILATION";
+export type ErrorType =
+  | "INPUT"
+  | "CONTRACT_READ"
+  | "CONTRACT_WRITE"
+  | "COMPILATION";
 
 export type RulesError = {
   errorType: ErrorType;
   state: any;
   message: string;
-}
+};
 
 export type Left<T> = {
   left: T;
@@ -306,7 +314,7 @@ export type UnwrapEither = <T, U>(e: Either<T, U>) => NonNullable<T | U>;
 export type Maybe<T> = NonNullable<T> | null;
 
 export type ASTAccumulator = {
-  instructionSet: any[],
-  mem: any[],
+  instructionSet: any[];
+  mem: any[];
   iterator: { value: number };
-}
+};

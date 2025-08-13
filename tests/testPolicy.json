@@ -1,0 +1,40 @@
+{
+  "Policy": "Test Policy",
+  "Description": "This is a test policy",
+  "PolicyType": "open",
+  "CallingFunctions": [
+    {
+      "name": "transfer(address to, uint256 value)",
+      "functionSignature": "transfer(address to, uint256 value)",
+      "encodedValues": "address to, uint256 value"
+    }
+  ],
+  "ForeignCalls": [
+    {
+      "name": "Simple Foreign Call",
+      "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+      "function": "testSig(address)",
+      "returnType": "uint256",
+      "valuesToPass": "to",
+      "callingFunction": "transfer(address to, uint256 value)"
+    }
+  ],
+  "Trackers": [
+    {
+      "name": "Simple String Tracker",
+      "type": "string",
+      "initialValue": "test"
+    }
+  ],
+  "MappedTrackers": [],
+  "Rules": [
+    {
+      "Name": "Rule One",
+      "Description": "Rule One Description",
+      "condition": "value > 500",
+      "positiveEffects": ["emit Success"],
+      "negativeEffects": ["revert()"],
+      "callingFunction": "transfer(address to, uint256 value)"
+    }
+  ]
+}

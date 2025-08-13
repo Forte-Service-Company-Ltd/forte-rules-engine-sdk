@@ -1,15 +1,20 @@
 /// SPDX-License-Identifier: BUSL-1.1
 
+import { Address } from "viem";
 import {
   stringReplacement,
   RuleStruct,
-  ruleJSON,
   PT,
-  ForeignCallOnChain,
   TrackerOnChain,
   hexToFunctionString,
+  CallingFunctionHashMapping,
+  FunctionArgument,
+  RuleMetadataStruct,
+  ForeignCallOnChain
 } from "../modules/types";
+import { CallingFunctionJSON, ForeignCallJSON, ForeignCallJSONReversed, MappedTrackerJSON, RuleJSON, TrackerJSON, validateCallingFunctionJSON, validateFCFunctionInput, validateForeignCallJSON, validateMappedTrackerJSON, validateTrackerJSON } from "../modules/validation";
 import { parseFunctionArguments } from "./parsing-utilities";
+import { isRight, unwrapEither } from "../modules/utils";
 
 /**
  * @file reverse-parsing-logic.ts
@@ -37,7 +42,7 @@ import { parseFunctionArguments } from "./parsing-utilities";
  * @param stringReplacements - An array of string replacements for specific instructions.
  * @returns A human-readable rule condition string.
  */
-export function reverseParseRule(
+export function reverseParseInstructionSet(
   instructionSet: number[],
   placeHolderArray: string[],
   stringReplacements: stringReplacement[]
@@ -49,6 +54,10 @@ export function reverseParseRule(
   var currentInstructionValues: any[] = [];
   var retVal = "";
   var instructionNumber = 0;
+  var truUpdated = false;
+  var keyIndex = -1;
+  var valueIndex = -1;
+  var instructionCount = instructionSet.length;
   for (var instruction of instructionSet) {
     if (currentAction == -1) {
       currentAction = Number(instruction);
@@ -57,10 +66,10 @@ export function reverseParseRule(
           currentActionIndex = 1;
           break;
         case 1:
-          currentActionIndex = 2;
+          currentActionIndex = 1;
           break;
         case 2:
-          currentActionIndex = 2;
+          currentActionIndex = 1;
           break;
         case 3:
           currentActionIndex = 2;
@@ -84,13 +93,22 @@ export function reverseParseRule(
           currentActionIndex = 2;
           break;
         case 10:
-          currentActionIndex = 1;
+          currentActionIndex = 2;
           break;
         case 11:
-          currentActionIndex = 1;
+          currentActionIndex = 2;
+          break;
+        case 12:
+          currentActionIndex = 2;
+          break;
+        case 17:
+          currentActionIndex = 3;
+          break;
+        case 18:
+          currentActionIndex = 4;
           break;
         default:
-          currentActionIndex = 0;
+          currentActionIndex = 2;
           break;
       }
     } else {
@@ -116,132 +134,6 @@ export function reverseParseRule(
           currentMemAddress += 1;
           break;
         case 1:
-          retVal = arithmeticOperatorReverseInterpretation(
-            instruction,
-            currentMemAddress,
-            memAddressesMap,
-            currentActionIndex,
-            currentInstructionValues,
-            " + "
-          );
-          if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
-          }
-          break;
-        case 2:
-          retVal = arithmeticOperatorReverseInterpretation(
-            instruction,
-            currentMemAddress,
-            memAddressesMap,
-            currentActionIndex,
-            currentInstructionValues,
-            " - "
-          );
-          if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
-          }
-          break;
-        case 3:
-          retVal = arithmeticOperatorReverseInterpretation(
-            instruction,
-            currentMemAddress,
-            memAddressesMap,
-            currentActionIndex,
-            currentInstructionValues,
-            " * "
-          );
-          if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
-          }
-          break;
-        case 4:
-          retVal = arithmeticOperatorReverseInterpretation(
-            instruction,
-            currentMemAddress,
-            memAddressesMap,
-            currentActionIndex,
-            currentInstructionValues,
-            " / "
-          );
-          if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
-          }
-          break;
-        case 5:
-          retVal = arithmeticOperatorReverseInterpretation(
-            instruction,
-            currentMemAddress,
-            memAddressesMap,
-            currentActionIndex,
-            currentInstructionValues,
-            " < "
-          );
-          if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
-          }
-          break;
-        case 6:
-          retVal = arithmeticOperatorReverseInterpretation(
-            instruction,
-            currentMemAddress,
-            memAddressesMap,
-            currentActionIndex,
-            currentInstructionValues,
-            " > "
-          );
-          if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
-          }
-          break;
-        case 7:
-          retVal = arithmeticOperatorReverseInterpretation(
-            instruction,
-            currentMemAddress,
-            memAddressesMap,
-            currentActionIndex,
-            currentInstructionValues,
-            " == "
-          );
-          if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
-          }
-          break;
-        case 8:
-          retVal = logicalOperatorReverseInterpretation(
-            instruction,
-            currentMemAddress,
-            memAddressesMap,
-            currentActionIndex,
-            currentInstructionValues,
-            " AND "
-          );
-          if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
-          }
-          break;
-        case 9:
-          retVal = logicalOperatorReverseInterpretation(
-            instruction,
-            currentMemAddress,
-            memAddressesMap,
-            currentActionIndex,
-            currentInstructionValues,
-            " OR "
-          );
-          if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
-          }
-          break;
-        case 10:
           for (var memValue of memAddressesMap) {
             if (memValue.memAddr == instruction) {
               currentInstructionValues.push(memValue.value);
@@ -258,16 +150,16 @@ export function reverseParseRule(
             currentInstructionValues = [];
           }
           break;
-        case 11:
+        case 2:
           memAddressesMap.push({
             memAddr: currentMemAddress,
             value: placeHolderArray[instruction],
           });
+          keyIndex = instruction;
           currentMemAddress += 1;
+          retVal = placeHolderArray[instruction]
           break;
-        case 12:
-          break;
-        case 13:
+        case 3:
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
             currentMemAddress,
@@ -275,6 +167,149 @@ export function reverseParseRule(
             currentActionIndex,
             currentInstructionValues,
             " = "
+          );
+          if (currentActionIndex == 1) {
+            currentMemAddress += 1;
+            currentInstructionValues = [];
+          }
+          break;
+        case 4:
+          if (currentActionIndex == 2) {
+            valueIndex = instruction;
+          } else {
+            var newMem =
+              placeHolderArray[valueIndex] +
+              "(" +
+              placeHolderArray[keyIndex] +
+              ")";
+            memAddressesMap.push({
+              memAddr: currentMemAddress,
+              value: newMem,
+            });
+            currentMemAddress += 1;
+          }
+
+          break;
+        case 5:
+          retVal = arithmeticOperatorReverseInterpretation(
+            instruction,
+            currentMemAddress,
+            memAddressesMap,
+            currentActionIndex,
+            currentInstructionValues,
+            " + "
+          );
+          if (currentActionIndex == 1) {
+            currentMemAddress += 1;
+            currentInstructionValues = [];
+          }
+          break;
+        case 6:
+          retVal = arithmeticOperatorReverseInterpretation(
+            instruction,
+            currentMemAddress,
+            memAddressesMap,
+            currentActionIndex,
+            currentInstructionValues,
+            " - "
+          );
+          if (currentActionIndex == 1) {
+            currentMemAddress += 1;
+            currentInstructionValues = [];
+          }
+          break;
+        case 7:
+          retVal = arithmeticOperatorReverseInterpretation(
+            instruction,
+            currentMemAddress,
+            memAddressesMap,
+            currentActionIndex,
+            currentInstructionValues,
+            " * "
+          );
+          if (currentActionIndex == 1) {
+            currentMemAddress += 1;
+            currentInstructionValues = [];
+          }
+          break;
+        case 8:
+          retVal = arithmeticOperatorReverseInterpretation(
+            instruction,
+            currentMemAddress,
+            memAddressesMap,
+            currentActionIndex,
+            currentInstructionValues,
+            " / "
+          );
+          if (currentActionIndex == 1) {
+            currentMemAddress += 1;
+            currentInstructionValues = [];
+          }
+          break;
+        case 9:
+          retVal = arithmeticOperatorReverseInterpretation(
+            instruction,
+            currentMemAddress,
+            memAddressesMap,
+            currentActionIndex,
+            currentInstructionValues,
+            " < "
+          );
+          if (currentActionIndex == 1) {
+            currentMemAddress += 1;
+            currentInstructionValues = [];
+          }
+          break;
+        case 10:
+          retVal = arithmeticOperatorReverseInterpretation(
+            instruction,
+            currentMemAddress,
+            memAddressesMap,
+            currentActionIndex,
+            currentInstructionValues,
+            " > "
+          );
+          if (currentActionIndex == 1) {
+            currentMemAddress += 1;
+            currentInstructionValues = [];
+          }
+          break;
+        case 11:
+          retVal = arithmeticOperatorReverseInterpretation(
+            instruction,
+            currentMemAddress,
+            memAddressesMap,
+            currentActionIndex,
+            currentInstructionValues,
+            " == "
+          );
+          if (currentActionIndex == 1) {
+            currentMemAddress += 1;
+            currentInstructionValues = [];
+          }
+          break;
+        case 12:
+          retVal = logicalOperatorReverseInterpretation(
+            instruction,
+            currentMemAddress,
+            memAddressesMap,
+            currentActionIndex,
+            currentInstructionValues,
+            " AND "
+          );
+          if (currentActionIndex == 1) {
+            currentMemAddress += 1;
+            currentInstructionValues = [];
+          }
+          break;
+        case 13:
+          retVal = logicalOperatorReverseInterpretation(
+            instruction,
+            currentMemAddress,
+            memAddressesMap,
+            currentActionIndex,
+            currentInstructionValues,
+            " OR "
           );
           if (currentActionIndex == 1) {
             currentMemAddress += 1;
@@ -309,6 +344,47 @@ export function reverseParseRule(
             currentInstructionValues = [];
           }
           break;
+        case 16:
+          retVal = arithmeticOperatorReverseInterpretation(
+            instruction,
+            currentMemAddress,
+            memAddressesMap,
+            currentActionIndex,
+            currentInstructionValues,
+            " != "
+          );
+          if (currentActionIndex == 1) {
+            currentMemAddress += 1;
+            currentInstructionValues = [];
+          }
+          break;
+        case 17:
+        case 18:
+          if (!truUpdated) {
+            var str = memAddressesMap[currentMemAddress - 1].value;
+            var memVal: any = str
+              .replace("TR:", "TRU:")
+              .replace("-", "-=")
+              .replace("+", "+=")
+              .replace("*", "*=")
+              .replace("/", "/=");
+            truUpdated = true;
+            memAddressesMap.push({
+              memAddr: currentMemAddress,
+              value: memVal,
+            });
+          }
+          if (currentActionIndex == 1) {
+            currentMemAddress += 1;
+            currentInstructionValues = [];
+            truUpdated = false;
+
+            if (instructionNumber + 1 == instructionCount) {
+              retVal = memAddressesMap[currentMemAddress - 1].value;
+            }
+          }
+          break;
+
         default:
           console.log("unknown instruction");
           break;
@@ -326,6 +402,45 @@ export function reverseParseRule(
   return retVal;
 }
 
+export const reverseParsePlaceholder = (
+  placeholder: any,
+  names: FunctionArgument[],
+  foreignCalls: ForeignCallOnChain[],
+  trackers: TrackerOnChain[],
+  mappings: hexToFunctionString[]
+): string => {
+  if (placeholder.flags == 0x01) {
+    const call = foreignCalls.find(call => call.foreignCallIndex === placeholder.typeSpecificIndex);
+    const map = mappings.find(map => map.hex === call?.signature);
+    return "FC:" + map?.functionString;
+  } else if (placeholder.flags == 0x02) {
+    const map = mappings.find(map => map.index === placeholder.typeSpecificIndex);
+    return "TR:" + map?.functionString;
+  } else if (placeholder.flags == 0x04) {
+    return "GV:MSG_SENDER";
+  } else if (placeholder.flags == 0x08) {
+    return "GV:BLOCK_TIMESTAMP";
+  } else if (placeholder.flags == 0x0c) {
+    return "GV:MSG_DATA";
+  } else if (placeholder.flags == 0x10) {
+    return "GV:BLOCK_NUMBER";
+  } else if (placeholder.flags == 0x14) {
+    return "GV:TX_ORIGIN";
+  } else {
+    return names[placeholder.typeSpecificIndex].name;
+  }
+}
+
+export const reverseParseEffect = (effect: any, placeholders: string[]): string => {
+  if (effect.effectType == 0) {
+    return "revert('" + effect.text + "')";
+  } else if (effect.effectType == 1) {
+    return "emit " + effect.text;
+  } else {
+    return reverseParseInstructionSet(effect.instructionSet, placeholders, [])
+  }
+}
+
 /**
  * Converts a `RuleStruct` object into a JSON-like string representation.
  *
@@ -333,6 +448,9 @@ export function reverseParseRule(
  * @param encodedValues - A string containing encoded values for the rule.
  * @param ruleS - The `RuleStruct` object containing rule details such as placeholders, positive effects, and negative effects.
  * @param plhArray - An array to store the names of placeholders extracted from the rule.
+ * @param foreignCalls - An array of foreign calls used in the rule.
+ * @param trackers - An array of trackers used in the rule.
+ * @param mappings - An array of mappings that associate a `hex` signature with a function.
  * @returns An object of type `ruleJSON` containing the condition, positive effects, negative effects, calling function, and encoded values.
  *
  * The function processes the `RuleStruct` object to:
@@ -345,76 +463,44 @@ export function convertRuleStructToString(
   functionString: string,
   encodedValues: string,
   ruleS: RuleStruct,
-  plhArray: string[],
+  ruleM: RuleMetadataStruct,
   foreignCalls: ForeignCallOnChain[],
   trackers: TrackerOnChain[],
   mappings: hexToFunctionString[]
-): ruleJSON {
-  var rJSON: ruleJSON = {
+): RuleJSON {
+  var rJSON: RuleJSON = {
+    Name: ruleM.ruleName,
+    Description: ruleM.ruleDescription,
     condition: "",
     positiveEffects: [],
     negativeEffects: [],
     callingFunction: "",
-    encodedValues: "",
   };
 
   var names = parseFunctionArguments(encodedValues);
 
-  for (var plh of ruleS!.placeHolders) {
-    if (plh.foreignCall) {
-      for (var call of foreignCalls) {
-        if (call.foreignCallIndex == plh.typeSpecificIndex) {
-          for (var map of mappings) {
-            if (map.hex == call.signature) {
-              plhArray.push("FC:" + map.functionString);
-            }
-          }
-        }
-      }
-    } else if (plh.trackerValue) {
-      for (var tracker of trackers) {
-        if (tracker.trackerIndex == plh.typeSpecificIndex) {
-          for (var map of mappings) {
-            if (map.index == plh.typeSpecificIndex) {
-              plhArray.push("TR:" + map.functionString);
-            }
-          }
-        }
-      }
-    } else {
-      plhArray.push(names[plh.typeSpecificIndex].name);
-    }
-  }
+  const plhArray = ruleS.placeHolders.map((placeholder) => reverseParsePlaceholder(
+    placeholder,
+    names,
+    foreignCalls,
+    trackers,
+    mappings
+  ));
 
-  var posIter = 0;
-  for (var pos of ruleS.posEffects) {
-    var effectString = "";
-    if (pos.effectType == 0) {
-      effectString += "revert(" + pos.text + ")";
-    } else if (pos.effectType == 1) {
-      effectString += "emit " + pos.text;
-    }
-    posIter += 1;
-
-    rJSON.positiveEffects.push(effectString);
-  }
-
-  if (ruleS.negEffects.length > 0) {
-    var negIter = 0;
-    for (var neg of ruleS.negEffects) {
-      var effectString = "";
-      if (neg.effectType == 0) {
-        effectString += "revert(" + neg.text + ")";
-      } else if (neg.effectType == 1) {
-        effectString += "emit " + neg.text;
-      }
-      negIter += 1;
-      rJSON.negativeEffects.push(effectString);
-    }
-  }
-  rJSON.condition = reverseParseRule(ruleS!.instructionSet, plhArray, []);
+  rJSON.condition = reverseParseInstructionSet(ruleS!.instructionSet, plhArray, []);
   rJSON.callingFunction = functionString;
-  rJSON.encodedValues = encodedValues;
+
+  const effectPlhArray = ruleS.effectPlaceHolders.map((placeholder) => reverseParsePlaceholder(
+    placeholder,
+    names,
+    foreignCalls,
+    trackers,
+    mappings
+  ));
+
+  rJSON.positiveEffects = ruleS.posEffects.map(effect => reverseParseEffect(effect, effectPlhArray));
+  rJSON.negativeEffects = ruleS.negEffects.map(effect => reverseParseEffect(effect, effectPlhArray));
+
   return rJSON;
 }
 
@@ -426,7 +512,8 @@ export function convertRuleStructToString(
  * @param foreignCalls - An array of foreign call objects or `null`. Each object should contain
  *                       details such as `function`, `returnType`, `parameterTypes`, and `foreignCallAddress`.
  * @param functionMappings - An array of mappings that associate a `hex` signature with
- *                                    a human-readable `functionSignature`.
+ *                           a human-readable `functionSignature`.
+ * @param names - An array of names corresponding to each foreign call, used for formatting the output.
  *
  * The function processes each foreign call by:
  * - Matching its `signature` with the corresponding `functionSignature` from the mappings.
@@ -443,42 +530,28 @@ export function convertRuleStructToString(
  * ```
  */
 export function convertForeignCallStructsToStrings(
-  callStrings: string[],
-  foreignCalls: ForeignCallOnChain[],
-  functionMappings: hexToFunctionString[],
-  names: string[]
-): void {
-  var fcIter = 1;
-  var iter = 0;
-  if (foreignCalls != null) {
-    for (var call of foreignCalls) {
-      var functionString = "";
-      for (var mapping of functionMappings) {
-        if (mapping.hex == call.signature) {
-          functionString = mapping.functionString;
-        }
-      }
-      var returnTypeString = "";
+  foreignCallsOnChain: ForeignCallOnChain[],
+  callingFunctionMappings: hexToFunctionString[]
+): ForeignCallJSONReversed[] {
+  const foreignCalls: ForeignCallJSONReversed[] = foreignCallsOnChain.map((call, iter) => {
+    const functionMeta = callingFunctionMappings.find(mapping => mapping.hex === call.signature);
 
-      for (var parameterType of PT) {
-        if (call.returnType == parameterType.enumeration) {
-          returnTypeString = parameterType.name;
-        }
-      }
-      var outputString = "";
-      outputString += names[iter];
-      outputString += " --> ";
-      outputString += call.foreignCallAddress;
-      outputString += " --> ";
-      outputString += functionString;
-      outputString += " --> ";
-      outputString += returnTypeString;
+    const returnTypeString = PT.find(pType => pType.enumeration == call.returnType)?.name;
 
-      callStrings.push(outputString);
-      fcIter += 1;
-      iter += 1;
-    }
-  }
+    const inputs = {
+      "name": functionMeta?.functionString || "",
+      "address": call.foreignCallAddress as Address,
+      "function": call.signature,
+      "returnType": returnTypeString || "",
+      "valuesToPass": functionMeta?.encodedValues || "",
+      "mappedTrackerKeyValues": "",
+      "callingFunction": "",
+    };
+
+    return inputs
+  });
+
+  return foreignCalls;
 }
 
 /**
@@ -486,33 +559,82 @@ export function convertForeignCallStructsToStrings(
  *
  * @param trackers - An array of tracker structures.
  * @param trackerStrings - An array to store the resulting strings.
+ * @param trackerNames - An array of names corresponding to each tracker, used for formatting the output.
  */
 export function convertTrackerStructsToStrings(
   trackers: TrackerOnChain[],
   trackerNames: string[]
-): string[] {
-  const trackerStrings: string[] = [];
-  if (trackers != null) {
-    var iter = 0;
-    for (var tracker of trackers) {
-      var trackerType = "";
-      for (var parameterType of PT) {
-        if (tracker.pType == parameterType.enumeration) {
-          trackerType = parameterType.name;
-        }
-      }
+): { Trackers: TrackerJSON[], MappedTrackers: MappedTrackerJSON[] } {
+  const Trackers = trackers
+    .filter(tracker => !tracker.mapped)
+    .map((tracker, iter) => {
+      const trackerType = PT.find(pt => pt.enumeration === tracker.pType)?.name || "";
 
-      var outputString = "";
-      outputString += trackerNames[iter];
-      outputString += " --> ";
-      outputString += trackerType;
-      outputString += " --> ";
-      outputString += tracker.trackerValue;
-      trackerStrings.push(outputString);
-      iter += 1;
+      const inputs = {
+        "name": trackerNames[iter],
+        "type": trackerType,
+        "initialValue": ""
+      };
+      const validatedInputs = validateTrackerJSON(JSON.stringify(inputs));
+      if (isRight(validatedInputs)) {
+        return unwrapEither(validatedInputs);
+      } else {
+        throw new Error(
+          `Invalid tracker input: ${JSON.stringify(validatedInputs.left)}`
+        );
+      }
+    });
+
+  const MappedTrackers = trackers
+    .filter(tracker => tracker.mapped)
+    .map((tracker, iter) => {
+      const valueType = PT.find(pt => pt.enumeration === tracker.pType)?.name || "";
+      const keyType = PT.find(pt => pt.enumeration === tracker.trackerKeyType)?.name || "";
+
+      const inputs = {
+        "name": trackerNames[iter],
+        valueType,
+        keyType,
+        initialKeys: [],
+        initialValues: []
+      };
+      const validatedInputs = validateMappedTrackerJSON(JSON.stringify(inputs));
+      if (isRight(validatedInputs)) {
+        return unwrapEither(validatedInputs);
+      } else {
+        throw new Error(
+          `Invalid mapped tracker input: ${JSON.stringify(validatedInputs.left)}`
+        );
+      }
+    });
+  return {
+    Trackers,
+    MappedTrackers
+  };
+}
+
+/**
+ * Converts tracker structures into human-readable strings.
+ *
+ * @param trackers - An array of tracker structures.
+ * @param trackerStrings - An array to store the resulting strings.
+ * @param trackerNames - An array of names corresponding to each tracker, used for formatting the output.
+ */
+export function convertCallingFunctionToStrings(
+  callingFunctions: CallingFunctionHashMapping[]
+): CallingFunctionJSON[] {
+  const callingFunctionJsons: CallingFunctionJSON[] = callingFunctions.map(callingFunction => {
+
+    const validatedInputs = validateCallingFunctionJSON(JSON.stringify(callingFunction));
+    if (isRight(validatedInputs)) {
+      return unwrapEither(validatedInputs);
+    } else {
+      throw new Error(
+        `Invalid calling function input: ${JSON.stringify(validatedInputs.left)}`
+      );
     }
-  }
-  return trackerStrings;
+  });
+  return callingFunctionJsons;
 }
 
 /**

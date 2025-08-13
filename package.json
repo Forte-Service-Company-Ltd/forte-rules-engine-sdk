@@ -1,53 +1,71 @@
 {
-  "author": "Thrackle",
-  "homepage": "https://github.com/thrackle-io/forte-rules-engine-sdk#readme",
-  "name": "@thrackle-io/forte-rules-engine-sdk",
+  "author": "Forte",
+  "homepage": "https://github.com/Forte-Service-Company-Ltd/forte-rules-engine-sdk#readme",
+  "name": "@fortefoundation/forte-rules-engine-sdk",
   "license": "BSL 1.1",
   "keywords": [
-    "rules",
     "sdk",
-    "thrackle"
+    "evm",
+    "solidity",
+    "ethereum",
+    "smart contracts",
+    "forte",
+    "rules engine"
   ],
   "bugs": {
-    "url": "https://github.com/thrackle-io/forte-rules-engine-sdk/issues"
+    "url": "https://github.com/Forte-Service-Company-Ltd/forte-rules-engine-sdk/issues"
   },
-  "version": "0.0.4-rc.1",
+  "version": "0.3.1",
   "description": "",
-  "main": "index.js",
-  "types": "dist/index.d.ts",
+  "type": "module",
+  "main": "./dist/cjs/index.js",
+  "module": "./dist/esm/index.js",
+  "types": "./dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js",
+      "types": "./dist/types/index.d.ts"
+    }
+  },
   "scripts": {
-    "build": "tsc",
-    "generate": "ts-node src/codeGeneration/codeModificationScript.ts",
+    "build": "npm run build:cjs && npm run build:esm && npm run build:types",
+    "build:cjs": "tsc -p tsconfig.cjs.json",
+    "build:esm": "tsc -p tsconfig.esm.json",
+    "build:types": "tsc -p tsconfig.types.json",
+    "generate": "tsx script/generate-policy-modifiers.ts",
     "test": "vitest"
   },
   "dependencies": {
+    "@fortefoundation/forte-rules-engine": "^0.3.2",
     "@wagmi/connectors": "^5.7.13",
     "@wagmi/core": "^2.17.0",
     "diff": "^7.0.0",
     "uuid": "^11.1.0",
-    "vitest": "^3.1.2"
+    "vitest": "^3.1.2",
+    "zod": "^3.25.63"
   },
   "devDependencies": {
     "@types/diff": "^7.0.2",
-    "@types/node": "^22.15.17",
-    "typedoc": "^0.26.5",
+    "@types/node": "^24.2.1",
+    "tsx": "^4.20.3",
+    "typedoc": "^0.28.0",
     "typedoc-plugin-frontmatter": "1.3.0",
-    "typedoc-plugin-markdown": "4.2.3",
+    "typedoc-plugin-markdown": "4.5.0",
     "typescript": "^5.6.3",
-    "viem": "^2.28.0"
+    "viem": "^2.33.3"
   },
   "files": [
     "README.md",
     "LICENSE",
     "package.json",
     "config.ts",
-    "tsconfig.json",
-    "index.js",
+    "tsconfig*.json",
     "src",
     "dist"
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/thrackle-io/forte-rules-engine-sdk.git"
+    "url": "git+https://github.com/Forte-Service-Company-Ltd/forte-rules-engine-sdk.git"
   }
 }
