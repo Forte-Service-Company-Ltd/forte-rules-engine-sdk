@@ -595,6 +595,26 @@ export function convertForeignCallStructsToStrings(
   return foreignCalls;
 }
 
+function retrieveDecoded(type: number, key: string): string {
+  if (type == 0) {
+    return decodeAbiParameters(
+      parseAbiParameters("address"),
+      key as `0x${string}`
+    )[0].toLowerCase();
+  } else if (type == 1) {
+    return decodeAbiParameters(
+      parseAbiParameters("string"),
+      key as `0x${string}`
+    )[0];
+  } else if (type == 2) {
+    return String(Number(key));
+  } else if (type == 3) {
+    return Number(key) == 0 ? "false" : "true";
+  } else {
+    return key;
+  }
+}
+
 /**
  * Converts tracker structures into human-readable strings.
  *
@@ -613,22 +633,10 @@ export function convertTrackerStructsToStrings(
       const trackerType =
         PT.find((pt) => pt.enumeration === tracker.pType)?.name || "";
 
-      var initialValue = "";
-      if (tracker.pType == 0) {
-        initialValue = decodeAbiParameters(
-          parseAbiParameters("address"),
-          trackerNames[iter].initialValue as `0x${string}`
-        )[0].toLowerCase();
-      } else if (tracker.pType == 1) {
-        initialValue = decodeAbiParameters(
-          parseAbiParameters("string"),
-          trackerNames[iter].initialValue as `0x${string}`
-        )[0];
-      } else if (tracker.pType == 2) {
-        initialValue = String(Number(trackerNames[iter].initialValue));
-      } else {
-        initialValue = trackerNames[iter].initialValue;
-      }
+      var initialValue = retrieveDecoded(
+        tracker.pType,
+        trackerNames[iter].initialValue
+      );
 
       const inputs = {
         name: trackerNames[iter].trackerName,
@@ -655,44 +663,14 @@ export function convertTrackerStructsToStrings(
       var keys = [];
 
       for (var key of mappedTrackerNames[iter].initialKeys) {
-        var decodedKey = "";
-        if (tracker.trackerKeyType == 0) {
-          decodedKey = decodeAbiParameters(
-            parseAbiParameters("address"),
-            key as `0x${string}`
-          )[0].toLowerCase();
-        } else if (tracker.trackerKeyType == 1) {
-          decodedKey = decodeAbiParameters(
-            parseAbiParameters("string"),
-            key as `0x${string}`
-          )[0];
-        } else if (tracker.trackerKeyType == 2) {
-          decodedKey = String(Number(key));
-        } else {
-          decodedKey = key;
-        }
+        var decodedKey = retrieveDecoded(tracker.trackerKeyType, key);
 
         keys.push(decodedKey);
       }
 
       var values = [];
       for (var key of mappedTrackerNames[iter].initialValues) {
-        var decodedValue = "";
-        if (tracker.pType == 0) {
-          decodedValue = decodeAbiParameters(
-            parseAbiParameters("address"),
-            key as `0x${string}`
-          )[0].toLowerCase();
-        } else if (tracker.pType == 1) {
-          decodedValue = decodeAbiParameters(
-            parseAbiParameters("string"),
-            key as `0x${string}`
-          )[0];
-        } else if (tracker.pType == 2) {
-          decodedValue = String(Number(key));
-        } else {
-          decodedValue = key;
-        }
+        var decodedValue = retrieveDecoded(tracker.pType, key);
         values.push(decodedValue);
         console.log(decodedValue);
       }
