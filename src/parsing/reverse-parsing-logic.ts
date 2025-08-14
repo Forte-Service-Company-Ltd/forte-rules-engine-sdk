@@ -565,7 +565,6 @@ export function convertForeignCallStructsToStrings(
   foreignCallsOnChain: ForeignCallOnChain[],
   callingFunctionMappings: hexToFunctionString[]
 ): ForeignCallJSONReversed[] {
-  console.log("HEX TO STRING!", callingFunctionMappings);
   const foreignCalls: ForeignCallJSONReversed[] = foreignCallsOnChain.map(
     (call, iter) => {
       const functionMeta = callingFunctionMappings.find(
@@ -631,12 +630,9 @@ export function convertTrackerStructsToStrings(
         initialValue = trackerNames[iter].initialValue;
       }
 
-      console.log("INITIAL", initialValue);
-
       const inputs = {
         name: trackerNames[iter].trackerName,
         type: trackerType,
-        // TODO: Update to cover more than just uint256
         initialValue: initialValue,
       };
       const validatedInputs = validateTrackerJSON(JSON.stringify(inputs));
@@ -648,12 +644,9 @@ export function convertTrackerStructsToStrings(
         );
       }
     });
-  console.log("tracker names m", mappedTrackerNames);
   const MappedTrackers = trackers
     .filter((tracker) => tracker.mapped)
     .map((tracker, iter) => {
-      console.log("MAPPED. T", tracker);
-      console.log(iter);
       const valueType =
         PT.find((pt) => pt.enumeration === tracker.pType)?.name || "";
       const keyType =
@@ -680,7 +673,6 @@ export function convertTrackerStructsToStrings(
         }
 
         keys.push(decodedKey);
-        console.log(decodedKey);
       }
 
       var values = [];

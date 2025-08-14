@@ -1065,7 +1065,7 @@ describe("Rules Engine Interactions", async () => {
                      "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
                      "function": "ATestForeignCall(address,uint256)",
                      "returnType": "uint256",
-                     "valuesToPass": "to, FC:AnotherTestForeignCall",
+                     "valuesToPass": "FC:AnotherTestForeignCall, TR:trackerOne",
                      "mappedTrackerKeyValues": "",
                      "callingFunction": "transfer(address to, uint256 value)"
                  }
@@ -1074,8 +1074,8 @@ describe("Rules Engine Interactions", async () => {
                "Trackers": [
                {
                 "name": "trackerOne",
-                "type": "string",
-                "initialValue": "Test"
+                "type": "uint256",
+                "initialValue": "123"
                 }],
                "MappedTrackers": [
                    {
@@ -1138,7 +1138,8 @@ describe("Rules Engine Interactions", async () => {
     input.ForeignCalls[0].valuesToPass = "to";
     input.ForeignCalls[0].callingFunction =
       "transfer(address to, uint256 value)";
-    input.ForeignCalls[1].valuesToPass = "to, FC:AnotherTestForeignCall";
+    input.ForeignCalls[1].valuesToPass =
+      "FC:AnotherTestForeignCall, TR:trackerOne";
     input.ForeignCalls[1].callingFunction =
       "transfer(address to, uint256 value)";
     input.Rules[0].negativeEffects = [
@@ -1151,55 +1152,53 @@ describe("Rules Engine Interactions", async () => {
       "TRU:mappedTrackerOne(to) += 1",
     ];
 
-    console.log(input);
-
     expect(parsed.Policy).toEqual(input.Policy);
     expect(retVal).toEqual(JSON.stringify(input, null, 2));
   });
 
   test("Can retrieve policy metadata", async () => {
     var policyJSON = `
-              {
-              "Policy": "Test Policy",
-              "Description": "Test Policy Description",
-              "PolicyType": "open",
-              "CallingFunctions": [
                 {
-                  "name": "transfer(address to, uint256 value)",
-                  "functionSignature": "transfer(address to, uint256 value)",
-                  "encodedValues": "address to, uint256 value"
+                "Policy": "Test Policy",
+                "Description": "Test Policy Description",
+                "PolicyType": "open",
+                "CallingFunctions": [
+                  {
+                    "name": "transfer(address to, uint256 value)",
+                    "functionSignature": "transfer(address to, uint256 value)",
+                    "encodedValues": "address to, uint256 value"
+                  }
+                ],
+                "ForeignCalls": [
+                    {
+                        "name": "testSig(address)",
+                        "function": "testSig(address)",
+                        "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                        "returnType": "uint256",
+                        "valuesToPass": "to",
+                        "mappedTrackerKeyValues": "",
+                        "callingFunction": "transfer(address to, uint256 value)"
+                    }
+                ],
+                "Trackers": [
+                {
+                    "name": "testTracker",
+                    "type": "string",
+                    "initialValue": "test"
                 }
-              ],
-              "ForeignCalls": [
-                  {
-                      "name": "testSig(address)",
-                      "function": "testSig(address)",
-                      "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                      "returnType": "uint256",
-                      "valuesToPass": "to",
-                      "mappedTrackerKeyValues": "",
-                      "callingFunction": "transfer(address to, uint256 value)"
-                  }
-              ],
-              "Trackers": [
-              {
-                  "name": "testTracker",
-                  "type": "string",
-                  "initialValue": "test"
-              }
-              ],
-              "MappedTrackers": [],
-              "Rules": [
-                  {
-                      "Name": "Rule A",
-                      "Description": "Rule A Description",
-                      "condition": "TR:testTracker > 500",
-                      "positiveEffects": ["emit Success"],
-                      "negativeEffects": ["revert()"],
-                      "callingFunction": "transfer(address to, uint256 value)"
-                  }
-              ]
-              }`;
+                ],
+                "MappedTrackers": [],
+                "Rules": [
+                    {
+                        "Name": "Rule A",
+                        "Description": "Rule A Description",
+                        "condition": "TR:testTracker > 500",
+                        "positiveEffects": ["emit Success"],
+                        "negativeEffects": ["revert()"],
+                        "callingFunction": "transfer(address to, uint256 value)"
+                    }
+                ]
+                }`;
 
     var result = await createPolicy(
       config,
@@ -1221,55 +1220,55 @@ describe("Rules Engine Interactions", async () => {
   });
   test("Can check if a policy exists", async () => {
     var policyJSON = `
-          {
-          "Policy": "Test Policy",
-          "Description": "Test Policy Description",
-          "PolicyType": "open",
-          "CallingFunctions": [
             {
-              "name": "transfer(address to, uint256 value)",
-              "functionSignature": "transfer(address to, uint256 value)",
-              "encodedValues": "address to, uint256 value"
-            }
-          ],
-          "ForeignCalls": [
-          {
-                  "name": "testSigTwo(uint256)",
-                  "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                  "function": "testSigTwo(uint256)",
-                  "returnType": "uint256",
-                  "valuesToPass": "TR:mTrackerOne",
-                  "mappedTrackerKeyValues": "to",
-                  "callingFunction": "transfer(address to, uint256 value)"
-          },{
-                  "name": "testSig(address)",
-                  "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                  "function": "testSig(uint256)",
-                  "returnType": "uint256",
-                  "valuesToPass": "FC:testSigTwo",
-                  "mappedTrackerKeyValues": "",
-                  "callingFunction": "transfer(address to, uint256 value)"
-              }
-          ],
-          "Trackers": [
-          {
-              "name": "Simple String Tracker",
-              "type": "string",
-              "initialValue": "test"
-          }
-          ],
-          "MappedTrackers": [],
-          "Rules": [
+            "Policy": "Test Policy",
+            "Description": "Test Policy Description",
+            "PolicyType": "open",
+            "CallingFunctions": [
               {
-                  "Name": "Rule A",
-                  "Description": "Rule A Description",
-                  "condition": "value > 500",
-                  "positiveEffects": ["emit Success"],
-                  "negativeEffects": ["revert()"],
-                  "callingFunction": "transfer(address to, uint256 value)"
+                "name": "transfer(address to, uint256 value)",
+                "functionSignature": "transfer(address to, uint256 value)",
+                "encodedValues": "address to, uint256 value"
               }
-              ]
-              }`;
+            ],
+            "ForeignCalls": [
+            {
+                    "name": "testSigTwo(uint256)",
+                    "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                    "function": "testSigTwo(uint256)",
+                    "returnType": "uint256",
+                    "valuesToPass": "TR:mTrackerOne",
+                    "mappedTrackerKeyValues": "to",
+                    "callingFunction": "transfer(address to, uint256 value)"
+            },{
+                    "name": "testSig(address)",
+                    "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                    "function": "testSig(uint256)",
+                    "returnType": "uint256",
+                    "valuesToPass": "FC:testSigTwo",
+                    "mappedTrackerKeyValues": "",
+                    "callingFunction": "transfer(address to, uint256 value)"
+                }
+            ],
+            "Trackers": [
+            {
+                "name": "Simple String Tracker",
+                "type": "string",
+                "initialValue": "test"
+            }
+            ],
+            "MappedTrackers": [],
+            "Rules": [
+                {
+                    "Name": "Rule A",
+                    "Description": "Rule A Description",
+                    "condition": "value > 500",
+                    "positiveEffects": ["emit Success"],
+                    "negativeEffects": ["revert()"],
+                    "callingFunction": "transfer(address to, uint256 value)"
+                }
+                ]
+                }`;
     var result = await createPolicy(
       config,
       getRulesEnginePolicyContract(rulesEngineContract, client),
@@ -1290,47 +1289,47 @@ describe("Rules Engine Interactions", async () => {
     "Can delete a full policy",
     async () => {
       var policyJSON = `
-              {
-              "Policy": "Test Policy",
-              "Description": "Test Policy Description",
-              "PolicyType": "open",
-              "CallingFunctions": [
                 {
-                  "name": "transfer(address to, uint256 value)",
-                  "functionSignature": "transfer(address to, uint256 value)",
-                  "encodedValues": "address to, uint256 value"
+                "Policy": "Test Policy",
+                "Description": "Test Policy Description",
+                "PolicyType": "open",
+                "CallingFunctions": [
+                  {
+                    "name": "transfer(address to, uint256 value)",
+                    "functionSignature": "transfer(address to, uint256 value)",
+                    "encodedValues": "address to, uint256 value"
+                  }
+                ],
+                "ForeignCalls": [
+                    {
+                        "name": "Simple Foreign Call",
+                        "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                        "function": "testSig(address)",
+                        "returnType": "uint256",
+                        "valuesToPass": "to",
+                        "mappedTrackerKeyValues": "",
+                        "callingFunction": "transfer(address to, uint256 value)"
+                    }
+                ],
+                "Trackers": [
+                {
+                    "name": "Simple String Tracker",
+                    "type": "string",
+                    "initialValue": "test"
                 }
-              ],
-              "ForeignCalls": [
-                  {
-                      "name": "Simple Foreign Call",
-                      "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                      "function": "testSig(address)",
-                      "returnType": "uint256",
-                      "valuesToPass": "to",
-                      "mappedTrackerKeyValues": "",
-                      "callingFunction": "transfer(address to, uint256 value)"
-                  }
-              ],
-              "Trackers": [
-              {
-                  "name": "Simple String Tracker",
-                  "type": "string",
-                  "initialValue": "test"
-              }
-              ],
-              "MappedTrackers": [],
-              "Rules": [
-                  {
-                      "Name": "Rule A",
-                      "Description": "Rule A Description",
-                      "condition": "value > 500",
-                      "positiveEffects": ["emit Success"],
-                      "negativeEffects": ["revert()"],
-                      "callingFunction": "transfer(address to, uint256 value)"
-                  }
-              ]
-              }`;
+                ],
+                "MappedTrackers": [],
+                "Rules": [
+                    {
+                        "Name": "Rule A",
+                        "Description": "Rule A Description",
+                        "condition": "value > 500",
+                        "positiveEffects": ["emit Success"],
+                        "negativeEffects": ["revert()"],
+                        "callingFunction": "transfer(address to, uint256 value)"
+                    }
+                ]
+                }`;
       var result = await createPolicy(
         config,
         getRulesEnginePolicyContract(rulesEngineContract, client),
@@ -1376,47 +1375,47 @@ describe("Rules Engine Interactions", async () => {
   );
   test("Can check if address is admin", async () => {
     var policyJSON = `
-          {
-          "Policy": "Test Policy",
-          "Description": "Test Policy Description",
-          "PolicyType": "open",
-          "CallingFunctions": [
-              {
-                "name": "transfer(address to, uint256 value)",
-                "functionSignature": "transfer(address to, uint256 value)",
-                "encodedValues": "address to, uint256 value"
-              }
-          ],
-          "ForeignCalls": [
-              {
-                  "name": "Simple Foreign Call",
-                  "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                  "function": "testSig(address)",
-                  "returnType": "uint256",
-                  "valuesToPass": "to",
-                  "mappedTrackerKeyValues": "",
-                  "callingFunction": "transfer(address to, uint256 value)"
-              }
-          ],
-          "Trackers": [
-          {
-              "name": "Simple String Tracker",
-              "type": "string",
-              "initialValue": "test"
-          }
-          ],
-          "MappedTrackers": [],
-          "Rules": [
-              {
-                  "Name": "Rule A",
-                  "Description": "Rule A Description",
-                  "condition": "value > 500",
-                  "positiveEffects": ["emit Success"],
-                  "negativeEffects": ["revert()"],
-                  "callingFunction": "transfer(address to, uint256 value)"
-              }
-              ]
-              }`;
+            {
+            "Policy": "Test Policy",
+            "Description": "Test Policy Description",
+            "PolicyType": "open",
+            "CallingFunctions": [
+                {
+                  "name": "transfer(address to, uint256 value)",
+                  "functionSignature": "transfer(address to, uint256 value)",
+                  "encodedValues": "address to, uint256 value"
+                }
+            ],
+            "ForeignCalls": [
+                {
+                    "name": "Simple Foreign Call",
+                    "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                    "function": "testSig(address)",
+                    "returnType": "uint256",
+                    "valuesToPass": "to",
+                    "mappedTrackerKeyValues": "",
+                    "callingFunction": "transfer(address to, uint256 value)"
+                }
+            ],
+            "Trackers": [
+            {
+                "name": "Simple String Tracker",
+                "type": "string",
+                "initialValue": "test"
+            }
+            ],
+            "MappedTrackers": [],
+            "Rules": [
+                {
+                    "Name": "Rule A",
+                    "Description": "Rule A Description",
+                    "condition": "value > 500",
+                    "positiveEffects": ["emit Success"],
+                    "negativeEffects": ["revert()"],
+                    "callingFunction": "transfer(address to, uint256 value)"
+                }
+                ]
+                }`;
     var result = await createPolicy(
       config,
       getRulesEnginePolicyContract(rulesEngineContract, client),
@@ -1436,47 +1435,47 @@ describe("Rules Engine Interactions", async () => {
   });
   test("Can update a policies admin", options, async () => {
     var policyJSON = `
-          {
-          "Policy": "Test Policy",
-          "Description": "Test Policy Description",
-          "PolicyType": "open",
-          "CallingFunctions": [
-              {
-                "name": "transfer(address to, uint256 value)",
-                "functionSignature": "transfer(address to, uint256 value)",
-                "encodedValues": "address to, uint256 value"
-              }
-          ],
-          "ForeignCalls": [
-              {
-                  "name": "Simple Foreign Call",
-                  "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                  "function": "testSig(address)",
-                  "returnType": "uint256",
-                  "valuesToPass": "to",
-                  "mappedTrackerKeyValues": "",
-                  "callingFunction": "transfer(address to, uint256 value)"
-              }
-          ],
-          "Trackers": [
-          {
-              "name": "Simple String Tracker",
-              "type": "string",
-              "initialValue": "test"
-          }
-          ],
-          "MappedTrackers": [],
-          "Rules": [
-              {
-                  "Name": "Rule A",
-                  "Description": "Rule A Description",
-                  "condition": "value > 500",
-                  "positiveEffects": ["emit Success"],
-                  "negativeEffects": ["revert()"],
-                  "callingFunction": "transfer(address to, uint256 value)"
-              }
-              ]
-              }`;
+            {
+            "Policy": "Test Policy",
+            "Description": "Test Policy Description",
+            "PolicyType": "open",
+            "CallingFunctions": [
+                {
+                  "name": "transfer(address to, uint256 value)",
+                  "functionSignature": "transfer(address to, uint256 value)",
+                  "encodedValues": "address to, uint256 value"
+                }
+            ],
+            "ForeignCalls": [
+                {
+                    "name": "Simple Foreign Call",
+                    "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                    "function": "testSig(address)",
+                    "returnType": "uint256",
+                    "valuesToPass": "to",
+                    "mappedTrackerKeyValues": "",
+                    "callingFunction": "transfer(address to, uint256 value)"
+                }
+            ],
+            "Trackers": [
+            {
+                "name": "Simple String Tracker",
+                "type": "string",
+                "initialValue": "test"
+            }
+            ],
+            "MappedTrackers": [],
+            "Rules": [
+                {
+                    "Name": "Rule A",
+                    "Description": "Rule A Description",
+                    "condition": "value > 500",
+                    "positiveEffects": ["emit Success"],
+                    "negativeEffects": ["revert()"],
+                    "callingFunction": "transfer(address to, uint256 value)"
+                }
+                ]
+                }`;
     var result = await createPolicy(
       config,
       getRulesEnginePolicyContract(rulesEngineContract, client),
@@ -1511,47 +1510,47 @@ describe("Rules Engine Interactions", async () => {
   });
   test("Can cement a policy", options, async () => {
     var policyJSON = `
-        {
-        "Policy": "Test Policy",
-        "Description": "Test Policy Description",
-        "PolicyType": "open",
-        "CallingFunctions": [
           {
-            "name": "transfer(address to, uint256 value)",
-            "functionSignature": "transfer(address to, uint256 value)",
-            "encodedValues": "address to, uint256 value"
+          "Policy": "Test Policy",
+          "Description": "Test Policy Description",
+          "PolicyType": "open",
+          "CallingFunctions": [
+            {
+              "name": "transfer(address to, uint256 value)",
+              "functionSignature": "transfer(address to, uint256 value)",
+              "encodedValues": "address to, uint256 value"
+            }
+          ],
+          "ForeignCalls": [
+              {
+                  "name": "Simple Foreign Call",
+                  "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                  "function": "testSig(address)",
+                  "returnType": "uint256",
+                  "valuesToPass": "to",
+                  "mappedTrackerKeyValues": "",
+                  "callingFunction": "transfer(address to, uint256 value)"
+              }
+          ],
+          "Trackers": [
+          {
+              "name": "Simple String Tracker",
+              "type": "string",
+              "initialValue": "test"
           }
-        ],
-        "ForeignCalls": [
-            {
-                "name": "Simple Foreign Call",
-                "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                "function": "testSig(address)",
-                "returnType": "uint256",
-                "valuesToPass": "to",
-                "mappedTrackerKeyValues": "",
-                "callingFunction": "transfer(address to, uint256 value)"
-            }
-        ],
-        "Trackers": [
-        {
-            "name": "Simple String Tracker",
-            "type": "string",
-            "initialValue": "test"
-        }
-        ],
-        "MappedTrackers": [],
-        "Rules": [
-            {
-                "Name": "Rule A",
-                "Description": "Rule A Description",
-                "condition": "value > 500",
-                "positiveEffects": ["emit Success"],
-                "negativeEffects": ["revert()"],
-                "callingFunction": "transfer(address to, uint256 value)"
-            }
-            ]
-            }`;
+          ],
+          "MappedTrackers": [],
+          "Rules": [
+              {
+                  "Name": "Rule A",
+                  "Description": "Rule A Description",
+                  "condition": "value > 500",
+                  "positiveEffects": ["emit Success"],
+                  "negativeEffects": ["revert()"],
+                  "callingFunction": "transfer(address to, uint256 value)"
+              }
+              ]
+              }`;
     var result = await createPolicy(
       config,
       getRulesEnginePolicyContract(rulesEngineContract, client),
@@ -1593,47 +1592,47 @@ describe("Rules Engine Interactions", async () => {
     options,
     async () => {
       var policyJSON = `
-        {
-        "Policy": "Test Policy",
-        "Description": "Test Policy Description",
-        "PolicyType": "open",
-        "CallingFunctions": [
-            {
-              "name": "transfer(address to, uint256 value)",
-              "functionSignature": "transfer(address to, uint256 value)",
-              "encodedValues": "address to, uint256 value"
-            }
-        ],
-        "ForeignCalls": [
-            {
-                "name": "Simple Foreign Call",
-                "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                "function": "testSig(address)",
-                "returnType": "uint256",
-                "valuesToPass": "to",
-                "mappedTrackerKeyValues": "",
-                "callingFunction": "transfer(address to, uint256 value)"
-            }
-        ],
-        "Trackers": [
-        {
-            "name": "Simple String Tracker",
-            "type": "string",
-            "initialValue": "test"
-        }
-        ],
-        "MappedTrackers": [],
-        "Rules": [
-            {
-                "Name": "Rule A",
-                "Description": "Rule A Description",
-                "condition": "value > 500",
-                "positiveEffects": ["emit Success"],
-                "negativeEffects": ["revert()"],
-                "callingFunction": "transfer(address to, uint256 value)"
-            }
-            ]
-            }`;
+          {
+          "Policy": "Test Policy",
+          "Description": "Test Policy Description",
+          "PolicyType": "open",
+          "CallingFunctions": [
+              {
+                "name": "transfer(address to, uint256 value)",
+                "functionSignature": "transfer(address to, uint256 value)",
+                "encodedValues": "address to, uint256 value"
+              }
+          ],
+          "ForeignCalls": [
+              {
+                  "name": "Simple Foreign Call",
+                  "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                  "function": "testSig(address)",
+                  "returnType": "uint256",
+                  "valuesToPass": "to",
+                  "mappedTrackerKeyValues": "",
+                  "callingFunction": "transfer(address to, uint256 value)"
+              }
+          ],
+          "Trackers": [
+          {
+              "name": "Simple String Tracker",
+              "type": "string",
+              "initialValue": "test"
+          }
+          ],
+          "MappedTrackers": [],
+          "Rules": [
+              {
+                  "Name": "Rule A",
+                  "Description": "Rule A Description",
+                  "condition": "value > 500",
+                  "positiveEffects": ["emit Success"],
+                  "negativeEffects": ["revert()"],
+                  "callingFunction": "transfer(address to, uint256 value)"
+              }
+              ]
+              }`;
       var result = await createPolicy(
         config,
         getRulesEnginePolicyContract(rulesEngineContract, client),
