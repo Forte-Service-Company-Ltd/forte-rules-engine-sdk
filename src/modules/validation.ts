@@ -64,7 +64,7 @@ export const ruleValidator = z.object({
   negativeEffects: z.array(z.string()),
   callingFunction: z.string(),
 });
-export interface RuleJSON extends z.infer<typeof ruleValidator> { }
+export interface RuleJSON extends z.infer<typeof ruleValidator> {}
 
 /**
  * Parses a JSON string and returns Either a RuleJSON object or an error.
@@ -130,7 +130,7 @@ export const foreignCallValidator = z.object({
   callingFunction: z.string().trim(),
 });
 
-export interface ForeignCallJSON extends z.infer<typeof foreignCallValidator> { }
+export interface ForeignCallJSON extends z.infer<typeof foreignCallValidator> {}
 
 /**
  * Parses a JSON string and returns Either a ForeignCallJSON object or an error.
@@ -160,12 +160,11 @@ export const validateForeignCallJSON = (
 };
 
 export const foreignCallReverseValidator = foreignCallValidator.extend({
-  function: z
-    .string()
-    .trim()
+  function: z.string().trim(),
 });
 
-export interface ForeignCallJSONReversed extends z.infer<typeof foreignCallValidator> { }
+export interface ForeignCallJSONReversed
+  extends z.infer<typeof foreignCallValidator> {}
 
 export const supportedTrackerTypes: string[] = [
   "uint256",
@@ -212,10 +211,10 @@ export const trackerValidator = z
     message: "Initial Value doesn't match type",
   });
 
-export interface TrackerJSON extends z.infer<typeof trackerValidator> { }
+export interface TrackerJSON extends z.infer<typeof trackerValidator> {}
 
 export interface MappedTrackerJSON
-  extends z.infer<typeof mappedTrackerValidator> { }
+  extends z.infer<typeof mappedTrackerValidator> {}
 
 const SupportedValues = [
   z.object({
@@ -318,7 +317,7 @@ export const callingFunctionValidator = z.object({
 });
 
 export interface CallingFunctionJSON
-  extends z.infer<typeof callingFunctionValidator> { }
+  extends z.infer<typeof callingFunctionValidator> {}
 
 /**
  * Parses a JSON string and returns Either a CallingFunctionJSON object or an error.
@@ -354,7 +353,7 @@ export const policyJSONValidator = z.object({
   MappedTrackers: z.array(mappedTrackerValidator),
   Rules: z.array(ruleValidator),
 });
-export interface PolicyJSON extends z.infer<typeof policyJSONValidator> { }
+export interface PolicyJSON extends z.infer<typeof policyJSONValidator> {}
 
 /**
  * Parses a JSON string and returns Either a PolicyJSON object or an error.

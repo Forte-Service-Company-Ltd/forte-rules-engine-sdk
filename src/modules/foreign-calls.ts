@@ -20,12 +20,14 @@ import {
   FCNameToID,
   RulesEnginePolicyContract,
   RulesEngineForeignCallContract,
+  TrackerMetadataStruct,
 } from "./types";
 import { getAllTrackers, getTrackerMetadata } from "./trackers";
 import { getCallingFunctionMetadata } from "./calling-functions";
 import { isLeft, unwrapEither } from "./utils";
 import {
   CallingFunctionJSON,
+  ForeignCallJSON,
   getRulesErrorMessages,
   validateForeignCallJSON,
 } from "./validation";
@@ -96,9 +98,9 @@ export const createForeignCall = async (
   );
   const trackerMetadata = await Promise.all(trackerMetadataCalls);
   const indexMapAdditions: FCNameToID[] = trackerMetadata.map(
-    (name: string, index: number) => {
+    (name: TrackerMetadataStruct, index: number) => {
       return {
-        name: name,
+        name: name.trackerName,
         id: trackers[index].trackerIndex,
         type: mappedArray[index] ? 1 : 0,
       };
@@ -124,7 +126,11 @@ export const createForeignCall = async (
   const foreignCallMetadata = await Promise.all(foreignCallMetadataCalls);
   const fcMapAdditions: FCNameToID[] = foreignCallMetadata.map(
     (name: string, index: number) => {
-      return { name: name, id: foreignCalls[index].foreignCallIndex, type: 0 };
+      return {
+        name: name.split("(")[0],
+        id: foreignCalls[index].foreignCallIndex,
+        type: 0,
+      };
     }
   );
   fcMap = [...fcMap, ...fcMapAdditions];
@@ -154,10 +160,9 @@ export const createForeignCall = async (
   if (isLeft(json)) {
     throw new Error(getRulesErrorMessages(unwrapEither(json)));
   }
-  const fcJSON = unwrapEither(json);
+  const fcJSON: ForeignCallJSON = unwrapEither(json);
   var iter = 1;
   var encodedValues: string[] = [];
-
   for (var mapp of callingFunctionMetadata) {
     if (mapp.callingFunction.trim() == fcJSON.callingFunction) {
       var builtJSON = {
@@ -185,6 +190,7 @@ export const createForeignCall = async (
     parameterTypes: foreignCall.parameterTypes,
     encodedIndices: foreignCall.encodedIndices,
     mappedTrackerKeyIndices: foreignCall.mappedTrackerKeyIndices,
+    callingFunctionIndex: iter,
   };
   var addFC;
   while (true) {
@@ -260,8 +266,12 @@ export const updateForeignCall = async (
   );
   const trackerMetadata = await Promise.all(trackerMetadataCalls);
   const indexMapAdditions: FCNameToID[] = trackerMetadata.map(
-    (name: string, index: number) => {
-      return { name: name, id: trackers[index].trackerIndex, type: 0 };
+    (name: TrackerMetadataStruct, index: number) => {
+      return {
+        name: name.trackerName,
+        id: trackers[index].trackerIndex,
+        type: 0,
+      };
     }
   );
   indexMap = [...indexMap, ...indexMapAdditions];
@@ -345,6 +355,7 @@ export const updateForeignCall = async (
     parameterTypes: foreignCall.parameterTypes,
     encodedIndices: foreignCall.encodedIndices,
     mappedTrackerKeyIndices: foreignCall.mappedTrackerKeyIndices,
+    callingFunctionIndex: iter,
   };
   var addFC;
 

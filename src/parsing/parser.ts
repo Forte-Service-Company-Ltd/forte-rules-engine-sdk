@@ -210,17 +210,17 @@ export function parseRuleSyntax(
   var raw = buildRawData(retVal, excludeArray);
   positiveEffectsFinal.forEach(
     (effect) =>
-    (effect.instructionSet = buildRawData(
-      effect.instructionSet,
-      excludeArray
-    ))
+      (effect.instructionSet = buildRawData(
+        effect.instructionSet,
+        excludeArray
+      ))
   );
   negativeEffectsFinal.forEach(
     (effect) =>
-    (effect.instructionSet = buildRawData(
-      effect.instructionSet,
-      excludeArray
-    ))
+      (effect.instructionSet = buildRawData(
+        effect.instructionSet,
+        excludeArray
+      ))
   );
   return {
     instructionSet: raw,
@@ -320,14 +320,9 @@ export function parseTrackerSyntax(syntax: TrackerJSON): TrackerDefinition {
       validatedAddress,
     ]);
   } else if (trackerType == "bytes") {
-    var interim = BigInt(
-      keccak256(
-        encodeAbiParameters(parseAbiParameters("bytes"), [
-          toHex(stringToBytes(String(syntax.initialValue))),
-        ])
-      )
-    );
-    trackerInitialValue = encodePacked(["uint256"], [BigInt(interim)]);
+    trackerInitialValue = encodeAbiParameters(parseAbiParameters("bytes"), [
+      toHex(stringToBytes(String(syntax.initialValue))),
+    ]);
   } else if (trackerType == "bool") {
     if (syntax.initialValue == "true") {
       trackerInitialValue = encodePacked(["uint256"], [1n]);
@@ -335,14 +330,10 @@ export function parseTrackerSyntax(syntax: TrackerJSON): TrackerDefinition {
       trackerInitialValue = encodePacked(["uint256"], [0n]);
     }
   } else {
-    var interim = BigInt(
-      keccak256(
-        encodeAbiParameters(parseAbiParameters("string"), [
-          syntax.initialValue as string,
-        ])
-      )
-    );
-    trackerInitialValue = encodePacked(["uint256"], [BigInt(interim)]);
+    trackerInitialValue = encodeAbiParameters(parseAbiParameters("string"), [
+      syntax.initialValue as string,
+    ]);
+    // trackerInitialValue = encodePacked(["uint256"], [BigInt(interim)]);
   }
   var trackerTypeEnum = 0;
   trackerTypeEnum = PT.find(pt => pt.name === trackerType)?.enumeration ?? 4;

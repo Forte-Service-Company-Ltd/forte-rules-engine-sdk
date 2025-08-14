@@ -152,7 +152,6 @@ export const createRule = async (
           policyId,
           id.id
         );
-
         for (var ind of fcChain!.encodedIndices) {
           if (ind.eType == 1) {
             var fcChainInternal = await getForeignCallMetadata(
@@ -169,7 +168,7 @@ export const createRule = async (
               policyId,
               ind.index
             );
-            fullFCList.push("TR:" + trackerInternal);
+            fullFCList.push("TR:" + trackerInternal.trackerName);
           }
         }
         fullFCList.push("FC:" + fcChainMeta);
@@ -219,7 +218,7 @@ export const createRule = async (
               policyId,
               ind.index
             );
-            fullFCListEff.push("TR:" + trackerInternal);
+            fullFCListEff.push("TR:" + trackerInternal.trackerName);
           }
         }
         fullFCListEff.push("FC:" + fcChainMeta);
@@ -370,7 +369,7 @@ export const updateRule = async (
               policyId,
               ind.index
             );
-            fullFCList.push("TR:" + trackerInternal);
+            fullFCList.push("TR:" + trackerInternal.trackerName);
           }
         }
         fullFCList.push("FC:" + fcChainMeta);
@@ -416,7 +415,7 @@ export const updateRule = async (
               policyId,
               ind.index
             );
-            fullFCListEff.push("TR:" + trackerInternal);
+            fullFCListEff.push("TR:" + trackerInternal.trackerName);
           }
         }
         fullFCListEff.push("FC:" + fcChainMeta);

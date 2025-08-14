@@ -16,6 +16,7 @@ import {
   toHex,
   encodeAbiParameters,
   parseAbiParameters,
+  decodeAbiParameters,
 } from "viem";
 import {
   parseRuleSyntax,
@@ -1072,12 +1073,15 @@ test("Creates a simple string tracker", () => {
       "type": "string",
         "initialValue": "test"
   } `;
+
   var retVal = parseTrackerSyntax(JSON.parse(str));
+  var decodedValue = decodeAbiParameters(
+    parseAbiParameters("string"),
+    retVal.initialValue as `0x${string}`
+  )[0];
   expect(retVal.name).toEqual("Simple String Tracker");
   expect(retVal.type).toEqual(pTypeEnum.STRING);
-  expect(retVal.initialValue).toEqual(
-    "0x05294e8f4a5ee627df181a607a6376b9d98fab962d53722cd6871cf8321cedf6"
-  );
+  expect(decodedValue).toEqual("test");
 });
 
 test("Creates a simple foreign call", () => {

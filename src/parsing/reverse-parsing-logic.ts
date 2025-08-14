@@ -1,6 +1,6 @@
 /// SPDX-License-Identifier: BUSL-1.1
 
-import { Address } from "viem";
+import { Address, decodeAbiParameters, parseAbiParameters } from "viem";
 import {
   stringReplacement,
   RuleStruct,
@@ -10,9 +10,22 @@ import {
   CallingFunctionHashMapping,
   FunctionArgument,
   RuleMetadataStruct,
-  ForeignCallOnChain
+  ForeignCallOnChain,
+  TrackerMetadataStruct,
 } from "../modules/types";
-import { CallingFunctionJSON, ForeignCallJSON, ForeignCallJSONReversed, MappedTrackerJSON, RuleJSON, TrackerJSON, validateCallingFunctionJSON, validateFCFunctionInput, validateForeignCallJSON, validateMappedTrackerJSON, validateTrackerJSON } from "../modules/validation";
+import {
+  CallingFunctionJSON,
+  ForeignCallJSON,
+  ForeignCallJSONReversed,
+  MappedTrackerJSON,
+  RuleJSON,
+  TrackerJSON,
+  validateCallingFunctionJSON,
+  validateFCFunctionInput,
+  validateForeignCallJSON,
+  validateMappedTrackerJSON,
+  validateTrackerJSON,
+} from "../modules/validation";
 import { parseFunctionArguments } from "./parsing-utilities";
 import { isRight, unwrapEither } from "../modules/utils";
 
@@ -157,7 +170,7 @@ export function reverseParseInstructionSet(
           });
           keyIndex = instruction;
           currentMemAddress += 1;
-          retVal = placeHolderArray[instruction]
+          retVal = placeHolderArray[instruction];
           break;
         case 3:
           retVal = arithmeticOperatorReverseInterpretation(
@@ -410,11 +423,15 @@ export const reverseParsePlaceholder = (
   mappings: hexToFunctionString[]
 ): string => {
   if (placeholder.flags == 0x01) {
-    const call = foreignCalls.find(call => call.foreignCallIndex === placeholder.typeSpecificIndex);
-    const map = mappings.find(map => map.hex === call?.signature);
-    return "FC:" + map?.functionString;
+    const call = foreignCalls.find(
+      (call) => call.foreignCallIndex === placeholder.typeSpecificIndex
+    );
+    const map = mappings.find((map) => map.hex === call?.signature);
+    return "FC:" + map?.functionString.split("(")[0];
   } else if (placeholder.flags == 0x02) {
-    const map = mappings.find(map => map.index === placeholder.typeSpecificIndex);
+    const map = mappings.find(
+      (map) => map.index === placeholder.typeSpecificIndex
+    );
     return "TR:" + map?.functionString;
   } else if (placeholder.flags == 0x04) {
     return "GV:MSG_SENDER";
@@ -429,17 +446,20 @@ export const reverseParsePlaceholder = (
   } else {
     return names[placeholder.typeSpecificIndex].name;
   }
-}
+};
 
-export const reverseParseEffect = (effect: any, placeholders: string[]): string => {
+export const reverseParseEffect = (
+  effect: any,
+  placeholders: string[]
+): string => {
   if (effect.effectType == 0) {
     return "revert('" + effect.text + "')";
   } else if (effect.effectType == 1) {
     return "emit " + effect.text;
   } else {
-    return reverseParseInstructionSet(effect.instructionSet, placeholders, [])
+    return reverseParseInstructionSet(effect.instructionSet, placeholders, []);
   }
-}
+};
 
 /**
  * Converts a `RuleStruct` object into a JSON-like string representation.
@@ -479,27 +499,39 @@ export function convertRuleStructToString(
 
   var names = parseFunctionArguments(encodedValues);
 
-  const plhArray = ruleS.placeHolders.map((placeholder) => reverseParsePlaceholder(
-    placeholder,
-    names,
-    foreignCalls,
-    trackers,
-    mappings
-  ));
+  const plhArray = ruleS.placeHolders.map((placeholder) =>
+    reverseParsePlaceholder(
+      placeholder,
+      names,
+      foreignCalls,
+      trackers,
+      mappings
+    )
+  );
 
-  rJSON.condition = reverseParseInstructionSet(ruleS!.instructionSet, plhArray, []);
+  rJSON.condition = reverseParseInstructionSet(
+    ruleS!.instructionSet,
+    plhArray,
+    []
+  );
   rJSON.callingFunction = functionString;
 
-  const effectPlhArray = ruleS.effectPlaceHolders.map((placeholder) => reverseParsePlaceholder(
-    placeholder,
-    names,
-    foreignCalls,
-    trackers,
-    mappings
-  ));
+  const effectPlhArray = ruleS.effectPlaceHolders.map((placeholder) =>
+    reverseParsePlaceholder(
+      placeholder,
+      names,
+      foreignCalls,
+      trackers,
+      mappings
+    )
+  );
 
-  rJSON.positiveEffects = ruleS.posEffects.map(effect => reverseParseEffect(effect, effectPlhArray));
-  rJSON.negativeEffects = ruleS.negEffects.map(effect => reverseParseEffect(effect, effectPlhArray));
+  rJSON.positiveEffects = ruleS.posEffects.map((effect) =>
+    reverseParseEffect(effect, effectPlhArray)
+  );
+  rJSON.negativeEffects = ruleS.negEffects.map((effect) =>
+    reverseParseEffect(effect, effectPlhArray)
+  );
 
   return rJSON;
 }
@@ -533,25 +565,54 @@ export function convertForeignCallStructsToStrings(
   foreignCallsOnChain: ForeignCallOnChain[],
   callingFunctionMappings: hexToFunctionString[]
 ): ForeignCallJSONReversed[] {
-  const foreignCalls: ForeignCallJSONReversed[] = foreignCallsOnChain.map((call, iter) => {
-    const functionMeta = callingFunctionMappings.find(mapping => mapping.hex === call.signature);
+  const foreignCalls: ForeignCallJSONReversed[] = foreignCallsOnChain.map(
+    (call, iter) => {
+      const functionMeta = callingFunctionMappings.find(
+        (mapping) => mapping.hex === call.signature
+      );
 
-    const returnTypeString = PT.find(pType => pType.enumeration == call.returnType)?.name;
+      const returnTypeString = PT.find(
+        (pType) => pType.enumeration == call.returnType
+      )?.name;
 
-    const inputs = {
-      "name": functionMeta?.functionString || "",
-      "address": call.foreignCallAddress as Address,
-      "function": call.signature,
-      "returnType": returnTypeString || "",
-      "valuesToPass": functionMeta?.encodedValues || "",
-      "mappedTrackerKeyValues": "",
-      "callingFunction": "",
-    };
+      const callingFunction = callingFunctionMappings.find(
+        (mapping) => mapping.index == call.callingFunctionIndex
+      );
+      const inputs = {
+        name: functionMeta?.functionString || "",
+        address: call.foreignCallAddress as Address,
+        function: functionMeta?.functionString || "",
+        returnType: returnTypeString || "",
+        valuesToPass: functionMeta?.encodedValues || "",
+        mappedTrackerKeyValues: "",
+        callingFunction: callingFunction?.functionString || "",
+      };
 
-    return inputs
-  });
+      return inputs;
+    }
+  );
 
   return foreignCalls;
+}
+
+function retrieveDecoded(type: number, key: string): string {
+  if (type == 0) {
+    return decodeAbiParameters(
+      parseAbiParameters("address"),
+      key as `0x${string}`
+    )[0].toLowerCase();
+  } else if (type == 1) {
+    return decodeAbiParameters(
+      parseAbiParameters("string"),
+      key as `0x${string}`
+    )[0];
+  } else if (type == 2) {
+    return String(Number(key));
+  } else if (type == 3) {
+    return Number(key) == 0 ? "false" : "true";
+  } else {
+    return key;
+  }
 }
 
 /**
@@ -563,17 +624,24 @@ export function convertForeignCallStructsToStrings(
  */
 export function convertTrackerStructsToStrings(
   trackers: TrackerOnChain[],
-  trackerNames: string[]
-): { Trackers: TrackerJSON[], MappedTrackers: MappedTrackerJSON[] } {
+  trackerNames: TrackerMetadataStruct[],
+  mappedTrackerNames: TrackerMetadataStruct[]
+): { Trackers: TrackerJSON[]; MappedTrackers: MappedTrackerJSON[] } {
   const Trackers = trackers
-    .filter(tracker => !tracker.mapped)
+    .filter((tracker) => !tracker.mapped)
     .map((tracker, iter) => {
-      const trackerType = PT.find(pt => pt.enumeration === tracker.pType)?.name || "";
+      const trackerType =
+        PT.find((pt) => pt.enumeration === tracker.pType)?.name || "";
+
+      var initialValue = retrieveDecoded(
+        tracker.pType,
+        trackerNames[iter].initialValue
+      );
 
       const inputs = {
-        "name": trackerNames[iter],
-        "type": trackerType,
-        "initialValue": ""
+        name: trackerNames[iter].trackerName,
+        type: trackerType,
+        initialValue: initialValue,
       };
       const validatedInputs = validateTrackerJSON(JSON.stringify(inputs));
       if (isRight(validatedInputs)) {
@@ -584,32 +652,50 @@ export function convertTrackerStructsToStrings(
         );
       }
     });
-
   const MappedTrackers = trackers
-    .filter(tracker => tracker.mapped)
+    .filter((tracker) => tracker.mapped)
     .map((tracker, iter) => {
-      const valueType = PT.find(pt => pt.enumeration === tracker.pType)?.name || "";
-      const keyType = PT.find(pt => pt.enumeration === tracker.trackerKeyType)?.name || "";
+      const valueType =
+        PT.find((pt) => pt.enumeration === tracker.pType)?.name || "";
+      const keyType =
+        PT.find((pt) => pt.enumeration === tracker.trackerKeyType)?.name || "";
+
+      var keys = [];
+
+      for (var key of mappedTrackerNames[iter].initialKeys) {
+        var decodedKey = retrieveDecoded(tracker.trackerKeyType, key);
+
+        keys.push(decodedKey);
+      }
+
+      var values = [];
+      for (var key of mappedTrackerNames[iter].initialValues) {
+        var decodedValue = retrieveDecoded(tracker.pType, key);
+        values.push(decodedValue);
+        console.log(decodedValue);
+      }
 
       const inputs = {
-        "name": trackerNames[iter],
+        name: mappedTrackerNames[iter].trackerName,
         valueType,
         keyType,
-        initialKeys: [],
-        initialValues: []
+        initialKeys: keys,
+        initialValues: values,
       };
       const validatedInputs = validateMappedTrackerJSON(JSON.stringify(inputs));
       if (isRight(validatedInputs)) {
         return unwrapEither(validatedInputs);
       } else {
         throw new Error(
-          `Invalid mapped tracker input: ${JSON.stringify(validatedInputs.left)}`
+          `Invalid mapped tracker input: ${JSON.stringify(
+            validatedInputs.left
+          )}`
         );
       }
     });
   return {
     Trackers,
-    MappedTrackers
+    MappedTrackers,
   };
 }
 
@@ -623,17 +709,22 @@ export function convertTrackerStructsToStrings(
 export function convertCallingFunctionToStrings(
   callingFunctions: CallingFunctionHashMapping[]
 ): CallingFunctionJSON[] {
-  const callingFunctionJsons: CallingFunctionJSON[] = callingFunctions.map(callingFunction => {
-
-    const validatedInputs = validateCallingFunctionJSON(JSON.stringify(callingFunction));
-    if (isRight(validatedInputs)) {
-      return unwrapEither(validatedInputs);
-    } else {
-      throw new Error(
-        `Invalid calling function input: ${JSON.stringify(validatedInputs.left)}`
+  const callingFunctionJsons: CallingFunctionJSON[] = callingFunctions.map(
+    (callingFunction) => {
+      const validatedInputs = validateCallingFunctionJSON(
+        JSON.stringify(callingFunction)
       );
+      if (isRight(validatedInputs)) {
+        return unwrapEither(validatedInputs);
+      } else {
+        throw new Error(
+          `Invalid calling function input: ${JSON.stringify(
+            validatedInputs.left
+          )}`
+        );
+      }
     }
-  });
+  );
   return callingFunctionJsons;
 }
 

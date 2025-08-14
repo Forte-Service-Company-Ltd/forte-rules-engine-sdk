@@ -11,7 +11,11 @@ import {
   parseMappedTrackerSyntax,
   parseTrackerSyntax,
 } from "../parsing/parser";
-import { RulesEngineComponentContract, TrackerOnChain } from "./types";
+import {
+  RulesEngineComponentContract,
+  TrackerMetadataStruct,
+  TrackerOnChain,
+} from "./types";
 import { isLeft, isRight, unwrapEither } from "./utils";
 import {
   getRulesErrorMessages,
@@ -323,7 +327,7 @@ export const getTrackerMetadata = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
   trackerId: number
-): Promise<string> => {
+): Promise<TrackerMetadataStruct> => {
   try {
     const getMeta = await readContract(config, {
       address: rulesEngineComponentContract.address,
@@ -332,11 +336,16 @@ export const getTrackerMetadata = async (
       args: [policyId, trackerId],
     });
 
-    let foreignCallResult = getMeta as string;
+    let foreignCallResult = getMeta as TrackerMetadataStruct;
     return foreignCallResult;
   } catch (error) {
     console.error(error);
-    return "";
+    return {
+      trackerName: "",
+      initialValue: "",
+      initialKeys: [],
+      initialValues: [],
+    };
   }
 };
 
