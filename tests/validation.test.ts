@@ -5,6 +5,9 @@ import {
   validateTrackerJSON,
   validatePolicyJSON,
   safeParseJson,
+  formatParenConditionGroups,
+  validateCondition,
+  validateMappedTrackerJSON,
 } from "../src/modules/validation";
 import { isLeft, isRight, unwrapEither } from "../src/modules/utils";
 import { RulesError } from "../src/modules/types";
@@ -34,6 +37,14 @@ const trackerJSON = `{
 							"type": "uint256",
 							"initialValue": "4"
 					}`;
+
+const mappedTrackerJSON = `{
+    "name": "Simple bool Tracker",
+    "keyType": "uint256",
+    "valueType": "uint256",
+    "initialKeys": ["0", "1", "2"],
+    "initialValues": ["1", "2", "3"]
+  }`
 
 var policyJSON = `
     {
@@ -77,6 +88,91 @@ var policyJSON = `
         }
         ]
         }`;
+
+var policyJSONFull = `
+    {
+    "Policy": "Test Full Policy",
+    "Description": "Test Policy Description",
+    "PolicyType": "open",
+    "CallingFunctions": [
+      {
+        "name": "transfer(address to, uint256 value)",
+        "functionSignature": "transfer(address to, uint256 value)",
+        "encodedValues": "address to, uint256 value"
+      },
+      {
+        "name": "mint(address to, uint256 value)",
+        "functionSignature": "mint(address to, uint256 value)",
+        "encodedValues": "address to, uint256 value"
+      }
+    ],
+    "ForeignCalls": [
+      {
+          "name": "SimpleForeignCall",
+          "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+          "function": "testSig(address)",
+          "returnType": "uint256",
+          "valuesToPass": "to",
+          "mappedTrackerKeyValues": "",
+          "callingFunction": "transfer(address to, uint256 value)"
+      },
+      {
+          "name": "SimpleForeignCall2",
+          "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+          "function": "testSig2(address)",
+          "returnType": "uint256",
+          "valuesToPass": "to",
+          "mappedTrackerKeyValues": "",
+          "callingFunction": "mint(address to, uint256 value)"
+      }
+    ],
+    "Trackers": [
+      {
+          "name": "SimpleStringTracker",
+          "type": "string",
+          "initialValue": "test"
+      },
+      {
+          "name": "SimpleUint256Tracker2",
+          "type": "uint256",
+          "initialValue": "0"
+      }
+    ],
+	"MappedTrackers": [
+    {
+      "name": "SimpleMappedTracker",
+      "keyType": "uint256",
+      "valueType": "uint256",
+      "initialKeys": ["0", "1", "2"],
+      "initialValues": ["1", "2", "3"]
+    },
+    {
+      "name": "SimpleMappedTracker2",
+      "keyType": "uint256",
+      "valueType": "uint256",
+      "initialKeys": ["0", "1", "2"],
+      "initialValues": ["1", "2", "3"]
+    }
+  ],
+    "Rules": [
+      {
+          "Name": "Rule A",
+          "Description": "Rule A Description",
+          "condition": "FC:SimpleForeignCall > 500 AND (TR:SimpleStringTracker == 'test' OR TR:SimpleMappedTracker(to) > 100)",
+          "positiveEffects": ["emit Success"],
+          "negativeEffects": ["revert()"],
+          "callingFunction": "transfer(address to, uint256 value)"
+      },
+      {
+          "Name": "Rule B",
+          "Description": "Rule B Description",
+          "condition": "FC:SimpleForeignCall > 500",
+          "positiveEffects": ["TR:SimpleStringTracker2(to) +=1", "TRU:SimpleMappedTracker2(to) +=1"],
+          "negativeEffects": ["revert()"],
+          "callingFunction": "mint(address to, uint256 value)"
+      }
+    ]
+  }`;
 
 test("Can validate rule JSON", () => {
   const parsedRule = validateRuleJSON(ruleJSON);
@@ -374,12 +470,99 @@ test("Can return multiple errors if tracker JSON is invalid", () => {
   }
 });
 
+
+test("Can validate mapped tracker JSON", () => {
+  const parsedJSON = JSON.parse(mappedTrackerJSON);
+  const parsedTracker = validateMappedTrackerJSON(mappedTrackerJSON);
+  expect(isRight(parsedTracker)).toBeTruthy();
+  if (isRight(parsedTracker)) {
+    const tracker = unwrapEither(parsedTracker);
+
+    expect(tracker.name).toEqual(parsedJSON.name);
+  }
+});
+
+
 test("Can validate policy JSON", () => {
   const parsedPolicy = validatePolicyJSON(policyJSON);
   expect(isRight(parsedPolicy)).toBeTruthy();
   if (isRight(parsedPolicy)) {
     const policy = unwrapEither(parsedPolicy);
     expect(policy.Policy).toEqual(JSON.parse(policyJSON).Policy);
+  }
+});
+
+test("Can validate full policy JSON", () => {
+  const parsedPolicy = validatePolicyJSON(policyJSONFull);
+  expect(isRight(parsedPolicy)).toBeTruthy();
+  if (isRight(parsedPolicy)) {
+    const policy = unwrapEither(parsedPolicy);
+    expect(policy.Policy).toEqual(JSON.parse(policyJSONFull).Policy);
+  }
+});
+
+test("Can catch missing calling function in foreign call in policy JSON", () => {
+  const parsedInput = JSON.parse(policyJSONFull);
+  parsedInput.ForeignCalls[0].callingFunction = "transferTo(uint256 value)";
+  const parsedPolicy = validatePolicyJSON(JSON.stringify(parsedInput));
+  expect(isRight(parsedPolicy)).toBeFalsy();
+  if (isLeft(parsedPolicy)) {
+    const errors = unwrapEither(parsedPolicy);
+    expect(errors[0].message).toEqual(
+      "Invalid reference call"
+    );
+  }
+});
+
+test("Can catch missing foreign call in condition in policy JSON", () => {
+  const parsedInput = JSON.parse(policyJSONFull);
+  parsedInput.Rules[0].condition = "FC:SimpleForeignCallMissing > 500 AND (TR:SimpleStringTracker == 'test' OR TR:SimpleMappedTracker(to) > 100)";
+  const parsedPolicy = validatePolicyJSON(JSON.stringify(parsedInput));
+  expect(isRight(parsedPolicy)).toBeFalsy();
+  if (isLeft(parsedPolicy)) {
+    const errors = unwrapEither(parsedPolicy);
+    expect(errors[0].message).toEqual(
+      "Invalid reference call"
+    );
+  }
+});
+
+test("Can catch missing tracker in condition in policy JSON", () => {
+  const parsedInput = JSON.parse(policyJSONFull);
+  parsedInput.Rules[0].condition = "FC:SimpleForeignCall > 500 AND (TR:SimpleStringTrackerMissing == 'test' OR TR:SimpleMappedTracker(to) > 100)";
+  const parsedPolicy = validatePolicyJSON(JSON.stringify(parsedInput));
+  expect(isRight(parsedPolicy)).toBeFalsy();
+  if (isLeft(parsedPolicy)) {
+    const errors = unwrapEither(parsedPolicy);
+    expect(errors[0].message).toEqual(
+      "Invalid reference call"
+    );
+  }
+});
+
+test("Can catch missing mapped tracker in condition in policy JSON", () => {
+  const parsedInput = JSON.parse(policyJSONFull);
+  parsedInput.Rules[0].condition = "FC:SimpleForeignCall > 500 AND (TR:SimpleStringTracker == 'test' OR TR:SimpleMappedTrackerMissing(to) > 100)";
+  const parsedPolicy = validatePolicyJSON(JSON.stringify(parsedInput));
+  expect(isRight(parsedPolicy)).toBeFalsy();
+  if (isLeft(parsedPolicy)) {
+    const errors = unwrapEither(parsedPolicy);
+    expect(errors[0].message).toEqual(
+      "Invalid reference call"
+    );
+  }
+});
+
+test("Can catch missing calling function encoded value in foreign call valueToPass in policy JSON", () => {
+  const parsedInput = JSON.parse(policyJSONFull);
+  parsedInput.ForeignCalls[0].valuesToPass = "transferTo";
+  const parsedPolicy = validatePolicyJSON(JSON.stringify(parsedInput));
+  expect(isRight(parsedPolicy)).toBeFalsy();
+  if (isLeft(parsedPolicy)) {
+    const errors = unwrapEither(parsedPolicy);
+    expect(errors[0].message).toEqual(
+      "Invalid reference call"
+    );
   }
 });
 
@@ -555,4 +738,62 @@ test("Tests can return error when parsing invalid json", () => {
   expect(isLeft(retVal)).toBeTruthy();
   const parsed = unwrapEither(retVal) as RulesError[];
   expect(parsed[0].message).toEqual("Failed to parse JSON");
+});
+
+test("Tests formatParenConditionGroups", () => {
+  const str = `FC:GetValue > 500 AND (FC:GetValue < 100 OR FC:GetValue > 200)`;
+  const groups = formatParenConditionGroups(str);
+  expect(groups.finalGroups.length).toEqual(2);
+});
+
+test("Tests formatParenConditionGroups nested second group", () => {
+  const str = `FC:GetValue > 500 AND (FC:GetValue < 100 OR (FC:GetValue > 200 AND TR:TestTracker > 100)) `;
+  const groups = formatParenConditionGroups(str);
+  expect(groups.finalGroups.length).toEqual(3);
+});
+
+test("Tests formatParenConditionGroups single group", () => {
+  const str = `FC:GetValue > 500`;
+  const groups = formatParenConditionGroups(str);
+  expect(groups.finalGroups.length).toEqual(1);
+});
+
+test("Tests formatParenConditionGroups nested first group", () => {
+  const str = `(FC:GetValue < 100 OR (FC:GetValue > 200 AND TR:TestTracker > 100)) AND FC:GetValue > 500`;
+  const groups = formatParenConditionGroups(str);
+  expect(groups.finalGroups.length).toEqual(3);
+});
+
+test("Tests formatParenConditionGroups nested both groups", () => {
+  const str = `(FC:GetValue < 100 OR (FC:GetValue > 200 AND TR:TestTracker > 100)) AND (TR:TestTracker > 400 AND (FC:GetValue > 500 AND FC:GetRole == "Admin"))`;
+  const groups = formatParenConditionGroups(str);
+  expect(groups.finalGroups.length).toEqual(5);
+});
+
+test("Tests formatParenConditionGroups catches missing paren", () => {
+  const str = `(FC:GetValue < 100 OR (FC:GetValue > 200 AND TR:TestTracker > 100) AND FC:GetValue > 500`;
+  const isValid = validateCondition(str)
+
+  expect(isValid).toBeFalsy();
+});
+
+test("Tests formatParenConditionGroups catches multiple AND operators", () => {
+  const str = `(FC:GetValue < 100 OR (FC:GetValue > 200 AND TR:TestTracker > 100)) AND FC:GetValue > 500 AND FC:GetScore > 100`;
+  const isValid = validateCondition(str)
+
+  expect(isValid).toBeFalsy();
+});
+
+test("Tests formatParenConditionGroups catches multiple OR operators", () => {
+  const str = `(FC:GetValue < 100 OR (FC:GetValue > 200 AND TR:TestTracker > 100)) OR FC:GetValue > 500 OR FC:GetScore > 100`;
+  const isValid = validateCondition(str)
+
+  expect(isValid).toBeFalsy();
+});
+
+test("Tests formatPrenConditionGroups catches AND and OR operators", () => {
+  const str = `(FC:GetValue < 100 OR (FC:GetValue > 200 AND TR:TestTracker > 100)) OR FC:GetValue > 500 OR FC:GetScore > 100`;
+  const isValid = validateCondition(str)
+
+  expect(isValid).toBeFalsy();
 });

@@ -210,17 +210,17 @@ export function parseRuleSyntax(
   var raw = buildRawData(retVal, excludeArray);
   positiveEffectsFinal.forEach(
     (effect) =>
-      (effect.instructionSet = buildRawData(
-        effect.instructionSet,
-        excludeArray
-      ))
+    (effect.instructionSet = buildRawData(
+      effect.instructionSet,
+      excludeArray
+    ))
   );
   negativeEffectsFinal.forEach(
     (effect) =>
-      (effect.instructionSet = buildRawData(
-        effect.instructionSet,
-        excludeArray
-      ))
+    (effect.instructionSet = buildRawData(
+      effect.instructionSet,
+      excludeArray
+    ))
   );
   return {
     instructionSet: raw,
