@@ -207,6 +207,7 @@ const validateReferencedCalls = (input: any): boolean => {
 
   const callingFunctionNames = input.CallingFunctions.map((call: any) => call.name);
   const fcCallingFunctions: string[] = input.ForeignCalls.map((fc: any) => fc.callingFunction);
+
   if (!fcCallingFunctions.every((fcName) => callingFunctionNames.includes(fcName))) {
     return false;
   }
@@ -257,10 +258,7 @@ export const validateCondition = (condition: string): boolean => {
     .map(validateConditionGroup)
     .every((isValid) => isValid);
 
-  if (!validatedOperators) return false; // If any group is invalid, return false
-
-
-  return true;
+  return validatedOperators;
 }
 
 
@@ -561,7 +559,7 @@ export const policyJSONValidator = z.object({
   Trackers: z.array(trackerValidator),
   MappedTrackers: z.array(mappedTrackerValidator),
   Rules: z.array(ruleValidator),
-});
+}).refine(validateReferencedCalls, { message: "Invalid reference call" });
 export interface PolicyJSON extends z.infer<typeof policyJSONValidator> { }
 
 /**

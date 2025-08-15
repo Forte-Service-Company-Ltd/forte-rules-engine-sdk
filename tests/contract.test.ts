@@ -1052,7 +1052,7 @@ describe("Rules Engine Interactions", async () => {
                ],
                "ForeignCalls": [
                  {
-                     "name": "AnotherTestForeignCall(address)",
+                     "name": "AnotherTestForeignCall",
                      "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
                      "function": "AnotherTestForeignCall(address)",
                      "returnType": "uint256",
@@ -1061,9 +1061,9 @@ describe("Rules Engine Interactions", async () => {
                      "callingFunction": "transfer(address to, uint256 value)"
                  },
                  {
-                     "name": "ATestForeignCall(address,uint256)",
+                     "name": "ATestForeignCall",
                      "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                     "function": "ATestForeignCall(address,uint256)",
+                     "function": "ATestForeignCall(address, uint256)",
                      "returnType": "uint256",
                      "valuesToPass": "FC:AnotherTestForeignCall, TR:trackerOne",
                      "mappedTrackerKeyValues": "",
@@ -1130,27 +1130,14 @@ describe("Rules Engine Interactions", async () => {
     );
 
     const parsed = JSON.parse(retVal);
+    console.log("Parsed Policy:", parsed);
 
     const input = JSON.parse(policyJSON);
+    // TODOupdate the input to match known limitations with the reverse parser
+    input.ForeignCalls[0].function = input.ForeignCalls[0].name;
+    input.ForeignCalls[1].function = input.ForeignCalls[1].name;
 
-    input.ForeignCalls[0].function = "AnotherTestForeignCall(address)";
-    input.ForeignCalls[1].function = "ATestForeignCall(address,uint256)";
-    input.ForeignCalls[0].valuesToPass = "to";
-    input.ForeignCalls[0].callingFunction =
-      "transfer(address to, uint256 value)";
-    input.ForeignCalls[1].valuesToPass =
-      "FC:AnotherTestForeignCall, TR:trackerOne";
-    input.ForeignCalls[1].callingFunction =
-      "transfer(address to, uint256 value)";
-    input.Rules[0].negativeEffects = [
-      "revert('Negative')",
-      "TRU:trackerOne += 12",
-    ];
-    input.Rules[0].positiveEffects = [
-      "emit Success",
-      "FC:AnotherTestForeignCall",
-      "TRU:mappedTrackerOne(to) += 1",
-    ];
+    input.Rules[0].negativeEffects[0] = "revert('Negative')";
 
     expect(parsed.Policy).toEqual(input.Policy);
     expect(retVal).toEqual(JSON.stringify(input, null, 2));

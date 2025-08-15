@@ -578,6 +578,7 @@ export function convertForeignCallStructsToStrings(
       const callingFunction = callingFunctionMappings.find(
         (mapping) => mapping.index == call.callingFunctionIndex
       );
+      console.log("CFCSTS functionMeta", functionMeta);
       const inputs = {
         name: functionMeta?.functionString || "",
         address: call.foreignCallAddress as Address,
