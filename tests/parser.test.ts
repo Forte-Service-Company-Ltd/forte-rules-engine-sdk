@@ -2620,6 +2620,51 @@ test("Evaluates a simple effect involving a mapped tracker update (TRUM))", () =
   expect(retVal.effectPlaceHolders.length).toEqual(2);
 });
 
+test("Evaluates a simple effect involving a mapped tracker with string value update (TRUM))", () => {
+  var expectedArray = [
+    "PLH",
+    0n,
+    "PLHM",
+    1n,
+    0n,
+    "PLH",
+    1n,
+    "-",
+    1n,
+    2n,
+    "TRUM",
+    1n,
+    3n,
+    0n,
+    1n,
+  ];
+
+  var ruleStringA = `{
+    "condition": " 1 == 1",
+      "positiveEffects": [" TRU:testOne(to) -= FC:getStringValue "],
+        "negativeEffects": [],
+          "callingFunction": "addValue"
+  } `;
+
+  var retVal = parseRuleSyntax(
+    JSON.parse(ruleStringA),
+    [
+      { id: 1, name: "testOne", type: 1 },
+      { id: 2, name: "testTwo", type: 3 },
+    ],
+    [{
+      id: 1,
+      name: "getStringValue",
+      type: 1,
+    }],
+    "uint256 value, address to",
+    [],
+    ["FC:getStringValue"]
+  );
+  expect(retVal.positiveEffects[0].instructionSet).toEqual(expectedArray);
+  expect(retVal.effectPlaceHolders.length).toEqual(3);
+});
+
 test("Evaluates a complex effect involving a mapped tracker update (TRUM))", () => {
   var expectedArray = [
     "PLH",
