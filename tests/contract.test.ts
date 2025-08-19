@@ -1130,7 +1130,6 @@ describe("Rules Engine Interactions", async () => {
     );
 
     const parsed = JSON.parse(retVal);
-    console.log("Parsed Policy:", parsed);
 
     const input = JSON.parse(policyJSON);
     // TODOupdate the input to match known limitations with the reverse parser
@@ -1670,4 +1669,5 @@ describe("Rules Engine Interactions", async () => {
       expect(isSubscriber).toEqual(false);
     }
   );
+
 });
