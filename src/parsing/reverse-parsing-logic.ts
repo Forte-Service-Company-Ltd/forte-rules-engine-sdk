@@ -19,6 +19,7 @@ import {
   ForeignCallJSONReversed,
   MappedTrackerJSON,
   RuleJSON,
+  RuleJSONReversed,
   TrackerJSON,
   validateCallingFunctionJSON,
   validateFCFunctionInput,
@@ -28,6 +29,7 @@ import {
 } from "../modules/validation";
 import { parseFunctionArguments } from "./parsing-utilities";
 import { isRight, unwrapEither } from "../modules/utils";
+import { id } from "zod/dist/types/v4/locales";
 
 /**
  * @file reverse-parsing-logic.ts
@@ -486,9 +488,11 @@ export function convertRuleStructToString(
   ruleM: RuleMetadataStruct,
   foreignCalls: ForeignCallOnChain[],
   trackers: TrackerOnChain[],
-  mappings: hexToFunctionString[]
-): RuleJSON {
-  var rJSON: RuleJSON = {
+  mappings: hexToFunctionString[],
+  ruleId?: number
+): RuleJSONReversed {
+  var rJSON: RuleJSONReversed = {
+    id: Number(ruleId),
     Name: ruleM.ruleName,
     Description: ruleM.ruleDescription,
     condition: "",
@@ -580,6 +584,7 @@ export function convertForeignCallStructsToStrings(
       );
       console.log("CFCSTS functionMeta", functionMeta);
       const inputs = {
+        id: Number(call.foreignCallIndex),
         name: functionMeta?.functionString || "",
         address: call.foreignCallAddress as Address,
         function: functionMeta?.functionString || "",
@@ -640,11 +645,12 @@ export function convertTrackerStructsToStrings(
       );
 
       const inputs = {
+        id: Number(tracker.trackerIndex),
         name: trackerNames[iter].trackerName,
         type: trackerType,
         initialValue: initialValue,
       };
-      const validatedInputs = validateTrackerJSON(JSON.stringify(inputs));
+      const validatedInputs = validateTrackerJSON(JSON.stringify(inputs), true);
       if (isRight(validatedInputs)) {
         return unwrapEither(validatedInputs);
       } else {
@@ -677,13 +683,14 @@ export function convertTrackerStructsToStrings(
       }
 
       const inputs = {
+        id: Number(tracker.trackerIndex),
         name: mappedTrackerNames[iter].trackerName,
         valueType,
         keyType,
         initialKeys: keys,
         initialValues: values,
       };
-      const validatedInputs = validateMappedTrackerJSON(JSON.stringify(inputs));
+      const validatedInputs = validateMappedTrackerJSON(JSON.stringify(inputs), true);
       if (isRight(validatedInputs)) {
         return unwrapEither(validatedInputs);
       } else {

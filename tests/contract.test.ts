@@ -72,6 +72,9 @@ import {
   proposeNewForeignCallAdmin,
   proposeNewPolicyAdmin,
 } from "../src/modules/admin";
+import { validate } from "uuid";
+import { validatePolicyJSON } from "../src/modules/validation";
+import { de } from "zod/v4/locales";
 
 // Hardcoded address of the diamond in diamondDeployedAnvilState.json
 var config: Config;
@@ -1100,15 +1103,20 @@ describe("Rules Engine Interactions", async () => {
       result.policyId
     );
 
-    const parsed = JSON.parse(retVal);
+    const parsed = retVal?.JSON ? JSON.parse(retVal?.JSON) : null;
 
     const input = JSON.parse(policyJSON);
     input.Trackers[0].initialValue = "1000";
     input.Rules[0].negativeEffects = ["revert('Negative')"];
     input.Rules[0].positiveEffects = ["revert('Positive')"];
 
+    expect(retVal?.Policy).toEqual(parsed)
+    expect(parsed.Rules[0].id).toEqual(1);
+
+    // Remove the ids to match the input
+    delete parsed.Rules[0].id;
+    expect(parsed).toEqual(input);
     expect(parsed.Policy).toEqual(input.Policy);
-    expect(retVal).toEqual(JSON.stringify(input, null, 2));
   });
 
   test("Can retrieve a full policy", async () => {
@@ -1203,7 +1211,7 @@ describe("Rules Engine Interactions", async () => {
       result.policyId
     );
 
-    const parsed = JSON.parse(retVal);
+    const parsed = retVal?.JSON ? JSON.parse(retVal?.JSON) : null;
 
     const input = JSON.parse(policyJSON);
     // TODOupdate the input to match known limitations with the reverse parser
@@ -1212,8 +1220,18 @@ describe("Rules Engine Interactions", async () => {
 
     input.Rules[0].negativeEffects[0] = "revert('Negative')";
 
+    expect(retVal?.Policy).toEqual(parsed)
+    expect(parsed.ForeignCalls[0].id).toEqual(1);
+    expect(parsed.ForeignCalls[1].id).toEqual(2);
+    expect(parsed.Rules[0].id).toEqual(1);
+
+    // Remove the ids to match the input
+    delete parsed.ForeignCalls[0].id;
+    delete parsed.ForeignCalls[1].id;
+    delete parsed.Rules[0].id;
+
+    expect(parsed).toEqual(input);
     expect(parsed.Policy).toEqual(input.Policy);
-    expect(retVal).toEqual(JSON.stringify(input, null, 2));
   });
 
   test("Can retrieve policy metadata", async () => {

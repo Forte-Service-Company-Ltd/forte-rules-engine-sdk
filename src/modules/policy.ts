@@ -31,6 +31,7 @@ import {
   Maybe,
   ForeignCallEncodedIndex,
   TrackerMetadataStruct,
+  PolicyResult,
 } from "./types";
 import {
   createForeignCall,
@@ -539,7 +540,7 @@ const reverseParseEncodedArgs = (
 };
 
 /**
- * Retrieves the full policy, including rules, trackers, and foreign calls, as a JSON string.
+ * Retrieves the full policy, including rules, trackers, and foreign calls.
  *
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEnginePolicyContract - The contract instance for interacting with the Rules Engine Policy.
@@ -547,7 +548,7 @@ const reverseParseEncodedArgs = (
  * @param rulesEngineComponentContract - The contract instance for interacting with the Rules Engine Component.
  * @param rulesEngineForeignCallContract - The contract instance for interacting with the Rules Engine Foreign Calls.
  * @param policyId - The ID of the policy to retrieve.
- * @returns A JSON string representing the full policy.
+ * @returns A PolicyResult object containing both the policy object and JSON string, or an empty string if an error occurs.
  */
 export const getPolicy = async (
   config: Config,
@@ -556,7 +557,7 @@ export const getPolicy = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   policyId: number
-): Promise<string> => {
+): Promise<Maybe<PolicyResult>> => {
   var allFunctionMappings: hexToFunctionString[] = [];
   const callingFunctionJSONs: CallingFunctionJSON[] = [];
   try {
@@ -721,7 +722,8 @@ export const getPolicy = async (
               ruleM!,
               foreignCalls,
               trackers,
-              allFunctionMappings
+              allFunctionMappings,
+              ruleId
             )
           );
         }
@@ -738,10 +740,17 @@ export const getPolicy = async (
       ...trackerJSONs,
       Rules: ruleJSONObjs,
     };
-    return JSON.stringify(jsonObj, null, 2);
+    const jsonString = JSON.stringify(jsonObj, null, 2);
+    const validatedPolicyJSON = validatePolicyJSON(jsonString, true);
+    if (isLeft(validatedPolicyJSON)) {
+      throw new Error(getRulesErrorMessages(unwrapEither(validatedPolicyJSON)));
+    }
+    const policyJSON = unwrapEither(validatedPolicyJSON);
+
+    return {Policy: jsonObj, JSON: JSON.stringify(policyJSON, null, 2)};
   } catch (error) {
     console.error(error);
-    return "";
+    return null;
   }
 };
 

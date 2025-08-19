@@ -280,13 +280,16 @@ export interface RuleJSON extends z.infer<typeof ruleValidator> { }
  * @returns Either the parsed RuleJSON object or an error.
  */
 export const validateRuleJSON = (
-  rule: string
+  rule: string,
+  reversed: boolean = false
 ): Either<RulesError[], RuleJSON> => {
   const parsedJson = safeParseJson(rule);
 
   if (isLeft(parsedJson)) return parsedJson;
 
-  const parsed = ruleValidator.safeParse(unwrapEither(parsedJson));
+  const ruleValidatorToUse = reversed ? ruleReverseValidator : ruleValidator;
+
+  const parsed = ruleValidatorToUse.safeParse(unwrapEither(parsedJson));
 
   if (parsed.success) {
     return makeRight(parsed.data);
@@ -299,6 +302,13 @@ export const validateRuleJSON = (
     return makeLeft(errors);
   }
 };
+
+export const ruleReverseValidator = ruleValidator.extend({
+  id: z.number().optional(),
+});
+
+export interface RuleJSONReversed
+  extends z.infer<typeof ruleReverseValidator> { }
 
 /**
  * Validates foreign call parameters to ensure they are of supported types.
@@ -346,13 +356,16 @@ export interface ForeignCallJSON extends z.infer<typeof foreignCallValidator> { 
  * @returns Either the parsed ForeignCallJSON object or an error.
  */
 export const validateForeignCallJSON = (
-  foreignCall: string
+  foreignCall: string,
+  reversed: boolean = false
 ): Either<RulesError[], ForeignCallJSON> => {
   const parsedJson = safeParseJson(foreignCall);
 
   if (isLeft(parsedJson)) return parsedJson;
 
-  const parsed = foreignCallValidator.safeParse(unwrapEither(parsedJson));
+  const foreignCallValidatorToUse = reversed ? foreignCallReverseValidator : foreignCallValidator;
+
+  const parsed = foreignCallValidatorToUse.safeParse(unwrapEither(parsedJson));
 
   if (parsed.success) {
     return makeRight(parsed.data);
@@ -368,6 +381,7 @@ export const validateForeignCallJSON = (
 
 export const foreignCallReverseValidator = foreignCallValidator.extend({
   function: z.string().trim(),
+  id: z.number().optional(),
 });
 
 export interface ForeignCallJSONReversed
@@ -420,6 +434,12 @@ export const trackerValidator = z
 
 export interface TrackerJSON extends z.infer<typeof trackerValidator> { }
 
+export const trackerReverseValidator = trackerValidator.extend({
+  id: z.number().optional(),
+});
+
+export interface TrackerJSONReversed extends z.infer<typeof trackerReverseValidator> { }
+
 export interface MappedTrackerJSON
   extends z.infer<typeof mappedTrackerValidator> { }
 
@@ -463,6 +483,13 @@ export const mappedTrackerValidator = z.object({
   initialValues: z.array(z.string()),
 });
 
+export const mappedTrackerReverseValidator = mappedTrackerValidator.extend({
+  id: z.number().optional(),
+});
+
+export interface MappedTrackerJSONReversed
+  extends z.infer<typeof mappedTrackerReverseValidator> { }
+
 /**
  * Parses a JSON string and returns Either a TrackerJSON object or an error.
  *
@@ -470,13 +497,16 @@ export const mappedTrackerValidator = z.object({
  * @returns Either the parsed TrackerJSON object or an error.
  */
 export const validateTrackerJSON = (
-  tracker: string
+  tracker: string,
+  reversed: boolean = false
 ): Either<RulesError[], TrackerJSON> => {
   const parsedJson = safeParseJson(tracker);
 
   if (isLeft(parsedJson)) return parsedJson;
 
-  const parsed = trackerValidator.safeParse(unwrapEither(parsedJson));
+  const trackerValidatorToUse = reversed ? trackerReverseValidator : trackerValidator;
+
+  const parsed = trackerValidatorToUse.safeParse(unwrapEither(parsedJson));
 
   if (parsed.success) {
     return makeRight(parsed.data);
@@ -497,13 +527,16 @@ export const validateTrackerJSON = (
  * @returns Either the parsed MappedTrackerJSON object or an error.
  */
 export const validateMappedTrackerJSON = (
-  tracker: string
+  tracker: string,
+  reversed: boolean = false
 ): Either<RulesError[], MappedTrackerJSON> => {
   const parsedJson = safeParseJson(tracker);
 
   if (isLeft(parsedJson)) return parsedJson;
 
-  const parsed = mappedTrackerValidator.safeParse(unwrapEither(parsedJson));
+  const mappedTrackerValidatorToUse = reversed ? mappedTrackerReverseValidator : mappedTrackerValidator;
+
+  const parsed = mappedTrackerValidatorToUse.safeParse(unwrapEither(parsedJson));
 
   if (parsed.success) {
     return makeRight(parsed.data);
@@ -525,6 +558,13 @@ export const callingFunctionValidator = z.object({
 
 export interface CallingFunctionJSON
   extends z.infer<typeof callingFunctionValidator> { }
+  
+export const callingFunctionReverseValidator = callingFunctionValidator.extend({
+  id: z.number().optional(),
+});
+
+export interface CallingFunctionJSONReversed
+  extends z.infer<typeof callingFunctionReverseValidator> { }
 
 /**
  * Parses a JSON string and returns Either a CallingFunctionJSON object or an error.
@@ -533,11 +573,15 @@ export interface CallingFunctionJSON
  * @returns Either the parsed CallingFunctionJSON object or an error.
  */
 export const validateCallingFunctionJSON = (
-  callingFunction: string
+  callingFunction: string,
+  reversed: boolean = false
 ): Either<RulesError[], CallingFunctionJSON> => {
   const parsedJson = safeParseJson(callingFunction);
   if (isLeft(parsedJson)) return parsedJson;
-  const parsed = callingFunctionValidator.safeParse(unwrapEither(parsedJson));
+
+  const callingFunctionValidatorToUse = reversed ? callingFunctionReverseValidator : callingFunctionValidator;
+
+  const parsed = callingFunctionValidatorToUse.safeParse(unwrapEither(parsedJson));
   if (parsed.success) {
     return makeRight(parsed.data);
   } else {
@@ -569,13 +613,16 @@ export interface PolicyJSON extends z.infer<typeof policyJSONValidator> { }
  * @returns Either the parsed PolicyJSON object or an error.
  */
 export const validatePolicyJSON = (
-  policy: string
+  policy: string,
+  reversed: boolean = false
 ): Either<RulesError[], PolicyJSON> => {
   const parsedJson = safeParseJson(policy);
 
   if (isLeft(parsedJson)) return parsedJson;
 
-  const parsed = policyJSONValidator.safeParse(unwrapEither(parsedJson));
+  const policyJSONValidatorToUse = reversed ? policyJSONReverseValidator : policyJSONValidator;
+
+  const parsed = policyJSONValidatorToUse.safeParse(unwrapEither(parsedJson));
 
   if (parsed.success) {
     return makeRight(parsed.data);
@@ -588,3 +635,14 @@ export const validatePolicyJSON = (
     return makeLeft(errors);
   }
 };
+
+export const policyJSONReverseValidator = policyJSONValidator.extend({
+  CallingFunctions: z.array(callingFunctionReverseValidator),
+  ForeignCalls: z.array(foreignCallReverseValidator),
+  Trackers: z.array(trackerReverseValidator),
+  MappedTrackers: z.array(mappedTrackerReverseValidator),
+  Rules: z.array(ruleReverseValidator),
+});
+
+export interface PolicyJSONReversed
+  extends z.infer<typeof policyJSONReverseValidator> { }

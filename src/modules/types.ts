@@ -6,6 +6,7 @@ import RulesEngineComponentLogicArtifact from "@fortefoundation/forte-rules-engi
 import RulesEngineRuleLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineRuleFacet.sol/RulesEngineRuleFacet.json";
 import RulesEngineAdminLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineAdminRolesFacet.sol/RulesEngineAdminRolesFacet.json";
 import RulesEngineForeignCallLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineForeignCallFacet.sol/RulesEngineForeignCallFacet.json";
+import { PolicyJSON } from "./validation";
 
 /**
  * @file types.ts
@@ -77,15 +78,6 @@ export type FCNameToID = {
   type: number;
 };
 
-/**
- * Represents the storage state of a rule
- */
-export type RuleStorageSet = {
-  /** Whether the rule is set */
-  set: boolean;
-  /** The rule data */
-  rule: any;
-};
 
 /**
  * Maps hex values to their function string representations
@@ -227,6 +219,31 @@ export type RuleMetadataStruct = {
   ruleName: string;
   /** Description of the rule */
   ruleDescription: string;
+};
+
+/**
+ * Represents the storage state of a rule
+ */
+export type RuleStorageSet = {
+  /** Whether the rule is set */
+  set: boolean;
+  /** The rule data */
+  rule: any;
+};
+
+// -----------------------------------------------------------------------------
+// Policy Types
+// -----------------------------------------------------------------------------
+
+/**
+ * Result type for the getPolicy function
+ * Contains both the parsed policy object and its JSON string representation
+ */
+export type PolicyResult = {
+  /** The parsed policy object */
+  Policy: PolicyJSON;
+  /** The JSON string representation of the policy */
+  JSON: string;
 };
 
 /**

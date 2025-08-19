@@ -37,6 +37,7 @@ export {
   Left,
   Right,
   Either,
+  PolicyResult,
 } from './modules/types.js'
 
 export {
