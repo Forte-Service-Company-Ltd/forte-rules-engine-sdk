@@ -7,7 +7,7 @@ import {
   Config,
   readContract,
 } from "@wagmi/core";
-import { RulesEngineAdminContract } from "./types";
+import { ContractBlockParameters, RulesEngineAdminContract } from "./types";
 import { sleep } from "./contract-interaction-utils";
 
 /**
@@ -126,9 +126,11 @@ export const confirmNewPolicyAdmin = async (
  *
  * This function determines whether or not an address is the admin for a specific policy.
  *
+ * @param config - The configuration object containing network and wallet information.
  * @param rulesEngineAdminContract - The contract instance containing the address and ABI
  * @param policyId - The ID of the policy to check the admin for.
  * @param adminAddress - The address to check
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * @returns whether or not the address is the policy admin.
  *
  */
@@ -136,7 +138,8 @@ export const isPolicyAdmin = async (
   config: Config,
   rulesEngineAdminContract: RulesEngineAdminContract,
   policyId: number,
-  adminAddress: Address
+  adminAddress: Address,
+  blockParams?: ContractBlockParameters
 ): Promise<boolean> => {
   try {
     let policyExists = await readContract(config, {
@@ -144,6 +147,7 @@ export const isPolicyAdmin = async (
       abi: rulesEngineAdminContract.abi,
       functionName: "isPolicyAdmin",
       args: [policyId, adminAddress],
+      ...blockParams
     });
     return policyExists as boolean;
   } catch (error) {
@@ -251,6 +255,7 @@ export const confirmNewCallingContractAdmin = async (
  * @param rulesEngineAdminContract - The contract instance containing the address and ABI
  * @param callingContract - The address of the contract to check the admin for.
  * @param account - The address to check
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * @returns whether or not the address is the calling contract admin.
  *
  */
@@ -258,7 +263,8 @@ export const isCallingContractAdmin = async (
   config: Config,
   rulesEngineAdminContract: RulesEngineAdminContract,
   callingContract: Address,
-  account: Address
+  account: Address,
+  blockParams?: ContractBlockParameters
 ): Promise<boolean> => {
   try {
     let policyExists = await readContract(config, {
@@ -266,6 +272,7 @@ export const isCallingContractAdmin = async (
       abi: rulesEngineAdminContract.abi,
       functionName: "isCallingContractAdmin",
       args: [callingContract, account],
+      ...blockParams
     });
     return policyExists as boolean;
   } catch (error) {
@@ -283,6 +290,7 @@ export const isCallingContractAdmin = async (
  * @param foreignCallContract - The address of the contract to check the admin for.
  * @param account - The address to check
  * @param functionSelector - The selector for the specific foreign call
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * @returns whether or not the address is the foreign call admin.
  *
  */
@@ -291,7 +299,8 @@ export const isForeignCallAdmin = async (
   rulesEngineAdminContract: RulesEngineAdminContract,
   foreignCallContract: Address,
   account: Address,
-  functionSelector: string
+  functionSelector: string,
+  blockParams?: ContractBlockParameters
 ): Promise<boolean> => {
   var selector = toFunctionSelector(functionSelector);
   try {
@@ -300,6 +309,7 @@ export const isForeignCallAdmin = async (
       abi: rulesEngineAdminContract.abi,
       functionName: "isForeignCallAdmin",
       args: [foreignCallContract, account, selector],
+      ...blockParams
     });
     return isForeignCallAdmin as boolean;
   } catch (error) {

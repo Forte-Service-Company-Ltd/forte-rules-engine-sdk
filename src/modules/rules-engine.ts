@@ -40,6 +40,8 @@ import {
   RuleMetadataStruct,
   PolicyMetadataStruct,
   TrackerMetadataStruct,
+  ContractBlockParameters,
+  PolicyResult,
 } from "./types";
 import {
   createPolicy as createPolicyInternal,
@@ -286,16 +288,18 @@ export class RulesEngine {
    * Retrieves the full policy, including rules, trackers, and foreign calls, as a JSON string.
    *
    * @param policyId - The ID of the policy to retrieve.
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
    * @returns A JSON string representing the full policy.
    */
-  getPolicy(policyId: number): Promise<string> {
+  getPolicy(policyId: number, blockParams?: ContractBlockParameters): Promise<Maybe<PolicyResult>> {
     return getPolicyInternal(
       config,
       this.rulesEnginePolicyContract,
       this.rulesEngineRulesContract,
       this.rulesEngineComponentContract,
       this.rulesEngineForeignCallContract,
-      policyId
+      policyId,
+      blockParams
     );
   }
 
@@ -303,43 +307,50 @@ export class RulesEngine {
    * Retrieves the metadata for a policy from the Rules Engine Policy Contract based on the provided policy ID.
    *
    * @param policyId - The ID of the policy.
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
    * @returns A promise that resolves to the policy metadata result if successful, or `null` if an error occurs.
    *
    * @throws Will log an error to the console if the contract interaction fails.
    */
   getPolicyMetadata = async (
-    policyId: number
+    policyId: number,
+    blockParams?: ContractBlockParameters
   ): Promise<Maybe<PolicyMetadataStruct>> => {
     return getPolicyMetadataInternal(
       config,
       this.rulesEnginePolicyContract,
-      policyId
+      policyId,
+      blockParams
     );
   };
 
   /**
    * Retrieves the IDs of all of the policies that have been applied to a contract address.
-   * @param address - The ID of the policy to check.
+   * @param address - The address to check.
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
    * @returns array of all of the policy ids applied to the contract
    */
-  getAppliedPolicyIds(address: string): Promise<number[]> {
+  getAppliedPolicyIds(address: string, blockParams?: ContractBlockParameters): Promise<number[]> {
     return getAppliedPolicyIdsInternal(
       config,
       this.rulesEnginePolicyContract,
-      address
+      address,
+      blockParams
     );
   }
 
   /**
    * Retrieves whether a policy is open or closed.
    * @param policyId - The ID of the policy to check.
-   * @returns array of all of the policy ids applied to the contract
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
+   * @returns True if the policy is closed, false otherwise
    */
-  isClosedPolicy(policyId: number): Promise<boolean> {
+  isClosedPolicy(policyId: number, blockParams?: ContractBlockParameters): Promise<boolean> {
     return isClosedPolicyInternal(
       config,
       this.rulesEnginePolicyContract,
-      policyId
+      policyId,
+      blockParams
     );
   }
 
@@ -377,17 +388,20 @@ export class RulesEngine {
    * Retrieves whether an address is a possible subscriber to the closed policy.
    * @param policyId - The ID of the policy to check.
    * @param subscriber - The address to check
-   * @returns array of all of the policy ids applied to the contract
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
+   * @returns True if the address is a subscriber to the closed policy, false otherwise
    */
   isClosedPolicySubscriber(
     policyId: number,
-    subscriber: Address
+    subscriber: Address,
+    blockParams?: ContractBlockParameters
   ): Promise<boolean> {
     return isClosedPolicySubscriberInternal(
       config,
       this.rulesEngineComponentContract,
       policyId,
-      subscriber
+      subscriber,
+      blockParams
     );
   }
 
@@ -522,14 +536,16 @@ export class RulesEngine {
    *
    * @param policyId - The ID of the policy containing the rule.
    * @param ruleId - The ID of the rule to retrieve.
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
    * @returns The retrieved rule as a `RuleStruct`, or `null` if retrieval fails.
    */
-  getRule(policyId: number, ruleId: number): Promise<Maybe<RuleStruct>> {
+  getRule(policyId: number, ruleId: number, blockParams?: ContractBlockParameters): Promise<Maybe<RuleStruct>> {
     return getRuleInternal(
       config,
       this.rulesEngineRulesContract,
       policyId,
-      ruleId
+      ruleId,
+      blockParams
     );
   }
 
@@ -538,19 +554,22 @@ export class RulesEngine {
    *
    * @param policyId - The ID of the policy associated with the rule.
    * @param ruleId - The ID of the rule to retrieve.
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
    * @returns A promise that resolves to the rule metadata result if successful, or `null` if an error occurs.
    *
    * @throws Will log an error to the console if the contract interaction fails.
    */
   getRuleMetadata(
     policyId: number,
-    ruleId: number
+    ruleId: number,
+    blockParams?: ContractBlockParameters
   ): Promise<Maybe<RuleMetadataStruct>> {
     return getRuleMetadataInternal(
       config,
       this.rulesEngineRulesContract,
       policyId,
-      ruleId
+      ruleId,
+      blockParams
     );
   }
 
@@ -558,12 +577,13 @@ export class RulesEngine {
    * Retrieves all rules associated with a specific policy ID from the Rules Engine Policy Contract.
    *
    * @param policyId - The unique identifier of the policy for which rules are to be retrieved.
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
    * @returns A promise that resolves to an array of rules if successful, or `null` if an error occurs.
    *
    * @throws Will log an error to the console if the operation fails.
    */
-  getAllRules(policyId: number): Promise<Maybe<any[]>> {
-    return getAllRulesInternal(config, this.rulesEngineRulesContract, policyId);
+  getAllRules(policyId: number, blockParams?: ContractBlockParameters): Promise<Maybe<any[]>> {
+    return getAllRulesInternal(config, this.rulesEngineRulesContract, policyId, blockParams);
   }
 
   /**
@@ -652,16 +672,18 @@ export class RulesEngine {
    *
    * @param policyId - The ID of the policy associated with the foreign call.
    * @param foreignCallId - The ID of the foreign call to retrieve.
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
    * @returns A promise that resolves to the result of the foreign call, or `null` if an error occurs.
    *
    * @throws Will log an error to the console if the contract interaction fails.
    */
-  getForeignCall(policyId: number, foreignCallId: number): Promise<Maybe<any>> {
+  getForeignCall(policyId: number, foreignCallId: number, blockParams?: ContractBlockParameters): Promise<Maybe<any>> {
     return getForeignCallInternal(
       config,
       this.rulesEngineForeignCallContract,
       policyId,
-      foreignCallId
+      foreignCallId,
+      blockParams
     );
   }
 
@@ -669,15 +691,17 @@ export class RulesEngine {
    * Retrieves all foreign calls associated with a specific policy ID from the Rules Engine Component Contract.
    *
    * @param policyId - The ID of the policy for which foreign calls are to be retrieved.
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
    * @returns A promise that resolves to an array of foreign calls if successful, or `null` if an error occurs.
    *
    * @throws Will log an error to the console if the operation fails.
    */
-  getAllForeignCalls(policyId: number): Promise<Maybe<any[]>> {
+  getAllForeignCalls(policyId: number, blockParams?: ContractBlockParameters): Promise<Maybe<any[]>> {
     return getAllForeignCallsInternal(
       config,
       this.rulesEngineForeignCallContract,
-      policyId
+      policyId,
+      blockParams
     );
   }
 
@@ -692,13 +716,15 @@ export class RulesEngine {
    */
   getForeignCallMetadata(
     policyId: number,
-    foreignCallId: number
+    foreignCallId: number,
+    blockParams?: ContractBlockParameters
   ): Promise<Maybe<any>> {
     return getForeignCallMetadataInternal(
       config,
       this.rulesEngineForeignCallContract,
       policyId,
-      foreignCallId
+      foreignCallId,
+      blockParams
     );
   }
 
@@ -707,19 +733,22 @@ export class RulesEngine {
    *
    * @param foreignCallAddress - the address of the contract the foreign call belongs to.
    * @param functionSelector - The selector for the specific foreign call
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
    * @returns Array of addresses that make up the permission list
    *
    * @throws Will log an error to the console if the operation fails.
    */
   getForeignCallPermissionList(
     foreignCallAddress: Address,
-    functionSelector: string
+    functionSelector: string,
+    blockParams?: ContractBlockParameters
   ): Promise<Address[]> {
     return getForeignCallPermissionListInternal(
       config,
       this.rulesEngineForeignCallContract,
       foreignCallAddress,
-      functionSelector
+      functionSelector,
+      blockParams
     );
   }
 
@@ -900,16 +929,18 @@ export class RulesEngine {
    *
    * @param policyId - The ID of the policy associated with the tracker.
    * @param trackerId - The ID of the tracker to retrieve.
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
    * @returns A promise that resolves to the tracker result if successful, or `null` if an error occurs.
    *
    * @throws Will log an error to the console if the contract interaction fails.
    */
-  getTracker(policyId: number, trackerId: number): Promise<Maybe<any>> {
+  getTracker(policyId: number, trackerId: number, blockParams?: ContractBlockParameters): Promise<Maybe<any>> {
     return getTrackerInternal(
       config,
       this.rulesEngineComponentContract,
       policyId,
-      trackerId
+      trackerId,
+      blockParams
     );
   }
 
@@ -917,16 +948,17 @@ export class RulesEngine {
    * Retrieves all trackers associated with a specific policy ID from the Rules Engine Component Contract.
    *
    * @param policyId - The unique identifier of the policy for which trackers are to be retrieved.
-   * including its address and ABI.
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
    * @returns A promise that resolves to an array of trackers if successful, or `null` if an error occurs.
    *
    * @throws Will log an error to the console if the operation fails.
    */
-  getAllTrackers(policyId: number): Promise<Maybe<any[]>> {
+  getAllTrackers(policyId: number, blockParams?: ContractBlockParameters): Promise<Maybe<any[]>> {
     return getAllTrackersInternal(
       config,
       this.rulesEngineComponentContract,
-      policyId
+      policyId,
+      blockParams
     );
   }
 
@@ -935,19 +967,22 @@ export class RulesEngine {
    *
    * @param policyId - The ID of the policy associated with the tracker.
    * @param trackerId - The ID of the tracker to retrieve.
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
    * @returns A promise that resolves to the tracker metadata result if successful, or `null` if an error occurs.
    *
    * @throws Will log an error to the console if the contract interaction fails.
    */
   getTrackerMetadata(
     policyId: number,
-    trackerId: number
+    trackerId: number,
+    blockParams?: ContractBlockParameters
   ): Promise<Maybe<TrackerMetadataStruct>> {
     return getTrackerMetadataInternal(
       config,
       this.rulesEngineComponentContract,
       policyId,
-      trackerId
+      trackerId,
+      blockParams
     );
   }
 
@@ -985,19 +1020,22 @@ export class RulesEngine {
    *
    * @param policyId - The ID of the policy which the calling function belongs to.
    * @param callingFunctionId - The Calling Function ID.
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
    * @returns A promise that resolves to the result of the contract interaction.
    *
    * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
    */
   getCallingFunctionMetadata(
     policyId: number,
-    callingFunctionId: number
+    callingFunctionId: number,
+    blockParams?: ContractBlockParameters
   ): Promise<CallingFunctionHashMapping> {
     return getCallingFunctionMetadataInternal(
       config,
       this.rulesEngineComponentContract,
       policyId,
-      callingFunctionId
+      callingFunctionId,
+      blockParams
     );
   }
 
@@ -1048,15 +1086,17 @@ export class RulesEngine {
    *
    * @param policyId - The ID of the policy to check the admin for.
    * @param adminAddress - The address to check
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
    * @returns whether or not the address is the policy admin.
    *
    */
-  isPolicyAdmin(policyId: number, adminAddress: Address): Promise<boolean> {
+  isPolicyAdmin(policyId: number, adminAddress: Address, blockParams?: ContractBlockParameters): Promise<boolean> {
     return isPolicyAdminInternal(
       config,
       this.rulesEngineAdminContract,
       policyId,
-      adminAddress
+      adminAddress,
+      blockParams
     );
   }
 
@@ -1110,18 +1150,21 @@ export class RulesEngine {
    *
    * @param callingContract - The address of the contract to check the admin for.
    * @param account - The address to check
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
    * @returns whether or not the address is the calling contract admin.
    *
    */
   isCallingContractAdmin(
     callingContract: Address,
-    account: Address
+    account: Address,
+    blockParams?: ContractBlockParameters
   ): Promise<boolean> {
     return isCallingContractAdminInternal(
       config,
       this.rulesEngineAdminContract,
       callingContract,
-      account
+      account,
+      blockParams
     );
   }
 
@@ -1190,14 +1233,16 @@ export class RulesEngine {
   isForeignCallAdmin(
     foreignCallAddress: Address,
     account: Address,
-    foreignCallSelector: string
+    foreignCallSelector: string,
+    blockParams?: ContractBlockParameters
   ): Promise<boolean> {
     return isForeignCallAdminInternal(
       config,
       this.rulesEngineAdminContract,
       foreignCallAddress,
       account,
-      foreignCallSelector
+      foreignCallSelector,
+      blockParams
     );
   }
 
@@ -1219,13 +1264,15 @@ export class RulesEngine {
   /**
    * Retrieves whether a policy is cemented.
    * @param policyId - The ID of the policy to check.
-   * @returns whether or not the policy is cemented
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
+   * @returns True if the policy is cemented, false otherwise
    */
-  isCementedPolicy(policyId: number): Promise<boolean> {
+  isCementedPolicy(policyId: number, blockParams?: ContractBlockParameters): Promise<boolean> {
     return isCementedPolicyInternal(
       config,
       this.rulesEnginePolicyContract,
-      policyId
+      policyId,
+      blockParams
     );
   }
 }
