@@ -38,6 +38,7 @@ export {
   Right,
   Either,
   PolicyResult,
+  ContractBlockParameters,
 } from './modules/types.js'
 
 export {
