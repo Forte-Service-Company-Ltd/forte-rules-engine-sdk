@@ -582,7 +582,6 @@ export function convertForeignCallStructsToStrings(
       const callingFunction = callingFunctionMappings.find(
         (mapping) => mapping.index == call.callingFunctionIndex
       );
-      console.log("CFCSTS functionMeta", functionMeta);
       const inputs = {
         id: Number(call.foreignCallIndex),
         name: functionMeta?.functionString || "",
@@ -679,7 +678,6 @@ export function convertTrackerStructsToStrings(
       for (var key of mappedTrackerNames[iter].initialValues) {
         var decodedValue = retrieveDecoded(tracker.pType, key);
         values.push(decodedValue);
-        console.log(decodedValue);
       }
 
       const inputs = {
