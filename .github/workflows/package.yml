@@ -47,18 +47,20 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ "${{ github.event.inputs.versionUpdateSignificance }}" = "Major" ]; then
-            npm version major
+            npm version major --no-git-tag-version
           elif [ "${{ github.event.inputs.versionUpdateSignificance }}" = "Minor" ]; then
-            npm version minor
+            npm version minor --no-git-tag-version
           elif [ "${{ github.event.inputs.versionUpdateSignificance }}" = "Patch" ]; then
-            npm version patch
+            npm version patch --no-git-tag-version
           else
-            npm version prerelease --preid=rc
+            npm version prerelease --preid=rc --no-git-tag-version
           fi
-          version=$(npm view $(npm pkg get name | tr -d '"') version)
+          version=$(perl -ne 'print $1 if /"version":\s*"([^"]+)"/' package.json)
           export newVersion="[version-image]: https://img.shields.io/badge/Version-${version}-brightgreen?style=for-the-badge&logo=appveyor"
           perl -i -pe's/^\[version-image\]:.*$/$ENV{newVersion}/g' README.md
-
+          git add README.md package.json package-lock.json
+          git commit -m "Updating versions for release"
+          git tag v$version
       - name: Push changes to the repository
         if: github.event.inputs.versionUpdateSignificance != 'current'
         uses: ad-m/github-push-action@master
