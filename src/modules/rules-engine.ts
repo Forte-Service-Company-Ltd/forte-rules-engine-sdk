@@ -290,7 +290,7 @@ export class RulesEngine {
    *
    * @param policyId - The ID of the policy to retrieve.
    * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
-   * @returns A JSON string representing the full policy.
+   * @returns — A PolicyResult object containing both the policy object and JSON string, or an empty string if an error occurs.
    */
   getPolicy(policyId: number, blockParams?: ContractBlockParameters): Promise<Maybe<PolicyResult>> {
     return getPolicyInternal(
