@@ -571,7 +571,8 @@ export const getPolicy = async (
     const policyMeta = await getPolicyMetadata(
       config,
       rulesEnginePolicyContract,
-      policyId
+      policyId,
+      blockParams
     );
     if (policyMeta == null) {
       throw new Error(`Policy with ID ${policyId} does not exist.`);
@@ -582,7 +583,8 @@ export const getPolicy = async (
     const PolicyType = await isClosedPolicy(
       config,
       rulesEnginePolicyContract,
-      policyId
+      policyId,
+      blockParams
     );
 
     var iter = 1;
@@ -592,7 +594,8 @@ export const getPolicy = async (
         config,
         rulesEngineComponentContract,
         policyId,
-        iter
+        iter,
+        blockParams
       );
       var newMapping: hexToFunctionString = {
         hex: mapp.signature,
@@ -613,7 +616,8 @@ export const getPolicy = async (
     var trackers: TrackerOnChain[] = await getAllTrackers(
       config,
       rulesEngineComponentContract,
-      policyId
+      policyId,
+      blockParams
     );
 
     var trackerNames: TrackerMetadataStruct[] = [];
@@ -623,7 +627,8 @@ export const getPolicy = async (
         config,
         rulesEngineComponentContract,
         policyId,
-        tracker.trackerIndex
+        tracker.trackerIndex,
+        blockParams
       );
       if (tracker.mapped) {
         mappedTrackerNames.push(meta);
@@ -648,7 +653,8 @@ export const getPolicy = async (
     var foreignCalls: ForeignCallOnChain[] = await getAllForeignCalls(
       config,
       rulesEngineForeignCallContract,
-      policyId
+      policyId,
+      blockParams
     );
     var foreignCallNames: string[] = [];
     for (var fc of foreignCalls) {
@@ -656,14 +662,16 @@ export const getPolicy = async (
         config,
         rulesEngineForeignCallContract,
         policyId,
-        fc.foreignCallIndex
+        fc.foreignCallIndex,
+        blockParams
       );
 
       var daData = getCallingFunctionMetadata(
         config,
         rulesEngineComponentContract,
         policyId,
-        fc.callingFunctionIndex
+        fc.callingFunctionIndex,
+        blockParams
       );
 
       foreignCallNames.push(name);
@@ -704,14 +712,16 @@ export const getPolicy = async (
           config,
           rulesEngineRulesContract,
           policyId,
-          ruleId
+          ruleId,
+          blockParams
         );
 
         const ruleM = await getRuleMetadata(
           config,
           rulesEngineRulesContract,
           policyId,
-          ruleId
+          ruleId,
+          blockParams
         );
         if (ruleS != null) {
           ruleJSONObjs.push(
