@@ -23,6 +23,7 @@ import {
   RulesEnginePolicyContract,
   RulesEngineForeignCallContract,
   RuleMetadataStruct,
+  ContractBlockParameters,
 } from "./types";
 import { getCallingFunctionMetadata } from "./calling-functions";
 import { buildForeignCallList } from "../parsing/parser";
@@ -518,16 +519,19 @@ export const deleteRule = async (
 /**
  * Retrieves a specific rule from the Rules Engine.
  *
+ * @param config - The configuration object containing network and wallet information.
+ * @param rulesEngineRulesContract - The contract instance for interacting with the Rules Engine Policy.
  * @param policyId - The ID of the policy containing the rule.
  * @param ruleId - The ID of the rule to retrieve.
- * @param rulesEngineRulesContract - The contract instance for interacting with the Rules Engine Policy.
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * @returns The retrieved rule as a `RuleStruct`, or `null` if retrieval fails.
  */
 export const getRule = async (
   config: Config,
   rulesEngineRulesContract: RulesEngineRulesContract,
   policyId: number,
-  ruleId: number
+  ruleId: number,
+  blockParams?: ContractBlockParameters
 ): Promise<Maybe<RuleStruct>> => {
   try {
     const result = await readContract(config, {
@@ -535,6 +539,7 @@ export const getRule = async (
       abi: rulesEngineRulesContract.abi,
       functionName: "getRule",
       args: [policyId, ruleId],
+      ...blockParams
     });
 
     let ruleResult = result as RuleStorageSet;
@@ -562,6 +567,7 @@ export const getRule = async (
  * @param rulesEngineRulesContract - The contract instance containing the address and ABI for interaction.
  * @param policyId - The ID of the policy associated with the rule.
  * @param ruleId - The ID of the rule to retrieve.
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * @returns A promise that resolves to the rule metadata result if successful, or `null` if an error occurs.
  *
  * @throws Will log an error to the console if the contract interaction fails.
@@ -570,7 +576,8 @@ export const getRuleMetadata = async (
   config: Config,
   rulesEngineRulesContract: RulesEngineRulesContract,
   policyId: number,
-  ruleId: number
+  ruleId: number,
+  blockParams?: ContractBlockParameters
 ): Promise<Maybe<RuleMetadataStruct>> => {
   try {
     const getMeta = await readContract(config, {
@@ -578,6 +585,7 @@ export const getRuleMetadata = async (
       abi: rulesEngineRulesContract.abi,
       functionName: "getRuleMetadata",
       args: [policyId, ruleId],
+      ...blockParams
     });
 
     let ruleResult = getMeta as RuleMetadataStruct;
@@ -591,9 +599,11 @@ export const getRuleMetadata = async (
 /**
  * Retrieves all rules associated with a specific policy ID from the Rules Engine Policy Contract.
  *
- * @param policyId - The unique identifier of the policy for which rules are to be retrieved.
+ * @param config - The configuration object containing network and wallet information.
  * @param rulesEngineRulesContract - An object representing the Rules Engine Rules Contract,
  * including its address and ABI (Application Binary Interface).
+ * @param policyId - The unique identifier of the policy for which rules are to be retrieved.
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * @returns A promise that resolves to an array of rules if successful, or `null` if an error occurs.
  *
  * @throws Will log an error to the console if the operation fails.
@@ -601,7 +611,8 @@ export const getRuleMetadata = async (
 export const getAllRules = async (
   config: Config,
   rulesEngineRulesContract: RulesEngineRulesContract,
-  policyId: number
+  policyId: number,
+  blockParams?: ContractBlockParameters
 ): Promise<Maybe<any[]>> => {
   try {
     const result = await readContract(config, {
@@ -609,6 +620,7 @@ export const getAllRules = async (
       abi: rulesEngineRulesContract.abi,
       functionName: "getAllRules",
       args: [policyId],
+      ...blockParams
     });
 
     return result as RuleStorageSet[];

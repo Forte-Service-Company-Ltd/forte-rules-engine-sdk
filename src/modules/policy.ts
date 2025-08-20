@@ -32,6 +32,7 @@ import {
   ForeignCallEncodedIndex,
   TrackerMetadataStruct,
   PolicyResult,
+  ContractBlockParameters,
 } from "./types";
 import {
   createForeignCall,
@@ -548,6 +549,7 @@ const reverseParseEncodedArgs = (
  * @param rulesEngineComponentContract - The contract instance for interacting with the Rules Engine Component.
  * @param rulesEngineForeignCallContract - The contract instance for interacting with the Rules Engine Foreign Calls.
  * @param policyId - The ID of the policy to retrieve.
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * @returns A PolicyResult object containing both the policy object and JSON string, or an empty string if an error occurs.
  */
 export const getPolicy = async (
@@ -556,7 +558,8 @@ export const getPolicy = async (
   rulesEngineRulesContract: RulesEngineRulesContract,
   rulesEngineComponentContract: RulesEngineComponentContract,
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
-  policyId: number
+  policyId: number,
+  blockParams?: ContractBlockParameters
 ): Promise<Maybe<PolicyResult>> => {
   var allFunctionMappings: hexToFunctionString[] = [];
   const callingFunctionJSONs: CallingFunctionJSON[] = [];
@@ -566,6 +569,7 @@ export const getPolicy = async (
       abi: rulesEnginePolicyContract.abi,
       functionName: "getPolicy",
       args: [policyId],
+      ...blockParams
     });
 
     const policyMeta = await getPolicyMetadata(
@@ -760,6 +764,7 @@ export const getPolicy = async (
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEnginePolicyContract - The contract instance containing the address and ABI for interaction.
  * @param policyId - The ID of the policy.
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * @returns A promise that resolves to the policy metadata result if successful, or `null` if an error occurs.
  *
  * @throws Will log an error to the console if the contract interaction fails.
@@ -767,7 +772,8 @@ export const getPolicy = async (
 export const getPolicyMetadata = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
-  policyId: number
+  policyId: number,
+  blockParams?: ContractBlockParameters
 ): Promise<Maybe<PolicyMetadataStruct>> => {
   try {
     const getMeta = await readContract(config, {
@@ -775,6 +781,7 @@ export const getPolicyMetadata = async (
       abi: rulesEnginePolicyContract.abi,
       functionName: "getPolicyMetadata",
       args: [policyId],
+      ...blockParams
     });
 
     let ruleResult = getMeta as PolicyMetadataStruct;
@@ -790,12 +797,14 @@ export const getPolicyMetadata = async (
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEnginePolicyContract - The contract instance for interacting with the Rules Engine Policy.
  * @param policyId - The ID of the policy to check.
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * @returns True if the policy exists, false otherwise.
  */
 export async function policyExists(
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
-  policyId: number
+  policyId: number,
+  blockParams?: ContractBlockParameters
 ): Promise<boolean> {
   try {
     let policyExists = await readContract(config, {
@@ -803,6 +812,7 @@ export async function policyExists(
       abi: rulesEnginePolicyContract.abi,
       functionName: "getPolicy",
       args: [policyId],
+      ...blockParams
     });
     if ((policyExists as any)[0] != null && (policyExists as any)[2] != null) {
       return true;
@@ -818,12 +828,14 @@ export async function policyExists(
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEnginePolicyContract - The contract instance for interacting with the Rules Engine Policy.
  * @param address - The address to check.
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * @returns array of all of the policy ids applied to the contract
  */
 export async function getAppliedPolicyIds(
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
-  address: string
+  address: string,
+  blockParams?: ContractBlockParameters
 ): Promise<number[]> {
   try {
     let appliedPolicies = await readContract(config, {
@@ -831,6 +843,7 @@ export async function getAppliedPolicyIds(
       abi: rulesEnginePolicyContract.abi,
       functionName: "getAppliedPolicyIds",
       args: [getAddress(address)],
+      ...blockParams
     });
     return appliedPolicies as number[];
   } catch (error) {
@@ -843,12 +856,14 @@ export async function getAppliedPolicyIds(
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEnginePolicyContract - The contract instance for interacting with the Rules Engine Policy.
  * @param policyId - The ID of the policy to check.
- * @returns array of all of the policy ids applied to the contract
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
+ * @returns True if the policy is closed, false otherwise
  */
 export async function isClosedPolicy(
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
-  policyId: number
+  policyId: number,
+  blockParams?: ContractBlockParameters
 ): Promise<boolean> {
   try {
     let isClosed = await readContract(config, {
@@ -856,6 +871,7 @@ export async function isClosedPolicy(
       abi: rulesEnginePolicyContract.abi,
       functionName: "isClosedPolicy",
       args: [policyId],
+      ...blockParams
     });
     return isClosed as boolean;
   } catch (error) {
@@ -949,13 +965,15 @@ export const openPolicy = async (
  * @param rulesEngineComponentContract - The contract instance for interacting with the Rules Engine Components.
  * @param policyId - The ID of the policy to check.
  * @param subscriber - The address to check
- * @returns array of all of the policy ids applied to the contract
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
+ * @returns True if the address is a subscriber to the closed policy, false otherwise
  */
 export async function isClosedPolicySubscriber(
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  subscriber: Address
+  subscriber: Address,
+  blockParams?: ContractBlockParameters
 ): Promise<boolean> {
   try {
     let isClosed = await readContract(config, {
@@ -963,6 +981,7 @@ export async function isClosedPolicySubscriber(
       abi: rulesEngineComponentContract.abi,
       functionName: "isClosedPolicySubscriber",
       args: [policyId, subscriber],
+      ...blockParams
     });
     return isClosed as boolean;
   } catch (error) {
@@ -1098,12 +1117,14 @@ export const cementPolicy = async (
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEnginePolicyContract - The contract instance for interacting with the Rules Engine Policy.
  * @param policyId - The ID of the policy to check.
- * @returns whether or not the policy is cemented
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
+ * @returns True if the policy is cemented, false otherwise
  */
 export const isCementedPolicy = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
-  policyId: number
+  policyId: number,
+  blockParams?: ContractBlockParameters
 ): Promise<boolean> => {
   try {
     const retrievePolicy = await readContract(config, {
@@ -1111,6 +1132,7 @@ export const isCementedPolicy = async (
       abi: rulesEnginePolicyContract.abi,
       functionName: "isCementedPolicy",
       args: [policyId],
+      ...blockParams
     });
 
     return retrievePolicy as boolean;

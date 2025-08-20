@@ -16,6 +16,7 @@ import {
   CallingFunctionHashMapping,
   PT,
   RulesEngineComponentContract,
+  ContractBlockParameters,
 } from "./types";
 
 /**
@@ -156,6 +157,7 @@ export const deleteCallingFunction = async (
  * @param rulesEngineComponentContract - The contract instance containing the address and ABI
  * @param policyId - The ID of the policy which the calling function belongs to.
  * @param callingFunctionId - The calling function ID.
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * @returns A promise that resolves to CallingFunctionHashMapping.
  *
  */
@@ -163,7 +165,8 @@ export const getCallingFunctionMetadata = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  callingFunctionId: number
+  callingFunctionId: number,
+  blockParams?: ContractBlockParameters
 ): Promise<CallingFunctionHashMapping> => {
   try {
     const getMeta = await readContract(config, {
@@ -171,6 +174,7 @@ export const getCallingFunctionMetadata = async (
       abi: rulesEngineComponentContract.abi,
       functionName: "getCallingFunctionMetadata",
       args: [policyId, callingFunctionId],
+      ...blockParams
     });
     let callingFunctionResult = getMeta as CallingFunctionHashMapping;
     return callingFunctionResult;

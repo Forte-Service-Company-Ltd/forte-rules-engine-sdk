@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: BUSL-1.1
-import { Abi, Address, ByteArray, GetContractReturnType, Hex } from "viem";
+import { Abi, Address, BlockNumber, BlockTag, ByteArray, GetContractReturnType, Hex } from "viem";
 
 import RulesEnginePolicyLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEnginePolicyFacet.sol/RulesEnginePolicyFacet.json";
 import RulesEngineComponentLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineComponentFacet.sol/RulesEngineComponentFacet.json";
@@ -639,3 +639,21 @@ export type UnwrapEither = <T, U>(e: Either<T, U>) => NonNullable<T | U>;
  * Maybe type for nullable values
  */
 export type Maybe<T> = NonNullable<T> | null;
+
+/**
+ * Block parameters that can be used in wagmi's readContract function
+ * to specify a specific block number or tag to interact with the contract at
+ */
+export type ContractBlockParameters = {
+  /**
+   * Block number to execute the contract interaction at
+   * This is useful for historical queries or when you want to execute against a specific block
+   */
+  blockNumber?: BlockNumber;
+
+  /**
+   * Block tag to execute the contract interaction at
+   * Common values include 'latest', 'earliest', 'pending', 'safe', 'finalized'
+   */
+  blockTag?: BlockTag;
+};
