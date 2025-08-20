@@ -63,6 +63,7 @@ import {
   validatePolicyJSON,
 } from "./validation";
 import { isLeft, unwrapEither } from "./utils";
+import { id } from "zod/dist/types/v4/locales";
 
 /**
  * @file policy.ts
@@ -589,7 +590,7 @@ export const getPolicy = async (
 
     var iter = 1;
 
-    for (var cfId in callingFunctions) {
+    for (var _cfId in callingFunctions) {
       var mapp = await getCallingFunctionMetadata(
         config,
         rulesEngineComponentContract,
@@ -605,6 +606,7 @@ export const getPolicy = async (
       };
       allFunctionMappings.push(newMapping);
       const callingFunctionJSON = {
+        id: Number(iter),
         name: mapp.callingFunction,
         functionSignature: mapp.callingFunction,
         encodedValues: mapp.encodedValues,

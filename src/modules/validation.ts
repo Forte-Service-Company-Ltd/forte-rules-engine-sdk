@@ -304,7 +304,7 @@ export const validateRuleJSON = (
 };
 
 export const ruleReverseValidator = ruleValidator.extend({
-  id: z.number().optional(),
+  id: z.number(),
 });
 
 export interface RuleJSONReversed
@@ -381,7 +381,7 @@ export const validateForeignCallJSON = (
 
 export const foreignCallReverseValidator = foreignCallValidator.extend({
   function: z.string().trim(),
-  id: z.number().optional(),
+  id: z.number(),
 });
 
 export interface ForeignCallJSONReversed
@@ -435,7 +435,7 @@ export const trackerValidator = z
 export interface TrackerJSON extends z.infer<typeof trackerValidator> { }
 
 export const trackerReverseValidator = trackerValidator.extend({
-  id: z.number().optional(),
+  id: z.number(),
 });
 
 export interface TrackerJSONReversed extends z.infer<typeof trackerReverseValidator> { }
@@ -484,7 +484,7 @@ export const mappedTrackerValidator = z.object({
 });
 
 export const mappedTrackerReverseValidator = mappedTrackerValidator.extend({
-  id: z.number().optional(),
+  id: z.number(),
 });
 
 export interface MappedTrackerJSONReversed
@@ -560,7 +560,7 @@ export interface CallingFunctionJSON
   extends z.infer<typeof callingFunctionValidator> { }
   
 export const callingFunctionReverseValidator = callingFunctionValidator.extend({
-  id: z.number().optional(),
+  id: z.number(),
 });
 
 export interface CallingFunctionJSONReversed

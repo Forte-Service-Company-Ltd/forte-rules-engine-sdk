@@ -1110,10 +1110,12 @@ describe("Rules Engine Interactions", async () => {
     expect(retVal?.Policy).toEqual(parsed)
     expect(parsed.Rules[0].id).toEqual(1);
     expect(parsed.Trackers[0].id).toEqual(1);
+    expect(parsed.CallingFunctions[0].id).toEqual(1);
 
     // Remove the ids to match the input
     delete parsed.Rules[0].id;
     delete parsed.Trackers[0].id;
+    delete parsed.CallingFunctions[0].id;
     
     expect(parsed).toEqual(input);
     expect(parsed.Policy).toEqual(input.Policy);
@@ -1226,6 +1228,7 @@ describe("Rules Engine Interactions", async () => {
     expect(parsed.Rules[0].id).toEqual(1);
     expect(parsed.Trackers[0].id).toEqual(1);
     expect(parsed.MappedTrackers[0].id).toEqual(2);
+    expect(parsed.CallingFunctions[0].id).toEqual(1);
 
     // Remove the ids to match the input
     delete parsed.ForeignCalls[0].id;
@@ -1233,6 +1236,7 @@ describe("Rules Engine Interactions", async () => {
     delete parsed.Rules[0].id;
     delete parsed.Trackers[0].id;
     delete parsed.MappedTrackers[0].id;
+    delete parsed.CallingFunctions[0].id;
 
     expect(parsed).toEqual(input);
     expect(parsed.Policy).toEqual(input.Policy);
