@@ -11,7 +11,6 @@ import {
 } from "../src/modules/validation";
 import { isLeft, isRight, unwrapEither } from "../src/modules/utils";
 import { RulesError } from "../src/modules/types";
-import { safeParse } from "zod/v4/core";
 
 const ruleJSON = `{
         "Name": "Rule A",

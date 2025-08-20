@@ -15,21 +15,16 @@ import {
 } from "../modules/types";
 import {
   CallingFunctionJSON,
-  ForeignCallJSON,
   ForeignCallJSONReversed,
   MappedTrackerJSON,
-  RuleJSON,
   RuleJSONReversed,
   TrackerJSON,
   validateCallingFunctionJSON,
-  validateFCFunctionInput,
-  validateForeignCallJSON,
   validateMappedTrackerJSON,
   validateTrackerJSON,
 } from "../modules/validation";
 import { parseFunctionArguments } from "./parsing-utilities";
 import { isRight, unwrapEither } from "../modules/utils";
-import { id } from "zod/dist/types/v4/locales";
 
 /**
  * @file reverse-parsing-logic.ts

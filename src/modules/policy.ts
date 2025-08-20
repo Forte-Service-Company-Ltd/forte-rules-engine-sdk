@@ -20,12 +20,10 @@ import {
   RulesEnginePolicyContract,
   RulesEngineComponentContract,
   FCNameToID,
-  TrackerDefinition,
   ForeignCallOnChain,
   TrackerOnChain,
   hexToFunctionString,
   RulesEngineRulesContract,
-  MappedTrackerDefinition,
   RulesEngineForeignCallContract,
   PolicyMetadataStruct,
   Maybe,
@@ -37,7 +35,6 @@ import {
 import {
   createForeignCall,
   getAllForeignCalls,
-  getForeignCall,
   getForeignCallMetadata,
 } from "./foreign-calls";
 import { createRule, getRuleMetadata } from "./rules";
@@ -65,8 +62,7 @@ import {
   PolicyJSON,
   validatePolicyJSON,
 } from "./validation";
-import { isLeft, isRight, unwrapEither } from "./utils";
-import { reverse } from "dns";
+import { isLeft, unwrapEither } from "./utils";
 
 /**
  * @file policy.ts

@@ -17,7 +17,7 @@ import {
   TrackerOnChain,
   ContractBlockParameters,
 } from "./types";
-import { isLeft, isRight, unwrapEither } from "./utils";
+import { isLeft, unwrapEither } from "./utils";
 import {
   getRulesErrorMessages,
   validateMappedTrackerJSON,

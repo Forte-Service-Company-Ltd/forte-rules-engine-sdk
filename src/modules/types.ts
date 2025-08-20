@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: BUSL-1.1
-import { Abi, Address, BlockNumber, BlockTag, ByteArray, GetContractReturnType, Hex } from "viem";
+import { Address, BlockNumber, BlockTag, ByteArray, GetContractReturnType, Hex } from "viem";
 
 import RulesEnginePolicyLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEnginePolicyFacet.sol/RulesEnginePolicyFacet.json";
 import RulesEngineComponentLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineComponentFacet.sol/RulesEngineComponentFacet.json";
