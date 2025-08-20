@@ -237,7 +237,6 @@ export function buildARuleStruct(
     posEffects: effect.positiveEffects,
     negEffects: effect.negativeEffects,
   };
-  console.log(rule);
   return rule;
 }
 

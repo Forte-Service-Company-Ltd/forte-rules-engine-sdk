@@ -9,6 +9,8 @@ import {
   InstructionSet,
   ASTAccumulator,
 } from "../modules/types";
+import { determinePTEnumeration } from "./parser";
+import { getPTEnum } from "../modules/utils";
 
 /**
  * @file internal-parsing-logic.ts
@@ -379,8 +381,18 @@ function convertASTToInstructionSet(
             if (expression[1].includes("|")) {
               acc.instructionSet.push(truKey);
             }
-            // Currently only supporting Memory type need to expand to support placeholder usage in tracker updates
-            acc.instructionSet.push(0);
+            const trackerName = expression[1].split(":")[1];
+            const trackerType = getPTEnum(indexMap.find(
+              (mapping) => mapping.name == trackerName
+            )?.type || 4);// Default to VOID if not found
+
+            // if trackerType is string(1) or bytes(5) then push 1 indicating placeholder tracker
+            // else push 0 indicating memory tracker
+            if (trackerType === "string" || trackerType === "bytes") {
+              acc.instructionSet.push(1);
+            } else {
+              acc.instructionSet.push(0);
+            }
 
             acc.iterator.value += 1;
             acc.mem.push(acc.iterator.value);

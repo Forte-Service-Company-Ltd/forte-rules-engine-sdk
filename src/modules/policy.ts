@@ -201,6 +201,7 @@ export const createPolicy = async (
         trackerIds.push(struc);
       }
     }
+
     if (policyJSON.MappedTrackers != null) {
       for (var mTracker of policyJSON.MappedTrackers) {
         const parsedTracker = parseMappedTrackerSyntax(mTracker);
