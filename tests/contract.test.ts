@@ -60,7 +60,7 @@ import {
   getTrackerToRuleIds,
 } from "../src/modules/trackers";
 import { sleep } from "../src/modules/contract-interaction-utils";
-import { Config } from "@wagmi/core";
+import { Config, getBlockNumber } from "@wagmi/core";
 import {
   confirmNewCallingContractAdmin,
   confirmNewForeignCallAdmin,
@@ -72,9 +72,6 @@ import {
   proposeNewForeignCallAdmin,
   proposeNewPolicyAdmin,
 } from "../src/modules/admin";
-import { validate } from "uuid";
-import { validatePolicyJSON } from "../src/modules/validation";
-import { de } from "zod/v4/locales";
 
 // Hardcoded address of the diamond in diamondDeployedAnvilState.json
 var config: Config;
@@ -1303,6 +1300,102 @@ describe("Rules Engine Interactions", async () => {
     expect(retVal?.policyName).toEqual("Test Policy");
     expect(retVal?.policyDescription).toEqual("Test Policy Description");
   });
+
+  test("Can retrieve historical metadata", async () => {
+    var policyJSON = `
+                {
+                "Policy": "Test Policy",
+                "Description": "Test Policy Description",
+                "PolicyType": "open",
+                "CallingFunctions": [
+                  {
+                    "name": "transfer(address to, uint256 value)",
+                    "functionSignature": "transfer(address to, uint256 value)",
+                    "encodedValues": "address to, uint256 value"
+                  }
+                ],
+                "ForeignCalls": [
+                    {
+                        "name": "testSig(address)",
+                        "function": "testSig(address)",
+                        "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                        "returnType": "uint256",
+                        "valuesToPass": "to",
+                        "mappedTrackerKeyValues": "",
+                        "callingFunction": "transfer(address to, uint256 value)"
+                    }
+                ],
+                "Trackers": [
+                {
+                    "name": "testTracker",
+                    "type": "string",
+                    "initialValue": "test"
+                }
+                ],
+                "MappedTrackers": [],
+                "Rules": [
+                    {
+                        "Name": "Rule A",
+                        "Description": "Rule A Description",
+                        "condition": "TR:testTracker > 500",
+                        "positiveEffects": ["emit Success"],
+                        "negativeEffects": ["revert()"],
+                        "callingFunction": "transfer(address to, uint256 value)"
+                    }
+                ]
+                }`;
+
+    var result = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      policyJSON
+    );
+
+    const blockNumber = await getBlockNumber(config);
+    
+    expect(result.policyId).toBeGreaterThanOrEqual(0);
+    var retVal = await getPolicyMetadata(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      result.policyId
+    );
+    expect(retVal?.policyName).toEqual("Test Policy");
+    expect(retVal?.policyDescription).toEqual("Test Policy Description");
+
+    var updateResult = await updatePolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      result.policyId,
+      [],
+      [],
+      [[]],
+      "Updated Policy",
+      "Updated Policy Description",
+      1
+    );
+    var updatedMetadata = await getPolicyMetadata(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      result.policyId
+    );
+    expect(updatedMetadata?.policyName).toEqual("Updated Policy");
+    expect(updatedMetadata?.policyDescription).toEqual("Updated Policy Description");
+
+    var historicalMetadata = await getPolicyMetadata(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      result.policyId,
+      {blockNumber}
+    );
+    expect(historicalMetadata?.policyName).toEqual("Test Policy");
+    expect(historicalMetadata?.policyDescription).toEqual("Test Policy Description");
+
+  });
+
   test("Can check if a policy exists", async () => {
     var policyJSON = `
       {

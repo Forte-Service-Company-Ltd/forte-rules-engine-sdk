@@ -128,12 +128,13 @@ export class RulesEngine {
    * @param {Address} rulesEngineAddress - The address of the deployed Rules Engine smart contract.
    * @param {Config} localConfig - The configuration object containing network and wallet information.
    * @param {any} client - The client instance for interacting with the blockchain.
+   * @param {number} localConfirmationCount - The number of confirmations (blocks that have passed) to wait before resolving transaction receipts (default is 1).
    */
   constructor(
     rulesEngineAddress: Address,
     localConfig: Config,
     client: any,
-    localConfirmationCount: number
+    localConfirmationCount: number = 1
   ) {
     this.rulesEnginePolicyContract = getContract({
       address: rulesEngineAddress,
@@ -1227,6 +1228,7 @@ export class RulesEngine {
    * @param foreignCallAdress - The address of the contract to check the admin for.
    * @param account - The address to check
    * @param functionSelector - The selector for the specific foreign call
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
    * @returns whether or not the address is the foreign call admin.
    *
    */
