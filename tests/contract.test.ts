@@ -57,6 +57,7 @@ import {
   getTracker,
   getAllTrackers,
   deleteTracker,
+  getTrackerToRuleIds,
 } from "../src/modules/trackers";
 import { sleep } from "../src/modules/contract-interaction-utils";
 import { Config } from "@wagmi/core";
@@ -498,7 +499,7 @@ describe("Rules Engine Interactions", async () => {
       result.policyId
     );
     expect(rules?.length).toEqual(1);
-    expect(rules![0][0].instructionSet.length).toEqual(0);
+    expect(rules?.[0]?.[0]?.instructionSet?.length ?? 0).toEqual(0);
   });
   test("Can create a new foreign call", async () => {
     var result = await createPolicy(
@@ -959,6 +960,79 @@ describe("Rules Engine Interactions", async () => {
     expect(updatedTRRetrieve?.trackerValue).toEqual(
       "0x0000000000000000000000000000000000000000000000000000000000000005"
     );
+  });
+  test("Can link a tracker to a rule and retrieve rule IDs", async () => {
+    var policyJSON = `
+      {
+      "Policy": "Test Policy",
+      "Description": "Test Policy Description",
+      "PolicyType": "open",
+      "CallingFunctions": [
+        {
+          "name": "transfer(address to, uint256 value)",
+          "functionSignature": "transfer(address to, uint256 value)",
+          "encodedValues": "address to, uint256 value"
+        }
+      ],
+      "ForeignCalls": [
+          {
+              "name": "testSig(address)",
+              "function": "testSig(address)",
+              "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+              "returnType": "uint256",
+              "valuesToPass": "to",
+              "mappedTrackerKeyValues": "",
+              "callingFunction": "transfer(address to, uint256 value)"
+          }
+      ],
+      "Trackers": [
+      {
+          "name": "testTracker",
+          "type": "string",
+          "initialValue": "test"
+      }
+      ],
+      "MappedTrackers": [],
+      "Rules": [
+          {
+              "Name": "Rule A",
+              "Description": "Rule A Description",
+              "condition": "TR:testTracker > 500",
+              "positiveEffects": ["emit Success"],
+              "negativeEffects": ["revert()"],
+              "callingFunction": "transfer(address to, uint256 value)"
+          }
+      ]
+      }`;
+    var result = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      policyJSON
+    );
+    expect(result.policyId).toBeGreaterThan(0);
+    
+    var resultTR = await getAllTrackers(
+      config,
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      result.policyId
+    );
+    expect(resultTR?.length).toEqual(1);
+
+
+    var trId = resultTR![0].trackerIndex;
+    var ruleIds = await getTrackerToRuleIds(
+      config,
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      result.policyId,
+      trId
+    );
+    expect(ruleIds.length).toEqual(1);
+
+    
   });
   test("Can retrieve a full simple policy", async () => {
     var policyJSON = `
