@@ -17,8 +17,10 @@ import {
   CallingFunctionJSON,
   ForeignCallJSONReversed,
   MappedTrackerJSON,
+  MappedTrackerJSONReversed,
   RuleJSONReversed,
   TrackerJSON,
+  TrackerJSONReversed,
   validateCallingFunctionJSON,
   validateMappedTrackerJSON,
   validateTrackerJSON,
@@ -626,7 +628,7 @@ export function convertTrackerStructsToStrings(
   trackers: TrackerOnChain[],
   trackerNames: TrackerMetadataStruct[],
   mappedTrackerNames: TrackerMetadataStruct[]
-): { Trackers: TrackerJSON[]; MappedTrackers: MappedTrackerJSON[] } {
+): { Trackers: TrackerJSONReversed[]; MappedTrackers: MappedTrackerJSONReversed[] } {
   const Trackers = trackers
     .filter((tracker) => !tracker.mapped)
     .map((tracker, iter) => {
@@ -638,7 +640,7 @@ export function convertTrackerStructsToStrings(
         trackerNames[iter].initialValue
       );
 
-      const inputs = {
+      const inputs: TrackerJSONReversed = {
         id: Number(tracker.trackerIndex),
         name: trackerNames[iter].trackerName,
         type: trackerType,
@@ -646,7 +648,7 @@ export function convertTrackerStructsToStrings(
       };
       const validatedInputs = validateTrackerJSON(JSON.stringify(inputs), true);
       if (isRight(validatedInputs)) {
-        return unwrapEither(validatedInputs);
+        return unwrapEither(validatedInputs) as TrackerJSONReversed;
       } else {
         throw new Error(
           `Invalid tracker input: ${JSON.stringify(validatedInputs.left)}`
@@ -675,7 +677,7 @@ export function convertTrackerStructsToStrings(
         values.push(decodedValue);
       }
 
-      const inputs = {
+      const inputs: MappedTrackerJSONReversed = {
         id: Number(tracker.trackerIndex),
         name: mappedTrackerNames[iter].trackerName,
         valueType,
@@ -685,7 +687,8 @@ export function convertTrackerStructsToStrings(
       };
       const validatedInputs = validateMappedTrackerJSON(JSON.stringify(inputs), true);
       if (isRight(validatedInputs)) {
-        return unwrapEither(validatedInputs);
+        // Ensure the returned object has the correct type with 'id'
+        return unwrapEither(validatedInputs) as MappedTrackerJSONReversed;
       } else {
         throw new Error(
           `Invalid mapped tracker input: ${JSON.stringify(

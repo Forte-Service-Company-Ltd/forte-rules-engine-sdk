@@ -57,9 +57,12 @@ import {
 } from "../parsing/reverse-parsing-logic";
 import {
   CallingFunctionJSON,
+  CallingFunctionJSONReversed,
   ForeignCallJSON,
+  ForeignCallJSONReversed,
   getRulesErrorMessages,
   PolicyJSON,
+  PolicyJSONReversed,
   validatePolicyJSON,
 } from "./validation";
 import { isLeft, unwrapEither } from "./utils";
@@ -559,7 +562,7 @@ export const getPolicy = async (
   blockParams?: ContractBlockParameters
 ): Promise<Maybe<PolicyResult>> => {
   var allFunctionMappings: hexToFunctionString[] = [];
-  const callingFunctionJSONs: CallingFunctionJSON[] = [];
+  const callingFunctionJSONs: CallingFunctionJSONReversed[] = [];
   try {
     const retrievePolicy = await readContract(config, {
       address: rulesEnginePolicyContract.address,
@@ -691,7 +694,7 @@ export const getPolicy = async (
       };
       allFunctionMappings.push(newMapping);
     }
-    const callStrings: ForeignCallJSON[] = convertForeignCallStructsToStrings(
+    const callStrings: ForeignCallJSONReversed[] = convertForeignCallStructsToStrings(
       foreignCalls,
       allFunctionMappings
     );
@@ -743,7 +746,7 @@ export const getPolicy = async (
       iter++;
     }
 
-    var jsonObj: PolicyJSON = {
+    var jsonObj: PolicyJSONReversed = {
       Policy: policyMeta.policyName,
       Description: policyMeta.policyDescription,
       PolicyType: PolicyType ? "closed" : "open",

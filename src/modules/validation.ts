@@ -399,7 +399,7 @@ export const foreignCallReverseValidator = foreignCallValidator.extend({
 });
 
 export interface ForeignCallJSONReversed
-  extends z.infer<typeof foreignCallValidator> { }
+  extends z.infer<typeof foreignCallReverseValidator> { }
 
 export const supportedTrackerTypes: string[] = [
   "uint256",

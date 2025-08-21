@@ -6,7 +6,7 @@ import RulesEngineComponentLogicArtifact from "@fortefoundation/forte-rules-engi
 import RulesEngineRuleLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineRuleFacet.sol/RulesEngineRuleFacet.json";
 import RulesEngineAdminLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineAdminRolesFacet.sol/RulesEngineAdminRolesFacet.json";
 import RulesEngineForeignCallLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineForeignCallFacet.sol/RulesEngineForeignCallFacet.json";
-import { PolicyJSON } from "./validation";
+import { PolicyJSON, PolicyJSONReversed } from "./validation";
 
 /**
  * @file types.ts
@@ -241,7 +241,7 @@ export type RuleStorageSet = {
  */
 export type PolicyResult = {
   /** The parsed policy object */
-  Policy: PolicyJSON;
+  Policy: PolicyJSONReversed;
   /** The JSON string representation of the policy */
   JSON: string;
 };
