@@ -6,7 +6,7 @@ import RulesEngineComponentLogicArtifact from "@fortefoundation/forte-rules-engi
 import RulesEngineRuleLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineRuleFacet.sol/RulesEngineRuleFacet.json";
 import RulesEngineAdminLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineAdminRolesFacet.sol/RulesEngineAdminRolesFacet.json";
 import RulesEngineForeignCallLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineForeignCallFacet.sol/RulesEngineForeignCallFacet.json";
-import { PolicyJSON, PolicyJSONReversed } from "./validation";
+import { CallingFunctionJSON, ForeignCallJSON, MappedTrackerJSON, PolicyJSON, RuleJSON, TrackerJSON } from "./validation";
 
 /**
  * @file types.ts
@@ -94,18 +94,6 @@ export type hexToFunctionString = {
 };
 
 /**
- * Maps calling functions to their signatures and encoded values
- */
-export type CallingFunctionHashMapping = {
-  /** The calling function identifier */
-  callingFunction: string;
-  /** Function signature */
-  signature: string;
-  /** Encoded values for the function */
-  encodedValues: string;
-};
-
-/**
  * Simple tuple type with integer and string fields
  */
 export type Tuple = {
@@ -181,6 +169,26 @@ export type EffectStructs = {
 };
 
 // -----------------------------------------------------------------------------
+// Calling Function Types
+// -----------------------------------------------------------------------------
+
+/**
+ * Maps calling functions to their signatures and encoded values
+ */
+export type CallingFunctionHashMapping = {
+  /** The calling function identifier */
+  callingFunction: string;
+  /** Function signature */
+  signature: string;
+  /** Encoded values for the function */
+  encodedValues: string;
+};
+
+export interface CallingFunctionData extends CallingFunctionJSON{
+  id: number;
+}
+
+// -----------------------------------------------------------------------------
 // Rule Types
 // -----------------------------------------------------------------------------
 
@@ -231,6 +239,11 @@ export type RuleStorageSet = {
   rule: any;
 };
 
+export interface RuleData extends RuleJSON {
+  id: number;
+}
+
+
 // -----------------------------------------------------------------------------
 // Policy Types
 // -----------------------------------------------------------------------------
@@ -241,10 +254,19 @@ export type RuleStorageSet = {
  */
 export type PolicyResult = {
   /** The parsed policy object */
-  Policy: PolicyJSONReversed;
+  Policy: PolicyData;
   /** The JSON string representation of the policy */
   JSON: string;
 };
+
+export interface PolicyData extends PolicyJSON {
+  /** The rules defined in the policy */
+  id: number;
+  rules: RuleData[];
+  foreignCalls: ForeignCallData[];
+  trackers: TrackerData[];
+  mappedTrackers: MappedTrackerData[];
+}
 
 /**
  * Metadata about a policy
@@ -348,6 +370,10 @@ export type ForeignCall = {
   fcPlaceholder: string;
 };
 
+export interface ForeignCallData extends ForeignCallJSON {
+  id: number;
+}
+
 // -----------------------------------------------------------------------------
 // Tracker Types
 // -----------------------------------------------------------------------------
@@ -437,6 +463,16 @@ export type Tracker = {
   /** Secondary raw type information */
   rawTypeTwo?: string;
 };
+
+export interface TrackerData extends TrackerJSON {
+  /** ID of the tracker */
+  id: number;
+}
+
+export interface MappedTrackerData extends MappedTrackerJSON {
+  /** ID of the mapped tracker */
+  id: number;
+}
 
 // -----------------------------------------------------------------------------
 // Placeholder and Component Types
