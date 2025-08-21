@@ -10,6 +10,8 @@ export { injectModifier } from './codeGeneration/inject-modifier.js'
 
 export { policyModifierGeneration } from './codeGeneration/code-modification-script.js'
 
+export { getTrackerToRuleIds } from './modules/trackers.js'
+
 export {
   RulesEnginePolicyContract,
   RulesEngineComponentContract,

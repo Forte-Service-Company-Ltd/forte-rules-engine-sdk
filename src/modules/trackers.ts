@@ -406,8 +406,7 @@ export const getTrackerToRuleIds = async (
       functionName: "getTrackerToRuleIds",
       args: [policyId, trackerId],
     });
-    let ruleIdsResult = retrieveRuleIds as number[];
-    return ruleIdsResult;
+    return retrieveRuleIds as number[];
   } catch (error) {
     console.error(error);
     return [];
