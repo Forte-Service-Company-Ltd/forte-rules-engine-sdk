@@ -39,6 +39,44 @@ export const safeParseJson = (input: string): Either<RulesError[], object> => {
   }
 };
 
+/**
+ * Generic validation function to parse and validate JSON against a Zod schema.
+ * 
+ * @param input - String to be parsed
+ * @param normalValidator - Zod validator to use when reversed is false
+ * @param reverseValidator - Zod validator to use when reversed is true
+ * @param reversed - Whether to use the reverse validator
+ * @param formatErrorMessage - Optional custom error message formatter
+ * @returns Either the validated object or error messages
+ */
+export const validateJSON = <T, R = T>(
+  input: string,
+  normalValidator: z.ZodType<T>,
+  reverseValidator: z.ZodType<R>,
+  reversed: boolean = false,
+  formatErrorMessage: (err: z.ZodIssue, path: string) => string = 
+    (err, path) => `${err.message}: Field ${path}`
+): Either<RulesError[], T | R> => {
+  const parsedJson = safeParseJson(input);
+  
+  if (isLeft(parsedJson)) return parsedJson;
+
+  const validatorToUse = reversed ? reverseValidator : normalValidator;
+
+  const parsed = validatorToUse.safeParse(unwrapEither(parsedJson));
+  
+  if (parsed.success) {
+    return makeRight(parsed.data);
+  } else {
+    const errors: RulesError[] = parsed.error.issues.map((err) => ({
+      errorType: "INPUT",
+      message: formatErrorMessage(err, err.path.join(".")),
+      state: { input },
+    }));
+    return makeLeft(errors);
+  }
+};
+
 export const PType = PT.map((p) => p.name); // ["address", "string", "uint256", "bool", "void", "bytes"]
 
 export const splitFunctionInput = (input: string): string[] => {
@@ -282,25 +320,13 @@ export interface RuleJSON extends z.infer<typeof ruleValidator> { }
 export const validateRuleJSON = (
   rule: string,
   reversed: boolean = false
-): Either<RulesError[], RuleJSON> => {
-  const parsedJson = safeParseJson(rule);
-
-  if (isLeft(parsedJson)) return parsedJson;
-
-  const ruleValidatorToUse = reversed ? ruleReverseValidator : ruleValidator;
-
-  const parsed = ruleValidatorToUse.safeParse(unwrapEither(parsedJson));
-
-  if (parsed.success) {
-    return makeRight(parsed.data);
-  } else {
-    const errors: RulesError[] = parsed.error.issues.map((err) => ({
-      errorType: "INPUT",
-      message: `${err.message}: Field ${err.path.join(".")}`,
-      state: { input: rule },
-    }));
-    return makeLeft(errors);
-  }
+): Either<RulesError[], RuleJSON | RuleJSONReversed> => {
+  return validateJSON<RuleJSON, RuleJSONReversed>(
+    rule,
+    ruleValidator,
+    ruleReverseValidator,
+    reversed
+  );
 };
 
 export const ruleReverseValidator = ruleValidator.extend({
@@ -358,25 +384,13 @@ export interface ForeignCallJSON extends z.infer<typeof foreignCallValidator> { 
 export const validateForeignCallJSON = (
   foreignCall: string,
   reversed: boolean = false
-): Either<RulesError[], ForeignCallJSON> => {
-  const parsedJson = safeParseJson(foreignCall);
-
-  if (isLeft(parsedJson)) return parsedJson;
-
-  const foreignCallValidatorToUse = reversed ? foreignCallReverseValidator : foreignCallValidator;
-
-  const parsed = foreignCallValidatorToUse.safeParse(unwrapEither(parsedJson));
-
-  if (parsed.success) {
-    return makeRight(parsed.data);
-  } else {
-    const errors: RulesError[] = parsed.error.issues.map((err) => ({
-      errorType: "INPUT",
-      message: `${err.message}: Field ${err.path.join(".")}`,
-      state: { input: foreignCall },
-    }));
-    return makeLeft(errors);
-  }
+): Either<RulesError[], ForeignCallJSON | ForeignCallJSONReversed> => {
+  return validateJSON<ForeignCallJSON, ForeignCallJSONReversed>(
+    foreignCall,
+    foreignCallValidator,
+    foreignCallReverseValidator,
+    reversed
+  );
 };
 
 export const foreignCallReverseValidator = foreignCallValidator.extend({
@@ -499,25 +513,13 @@ export interface MappedTrackerJSONReversed
 export const validateTrackerJSON = (
   tracker: string,
   reversed: boolean = false
-): Either<RulesError[], TrackerJSON> => {
-  const parsedJson = safeParseJson(tracker);
-
-  if (isLeft(parsedJson)) return parsedJson;
-
-  const trackerValidatorToUse = reversed ? trackerReverseValidator : trackerValidator;
-
-  const parsed = trackerValidatorToUse.safeParse(unwrapEither(parsedJson));
-
-  if (parsed.success) {
-    return makeRight(parsed.data);
-  } else {
-    const errors: RulesError[] = parsed.error.issues.map((err) => ({
-      errorType: "INPUT",
-      message: `${err.message}: Field ${err.path.join(".")}`,
-      state: { input: tracker },
-    }));
-    return makeLeft(errors);
-  }
+): Either<RulesError[], TrackerJSON | TrackerJSONReversed> => {
+  return validateJSON<TrackerJSON, TrackerJSONReversed>(
+    tracker,
+    trackerValidator,
+    trackerReverseValidator,
+    reversed
+  );
 };
 
 /**
@@ -529,25 +531,13 @@ export const validateTrackerJSON = (
 export const validateMappedTrackerJSON = (
   tracker: string,
   reversed: boolean = false
-): Either<RulesError[], MappedTrackerJSON> => {
-  const parsedJson = safeParseJson(tracker);
-
-  if (isLeft(parsedJson)) return parsedJson;
-
-  const mappedTrackerValidatorToUse = reversed ? mappedTrackerReverseValidator : mappedTrackerValidator;
-
-  const parsed = mappedTrackerValidatorToUse.safeParse(unwrapEither(parsedJson));
-
-  if (parsed.success) {
-    return makeRight(parsed.data);
-  } else {
-    const errors: RulesError[] = parsed.error.issues.map((err) => ({
-      errorType: "INPUT",
-      message: `${err.message}: Field ${err.path.join(".")}`,
-      state: { input: tracker },
-    }));
-    return makeLeft(errors);
-  }
+): Either<RulesError[], MappedTrackerJSON | MappedTrackerJSONReversed> => {
+  return validateJSON<MappedTrackerJSON, MappedTrackerJSONReversed>(
+    tracker,
+    mappedTrackerValidator,
+    mappedTrackerReverseValidator,
+    reversed
+  );
 };
 
 export const callingFunctionValidator = z.object({
@@ -575,23 +565,13 @@ export interface CallingFunctionJSONReversed
 export const validateCallingFunctionJSON = (
   callingFunction: string,
   reversed: boolean = false
-): Either<RulesError[], CallingFunctionJSON> => {
-  const parsedJson = safeParseJson(callingFunction);
-  if (isLeft(parsedJson)) return parsedJson;
-
-  const callingFunctionValidatorToUse = reversed ? callingFunctionReverseValidator : callingFunctionValidator;
-
-  const parsed = callingFunctionValidatorToUse.safeParse(unwrapEither(parsedJson));
-  if (parsed.success) {
-    return makeRight(parsed.data);
-  } else {
-    const errors: RulesError[] = parsed.error.issues.map((err) => ({
-      errorType: "INPUT",
-      message: `${err.message}: Field ${err.path.join(".")}`,
-      state: { input: callingFunction },
-    }));
-    return makeLeft(errors);
-  }
+): Either<RulesError[], CallingFunctionJSON | CallingFunctionJSONReversed> => {
+  return validateJSON<CallingFunctionJSON, CallingFunctionJSONReversed>(
+    callingFunction,
+    callingFunctionValidator,
+    callingFunctionReverseValidator,
+    reversed
+  );
 };
 
 export const policyJSONValidator = z.object({
@@ -615,25 +595,14 @@ export interface PolicyJSON extends z.infer<typeof policyJSONValidator> { }
 export const validatePolicyJSON = (
   policy: string,
   reversed: boolean = false
-): Either<RulesError[], PolicyJSON> => {
-  const parsedJson = safeParseJson(policy);
-
-  if (isLeft(parsedJson)) return parsedJson;
-
-  const policyJSONValidatorToUse = reversed ? policyJSONReverseValidator : policyJSONValidator;
-
-  const parsed = policyJSONValidatorToUse.safeParse(unwrapEither(parsedJson));
-
-  if (parsed.success) {
-    return makeRight(parsed.data);
-  } else {
-    const errors: RulesError[] = parsed.error.issues.map((err) => ({
-      errorType: "INPUT",
-      message: `${err.message}${err.path.length ? `: Field ${err.path.join(".")}` : ""}`,
-      state: { input: policy },
-    }));
-    return makeLeft(errors);
-  }
+): Either<RulesError[], PolicyJSON | PolicyJSONReversed> => {
+  return validateJSON<PolicyJSON, PolicyJSONReversed>(
+    policy,
+    policyJSONValidator,
+    policyJSONReverseValidator,
+    reversed,
+    (err, path) => `${err.message}${path ? `: Field ${path}` : ""}`
+  );
 };
 
 export const policyJSONReverseValidator = policyJSONValidator.extend({
