@@ -499,8 +499,7 @@ describe("Rules Engine Interactions", async () => {
       result.policyId
     );
     expect(rules?.length).toEqual(1);
-    
-    expect(rules && rules[0] && rules[0][0] ? rules[0][0].instructionSet.length : 0).toEqual(0);
+    expect(rules![0][0].instructionSet.length).toEqual(0);
   });
   test("Can create a new foreign call", async () => {
     var result = await createPolicy(
