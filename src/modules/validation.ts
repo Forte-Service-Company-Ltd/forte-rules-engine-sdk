@@ -54,7 +54,7 @@ export const validateJSON = <T, R = T>(
   normalValidator: z.ZodType<T>,
   reverseValidator: z.ZodType<R>,
   reversed: boolean = false,
-  formatErrorMessage: (err: z.ZodIssue, path: string) => string = 
+  formatErrorMessage: (err: z.core.$ZodIssue, path: string) => string = 
     (err, path) => `${err.message}: Field ${path}`
 ): Either<RulesError[], T | R> => {
   const parsedJson = safeParseJson(input);
