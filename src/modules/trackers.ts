@@ -380,3 +380,36 @@ export const getAllTrackers = async (
     return [];
   }
 };
+
+/**
+ * Retrieves the rule IDs associated with a specific tracker from the Rules Engine Component Contract
+ * based on the provided policy ID and tracker ID.
+ *
+ * @param config - The configuration object containing network and wallet information.
+ * @param rulesEngineComponentContract - The contract instance containing the address and ABI for interaction.
+ * @param policyId - The ID of the policy associated with the tracker.
+ * @param trackerId - The ID of the tracker for which rule IDs are to be retrieved.
+ * @returns A promise that resolves to an array of rule IDs if successful, or an empty array if an error occurs.
+ *
+ * @throws Will log an error to the console if the contract interaction fails.
+ */
+export const getTrackerToRuleIds = async (
+  config: Config,
+  rulesEngineComponentContract: RulesEngineComponentContract,
+  policyId: number,
+  trackerId: number
+): Promise<number[]> => {
+  try {
+    const retrieveRuleIds = await readContract(config, {
+      address: rulesEngineComponentContract.address,
+      abi: rulesEngineComponentContract.abi,
+      functionName: "getTrackerToRuleIds",
+      args: [policyId, trackerId],
+    });
+    let ruleIdsResult = retrieveRuleIds as number[];
+    return ruleIdsResult;
+  } catch (error) {
+    console.error(error);
+    return [];
+  }
+};
