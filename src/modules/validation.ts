@@ -42,7 +42,7 @@ export const safeParseJson = (input: string): Either<RulesError[], object> => {
 export const PType = PT.map((p) => p.name); // ["address", "string", "uint256", "bool", "void", "bytes"]
 
 export const splitFunctionInput = (input: string): string[] => {
-  return input?.split("(")[1]?.split(")")[0]?.split(",");
+  return input?.split("(")[1]?.split(")")[0]?.split(",") || [];
 };
 
 /**
@@ -307,12 +307,19 @@ export const validateRuleJSON = (
  * @returns true if input is valid, false if input is invalid.
  */
 export const validateFCFunctionInput = (input: string): boolean => {
-  const parameterSplit = splitFunctionInput(input);
+  // Detect presence of parentheses; if missing, params are undefined => invalid
+  const openIdx = input.indexOf("(");
+  const closeIdx = input.indexOf(")", openIdx + 1);
+  if (openIdx === -1 || closeIdx === -1) return false;
 
-  return (
-    parameterSplit?.filter((parameter) => !PType.includes(parameter.trim()))
-      .length === 0
-  );
+  // Extract inner params
+  const inner = input.slice(openIdx + 1, closeIdx).trim();
+  // Empty string means zero parameters => valid
+  if (inner === "") return true;
+
+  // Otherwise, validate each declared type against supported PType list
+  const parts = inner.split(",").map((p) => p.trim()).filter(Boolean);
+  return parts.every((parameter) => PType.includes(parameter));
 };
 
 export const foreignCallValidator = z.object({
