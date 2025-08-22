@@ -72,6 +72,7 @@ import {
   proposeNewForeignCallAdmin,
   proposeNewPolicyAdmin,
 } from "../src/modules/admin";
+import { PolicyData } from "../src/modules/types";
 
 // Hardcoded address of the diamond in diamondDeployedAnvilState.json
 var config: Config;
@@ -89,6 +90,77 @@ export const takeSnapshot = async () => {
 export const revertToSnapshot = async (snapshotId: any) => {
   await client.revert({ id: snapshotId });
 };
+
+// Reusable assertion for Policy data vs. input JSON
+function assertPolicyDataMatchesInput(policyData: PolicyData, input: any) {
+  // Top-level fields
+  expect(policyData.name).toEqual(input.Policy);
+  expect(policyData.description).toEqual(input.Description);
+  expect(policyData.policyType).toEqual(input.PolicyType);
+
+  // CallingFunctions
+  expect(policyData.callingFunctions.length).toEqual(
+    input.CallingFunctions.length
+  );
+  for (let i = 0; i < input.CallingFunctions.length; i++) {
+    const cfIn = input.CallingFunctions[i];
+    const cfData = policyData.callingFunctions[i];
+    expect(cfData.functionSignature).toEqual(cfIn.functionSignature);
+    expect(cfData.encodedValues).toEqual(cfIn.encodedValues);
+    expect(cfData.name).toEqual(cfIn.name);
+  }
+
+  // ForeignCalls
+  expect(policyData.foreignCalls.length).toEqual(input.ForeignCalls.length);
+  for (let i = 0; i < input.ForeignCalls.length; i++) {
+    const fcIn = input.ForeignCalls[i];
+    const fcData = policyData.foreignCalls[i];
+    expect(fcData.name).toEqual(fcIn.name);
+    expect(fcData.function).toEqual(fcIn.function);
+    expect(getAddress(fcData.address)).toEqual(getAddress(fcIn.address));
+    expect(fcData.returnType).toEqual(fcIn.returnType);
+    expect(fcData.valuesToPass).toEqual(fcIn.valuesToPass);
+    expect(fcData.mappedTrackerKeyValues).toEqual(fcIn.mappedTrackerKeyValues);
+    expect(fcData.callingFunction).toEqual(fcIn.callingFunction);
+  }
+
+  // Trackers
+  expect(policyData.trackers.length).toEqual(input.Trackers.length);
+  for (let i = 0; i < input.Trackers.length; i++) {
+    const trIn = input.Trackers[i];
+    const trData = policyData.trackers[i];
+    expect(trData.name).toEqual(trIn.name);
+    expect(trData.type).toEqual(trIn.type);
+    expect(trData.initialValue).toEqual(trIn.initialValue);
+  }
+
+  // MappedTrackers
+  expect(policyData.mappedTrackers.length).toEqual(
+    input.MappedTrackers.length
+  );
+  for (let i = 0; i < input.MappedTrackers.length; i++) {
+    const mIn = input.MappedTrackers[i];
+    const mData = policyData.mappedTrackers[i];
+    expect(mData.name).toEqual(mIn.name);
+    expect(mData.keyType).toEqual(mIn.keyType);
+    expect(mData.valueType).toEqual(mIn.valueType);
+    expect(mData.initialKeys).toEqual(mIn.initialKeys);
+    expect(mData.initialValues).toEqual(mIn.initialValues);
+  }
+
+  // Rules
+  expect(policyData.rules.length).toEqual(input.Rules.length);
+  for (let i = 0; i < input.Rules.length; i++) {
+    const ruleIn = input.Rules[i];
+    const ruleData = policyData.rules[i];
+    expect(ruleData.Name).toEqual(ruleIn.Name);
+    expect(ruleData.Description).toEqual(ruleIn.Description);
+    expect(ruleData.condition).toEqual(ruleIn.condition);
+    expect(ruleData.callingFunction).toEqual(ruleIn.callingFunction);
+    expect(ruleData.positiveEffects).toEqual(ruleIn.positiveEffects);
+    expect(ruleData.negativeEffects).toEqual(ruleIn.negativeEffects);
+  }
+}
 
 describe("Rules Engine Interactions", async () => {
   const rulesEngineContract: `0x${string}` = DiamondAddress;
@@ -1100,25 +1172,21 @@ describe("Rules Engine Interactions", async () => {
       result.policyId
     );
 
+    expect(retVal).toBeDefined();
+    expect(retVal!.Policy).toBeDefined();
+
     const parsed = retVal?.JSON ? JSON.parse(retVal?.JSON) : null;
 
     const input = JSON.parse(policyJSON);
     input.Trackers[0].initialValue = "1000";
     input.Rules[0].negativeEffects = ["revert('Negative')"];
     input.Rules[0].positiveEffects = ["revert('Positive')"];
-
-    expect(retVal?.Policy).toEqual(parsed)
-    expect(parsed.Rules[0].id).toEqual(1);
-    expect(parsed.Trackers[0].id).toEqual(1);
-    expect(parsed.CallingFunctions[0].id).toEqual(1);
-
-    // Remove the ids to match the input
-    delete parsed.Rules[0].id;
-    delete parsed.Trackers[0].id;
-    delete parsed.CallingFunctions[0].id;
     
     expect(parsed).toEqual(input);
     expect(parsed.Policy).toEqual(input.Policy);
+
+    // Verify Policy data mirrors input fields
+    assertPolicyDataMatchesInput(retVal?.Policy!, input);
   });
 
   test("Can retrieve a full policy", async () => {
@@ -1213,6 +1281,9 @@ describe("Rules Engine Interactions", async () => {
       result.policyId
     );
 
+    expect(retVal).toBeDefined();
+    expect(retVal!.Policy).toBeDefined();
+
     const parsed = retVal?.JSON ? JSON.parse(retVal?.JSON) : null;
 
     const input = JSON.parse(policyJSON);
@@ -1222,24 +1293,11 @@ describe("Rules Engine Interactions", async () => {
 
     input.Rules[0].negativeEffects[0] = "revert('Negative')";
 
-    expect(retVal?.Policy).toEqual(parsed)
-    expect(parsed.ForeignCalls[0].id).toEqual(1);
-    expect(parsed.ForeignCalls[1].id).toEqual(2);
-    expect(parsed.Rules[0].id).toEqual(1);
-    expect(parsed.Trackers[0].id).toEqual(1);
-    expect(parsed.MappedTrackers[0].id).toEqual(2);
-    expect(parsed.CallingFunctions[0].id).toEqual(1);
-
-    // Remove the ids to match the input
-    delete parsed.ForeignCalls[0].id;
-    delete parsed.ForeignCalls[1].id;
-    delete parsed.Rules[0].id;
-    delete parsed.Trackers[0].id;
-    delete parsed.MappedTrackers[0].id;
-    delete parsed.CallingFunctions[0].id;
-
     expect(parsed).toEqual(input);
     expect(parsed.Policy).toEqual(input.Policy);
+
+    // Verify Policy data mirrors input fields
+    assertPolicyDataMatchesInput(retVal?.Policy!, input);
   });
 
   test("Can retrieve policy metadata", async () => {

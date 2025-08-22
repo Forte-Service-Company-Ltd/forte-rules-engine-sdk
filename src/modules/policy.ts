@@ -765,7 +765,7 @@ export const getPolicy = async (
     };
 
     const policyData: PolicyData = {
-      id: policyId,
+      id: Number(policyId),
       name: policyMeta.policyName,
       description: policyMeta.policyDescription,
       policyType: PolicyType ? "closed" : "open",
@@ -777,13 +777,8 @@ export const getPolicy = async (
     }
 
     const jsonString = JSON.stringify(policyJSON, null, 2);
-    const validatedPolicyJSON = validatePolicyJSON(jsonString);
-    if (isLeft(validatedPolicyJSON)) {
-      throw new Error(getRulesErrorMessages(unwrapEither(validatedPolicyJSON)));
-    }
-    const json = unwrapEither(validatedPolicyJSON);
 
-    return {Policy: policyData, JSON: JSON.stringify(json, null, 2)};
+    return {Policy: policyData, JSON: jsonString};
   } catch (error) {
     console.error(error);
     return null;

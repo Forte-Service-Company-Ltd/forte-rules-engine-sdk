@@ -42,7 +42,7 @@ export const safeParseJson = (input: string): Either<RulesError[], object> => {
 export const PType = PT.map((p) => p.name); // ["address", "string", "uint256", "bool", "void", "bytes"]
 
 export const splitFunctionInput = (input: string): string[] => {
-  return input.split("(")[1].split(")")[0].split(",");
+  return input?.split("(")[1]?.split(")")[0]?.split(",");
 };
 
 /**
@@ -310,7 +310,7 @@ export const validateFCFunctionInput = (input: string): boolean => {
   const parameterSplit = splitFunctionInput(input);
 
   return (
-    parameterSplit.filter((parameter) => !PType.includes(parameter.trim()))
+    parameterSplit?.filter((parameter) => !PType.includes(parameter.trim()))
       .length === 0
   );
 };

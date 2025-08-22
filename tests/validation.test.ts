@@ -355,6 +355,26 @@ test("Can catch all wrong inputs for fields in foreign call JSON", () => {
   }
 });
 
+test("Can catch foreign call function with no parameters", () => {
+  const invalidNoParamsFC = `{
+    "name": "NoParamCall",
+    "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+    "function": "testSig",
+    "returnType": "uint256",
+    "valuesToPass": "",
+    "mappedTrackerKeyValues": "",
+    "callingFunction": "transfer(address to, uint256 value)"
+  }`;
+  const parsed = validateForeignCallJSON(invalidNoParamsFC);
+  expect(isLeft(parsed)).toBeTruthy();
+  if (isLeft(parsed)) {
+    const errors = unwrapEither(parsed);
+    expect(errors[0].message).toEqual(
+      "Unsupported argument type: Field function"
+    );
+  }
+});
+
 test("Can return errors if foreign call JSON is invalid", () => {
   const invalidFCJSON = JSON.parse(fcJSON);
   invalidFCJSON.name = 100; // Change name to a number to make it invalid
