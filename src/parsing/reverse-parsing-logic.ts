@@ -12,15 +12,21 @@ import {
   RuleMetadataStruct,
   ForeignCallOnChain,
   TrackerMetadataStruct,
+  RuleDataAndJSON,
+  RuleData,
+  ForeignCallDataAndJSON,
+  ForeignCallData,
+  TrackerDataAndJSON,
+  MappedTrackerDataAndJSON,
+  TrackerData,
+  MappedTrackerData,
 } from "../modules/types";
 import {
   CallingFunctionJSON,
-  ForeignCallJSONReversed,
+  ForeignCallJSON,
   MappedTrackerJSON,
-  MappedTrackerJSONReversed,
-  RuleJSONReversed,
+  RuleJSON,
   TrackerJSON,
-  TrackerJSONReversed,
   validateCallingFunctionJSON,
   validateMappedTrackerJSON,
   validateTrackerJSON,
@@ -487,9 +493,8 @@ export function convertRuleStructToString(
   trackers: TrackerOnChain[],
   mappings: hexToFunctionString[],
   ruleId?: number
-): RuleJSONReversed {
-  var rJSON: RuleJSONReversed = {
-    id: Number(ruleId),
+): RuleDataAndJSON {
+  var rJSON: RuleJSON = {
     Name: ruleM.ruleName,
     Description: ruleM.ruleDescription,
     condition: "",
@@ -534,7 +539,12 @@ export function convertRuleStructToString(
     reverseParseEffect(effect, effectPlhArray)
   );
 
-  return rJSON;
+  const ruleData: RuleData = {
+    id: Number(ruleId),
+    ...rJSON
+  }
+
+  return {data: ruleData, json: rJSON};
 }
 
 /**
@@ -565,8 +575,8 @@ export function convertRuleStructToString(
 export function convertForeignCallStructsToStrings(
   foreignCallsOnChain: ForeignCallOnChain[],
   callingFunctionMappings: hexToFunctionString[]
-): ForeignCallJSONReversed[] {
-  const foreignCalls: ForeignCallJSONReversed[] = foreignCallsOnChain.map(
+): ForeignCallDataAndJSON[] {
+  const foreignCalls: ForeignCallDataAndJSON[] = foreignCallsOnChain.map(
     (call, iter) => {
       const functionMeta = callingFunctionMappings.find(
         (mapping) => mapping.hex === call.signature
@@ -579,8 +589,7 @@ export function convertForeignCallStructsToStrings(
       const callingFunction = callingFunctionMappings.find(
         (mapping) => mapping.index == call.callingFunctionIndex
       );
-      const inputs = {
-        id: Number(call.foreignCallIndex),
+      const inputs: ForeignCallJSON = {
         name: functionMeta?.functionString || "",
         address: call.foreignCallAddress as Address,
         function: functionMeta?.functionString || "",
@@ -590,7 +599,15 @@ export function convertForeignCallStructsToStrings(
         callingFunction: callingFunction?.functionString || "",
       };
 
-      return inputs;
+      const foreignCallData: ForeignCallData = {
+        id: Number(call.foreignCallIndex),
+        ...inputs
+      };
+
+      return {
+        data: foreignCallData,
+        json: inputs
+      };
     }
   );
 
@@ -628,8 +645,8 @@ export function convertTrackerStructsToStrings(
   trackers: TrackerOnChain[],
   trackerNames: TrackerMetadataStruct[],
   mappedTrackerNames: TrackerMetadataStruct[]
-): { Trackers: TrackerJSONReversed[]; MappedTrackers: MappedTrackerJSONReversed[] } {
-  const Trackers = trackers
+): { Trackers: TrackerDataAndJSON[]; MappedTrackers: MappedTrackerDataAndJSON[] } {
+  const Trackers: TrackerDataAndJSON[] = trackers
     .filter((tracker) => !tracker.mapped)
     .map((tracker, iter) => {
       const trackerType =
@@ -640,22 +657,27 @@ export function convertTrackerStructsToStrings(
         trackerNames[iter].initialValue
       );
 
-      const inputs: TrackerJSONReversed = {
-        id: Number(tracker.trackerIndex),
+      const inputs: TrackerJSON = {
         name: trackerNames[iter].trackerName,
         type: trackerType,
         initialValue: initialValue,
       };
-      const validatedInputs = validateTrackerJSON(JSON.stringify(inputs), true);
+      const validatedInputs = validateTrackerJSON(JSON.stringify(inputs));
       if (isRight(validatedInputs)) {
-        return unwrapEither(validatedInputs) as TrackerJSONReversed;
+        const trackerJSON = unwrapEither(validatedInputs);
+        const trackerData: TrackerData = {
+          id: Number(tracker.trackerIndex),
+          ...trackerJSON,
+        };
+
+        return {data: trackerData, json: trackerJSON};
       } else {
         throw new Error(
           `Invalid tracker input: ${JSON.stringify(validatedInputs.left)}`
         );
       }
     });
-  const MappedTrackers = trackers
+  const MappedTrackers: MappedTrackerDataAndJSON[] = trackers
     .filter((tracker) => tracker.mapped)
     .map((tracker, iter) => {
       const valueType =
@@ -677,18 +699,21 @@ export function convertTrackerStructsToStrings(
         values.push(decodedValue);
       }
 
-      const inputs: MappedTrackerJSONReversed = {
-        id: Number(tracker.trackerIndex),
+      const inputs: MappedTrackerJSON = {
         name: mappedTrackerNames[iter].trackerName,
         valueType,
         keyType,
         initialKeys: keys,
         initialValues: values,
       };
-      const validatedInputs = validateMappedTrackerJSON(JSON.stringify(inputs), true);
+      const validatedInputs = validateMappedTrackerJSON(JSON.stringify(inputs));
       if (isRight(validatedInputs)) {
-        // Ensure the returned object has the correct type with 'id'
-        return unwrapEither(validatedInputs) as MappedTrackerJSONReversed;
+        const mappedTrackerJSON = unwrapEither(validatedInputs);
+        const mappedTrackerData: MappedTrackerData = {
+          id: Number(tracker.trackerIndex),
+          ...mappedTrackerJSON,
+        };
+        return {data: mappedTrackerData, json: mappedTrackerJSON};
       } else {
         throw new Error(
           `Invalid mapped tracker input: ${JSON.stringify(

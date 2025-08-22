@@ -188,6 +188,11 @@ export interface CallingFunctionData extends CallingFunctionJSON{
   id: number;
 }
 
+export type CallingFunctionDataAndJSON = {
+  data: CallingFunctionData;
+  json: CallingFunctionJSON;
+};
+
 // -----------------------------------------------------------------------------
 // Rule Types
 // -----------------------------------------------------------------------------
@@ -243,6 +248,11 @@ export interface RuleData extends RuleJSON {
   id: number;
 }
 
+export type RuleDataAndJSON = {
+  data: RuleData;
+  json: RuleJSON;
+}
+
 
 // -----------------------------------------------------------------------------
 // Policy Types
@@ -259,13 +269,17 @@ export type PolicyResult = {
   JSON: string;
 };
 
-export interface PolicyData extends PolicyJSON {
+export interface PolicyData {
   /** The rules defined in the policy */
   id: number;
+  name: string;
+  description: string;
+  policyType: string;
   rules: RuleData[];
   foreignCalls: ForeignCallData[];
   trackers: TrackerData[];
   mappedTrackers: MappedTrackerData[];
+  callingFunctions: CallingFunctionData[];
 }
 
 /**
@@ -374,6 +388,11 @@ export interface ForeignCallData extends ForeignCallJSON {
   id: number;
 }
 
+export type ForeignCallDataAndJSON = {
+  data: ForeignCallData;
+  json: ForeignCallJSON;
+};
+
 // -----------------------------------------------------------------------------
 // Tracker Types
 // -----------------------------------------------------------------------------
@@ -469,10 +488,20 @@ export interface TrackerData extends TrackerJSON {
   id: number;
 }
 
+export type TrackerDataAndJSON = {
+  data: TrackerData;
+  json: TrackerJSON;
+};
+
 export interface MappedTrackerData extends MappedTrackerJSON {
   /** ID of the mapped tracker */
   id: number;
 }
+
+export type MappedTrackerDataAndJSON = {
+  data: MappedTrackerData;
+  json: MappedTrackerJSON;
+};
 
 // -----------------------------------------------------------------------------
 // Placeholder and Component Types

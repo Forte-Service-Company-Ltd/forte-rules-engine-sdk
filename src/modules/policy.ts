@@ -31,6 +31,10 @@ import {
   TrackerMetadataStruct,
   PolicyResult,
   ContractBlockParameters,
+  CallingFunctionData,
+  CallingFunctionDataAndJSON,
+  ForeignCallDataAndJSON,
+  PolicyData,
 } from "./types";
 import {
   createForeignCall,
@@ -57,12 +61,9 @@ import {
 } from "../parsing/reverse-parsing-logic";
 import {
   CallingFunctionJSON,
-  CallingFunctionJSONReversed,
   ForeignCallJSON,
-  ForeignCallJSONReversed,
   getRulesErrorMessages,
   PolicyJSON,
-  PolicyJSONReversed,
   validatePolicyJSON,
 } from "./validation";
 import { isLeft, unwrapEither } from "./utils";
@@ -562,7 +563,7 @@ export const getPolicy = async (
   blockParams?: ContractBlockParameters
 ): Promise<Maybe<PolicyResult>> => {
   var allFunctionMappings: hexToFunctionString[] = [];
-  const callingFunctionJSONs: CallingFunctionJSONReversed[] = [];
+  const callingFunctionsDataAndJSON: CallingFunctionDataAndJSON[] = [];
   try {
     const retrievePolicy = await readContract(config, {
       address: rulesEnginePolicyContract.address,
@@ -609,12 +610,18 @@ export const getPolicy = async (
       };
       allFunctionMappings.push(newMapping);
       const callingFunctionJSON = {
-        id: Number(iter),
         name: mapp.callingFunction,
         functionSignature: mapp.callingFunction,
         encodedValues: mapp.encodedValues,
       };
-      callingFunctionJSONs.push(callingFunctionJSON);
+      const callingFunctionData: CallingFunctionData = {
+        id: Number(iter),
+        ...callingFunctionJSON,
+      };
+      callingFunctionsDataAndJSON.push({
+        data: callingFunctionData,
+        json: callingFunctionJSON,
+      });
       iter++;
     }
 
@@ -694,7 +701,7 @@ export const getPolicy = async (
       };
       allFunctionMappings.push(newMapping);
     }
-    const callStrings: ForeignCallJSONReversed[] = convertForeignCallStructsToStrings(
+    const callStrings: ForeignCallDataAndJSON[] = convertForeignCallStructsToStrings(
       foreignCalls,
       allFunctionMappings
     );
@@ -746,23 +753,37 @@ export const getPolicy = async (
       iter++;
     }
 
-    var jsonObj: PolicyJSONReversed = {
+    var policyJSON: PolicyJSON = {
       Policy: policyMeta.policyName,
       Description: policyMeta.policyDescription,
       PolicyType: PolicyType ? "closed" : "open",
-      CallingFunctions: callingFunctionJSONs,
-      ForeignCalls: callStrings,
-      ...trackerJSONs,
-      Rules: ruleJSONObjs,
+      CallingFunctions: callingFunctionsDataAndJSON.map((cf) => cf.json),
+      ForeignCalls: callStrings.map((fc) => fc.json),
+      Trackers: trackerJSONs.Trackers.map((tracker) => tracker.json),
+      MappedTrackers: trackerJSONs.MappedTrackers.map((tracker) => tracker.json),
+      Rules: ruleJSONObjs.map((rule) => rule.json),
     };
-    const jsonString = JSON.stringify(jsonObj, null, 2);
-    const validatedPolicyJSON = validatePolicyJSON(jsonString, true);
+
+    const policyData: PolicyData = {
+      id: policyId,
+      name: policyMeta.policyName,
+      description: policyMeta.policyDescription,
+      policyType: PolicyType ? "closed" : "open",
+      rules: ruleJSONObjs.map((rule) => rule.data),
+      foreignCalls: callStrings.map((fc) => fc.data),
+      trackers: trackerJSONs.Trackers.map((tracker) => tracker.data),
+      mappedTrackers: trackerJSONs.MappedTrackers.map((tracker) => tracker.data),
+      callingFunctions: callingFunctionsDataAndJSON.map((cf) => cf.data),
+    }
+
+    const jsonString = JSON.stringify(policyJSON, null, 2);
+    const validatedPolicyJSON = validatePolicyJSON(jsonString);
     if (isLeft(validatedPolicyJSON)) {
       throw new Error(getRulesErrorMessages(unwrapEither(validatedPolicyJSON)));
     }
-    const policyJSON = unwrapEither(validatedPolicyJSON);
+    const json = unwrapEither(validatedPolicyJSON);
 
-    return {Policy: jsonObj, JSON: JSON.stringify(policyJSON, null, 2)};
+    return {Policy: policyData, JSON: JSON.stringify(json, null, 2)};
   } catch (error) {
     console.error(error);
     return null;
