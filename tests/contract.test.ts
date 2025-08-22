@@ -60,7 +60,7 @@ import {
   getTrackerToRuleIds,
 } from "../src/modules/trackers";
 import { sleep } from "../src/modules/contract-interaction-utils";
-import { Config } from "@wagmi/core";
+import { Config, getBlockNumber } from "@wagmi/core";
 import {
   confirmNewCallingContractAdmin,
   confirmNewForeignCallAdmin,
@@ -72,6 +72,7 @@ import {
   proposeNewForeignCallAdmin,
   proposeNewPolicyAdmin,
 } from "../src/modules/admin";
+import { PolicyData } from "../src/modules/types";
 
 // Hardcoded address of the diamond in diamondDeployedAnvilState.json
 var config: Config;
@@ -89,6 +90,77 @@ export const takeSnapshot = async () => {
 export const revertToSnapshot = async (snapshotId: any) => {
   await client.revert({ id: snapshotId });
 };
+
+// Reusable assertion for Policy data vs. input JSON
+function assertPolicyDataMatchesInput(policyData: PolicyData, input: any) {
+  // Top-level fields
+  expect(policyData.name).toEqual(input.Policy);
+  expect(policyData.description).toEqual(input.Description);
+  expect(policyData.policyType).toEqual(input.PolicyType);
+
+  // CallingFunctions
+  expect(policyData.callingFunctions.length).toEqual(
+    input.CallingFunctions.length
+  );
+  for (let i = 0; i < input.CallingFunctions.length; i++) {
+    const cfIn = input.CallingFunctions[i];
+    const cfData = policyData.callingFunctions[i];
+    expect(cfData.functionSignature).toEqual(cfIn.functionSignature);
+    expect(cfData.encodedValues).toEqual(cfIn.encodedValues);
+    expect(cfData.name).toEqual(cfIn.name);
+  }
+
+  // ForeignCalls
+  expect(policyData.foreignCalls.length).toEqual(input.ForeignCalls.length);
+  for (let i = 0; i < input.ForeignCalls.length; i++) {
+    const fcIn = input.ForeignCalls[i];
+    const fcData = policyData.foreignCalls[i];
+    expect(fcData.name).toEqual(fcIn.name);
+    expect(fcData.function).toEqual(fcIn.function);
+    expect(getAddress(fcData.address)).toEqual(getAddress(fcIn.address));
+    expect(fcData.returnType).toEqual(fcIn.returnType);
+    expect(fcData.valuesToPass).toEqual(fcIn.valuesToPass);
+    expect(fcData.mappedTrackerKeyValues).toEqual(fcIn.mappedTrackerKeyValues);
+    expect(fcData.callingFunction).toEqual(fcIn.callingFunction);
+  }
+
+  // Trackers
+  expect(policyData.trackers.length).toEqual(input.Trackers.length);
+  for (let i = 0; i < input.Trackers.length; i++) {
+    const trIn = input.Trackers[i];
+    const trData = policyData.trackers[i];
+    expect(trData.name).toEqual(trIn.name);
+    expect(trData.type).toEqual(trIn.type);
+    expect(trData.initialValue).toEqual(trIn.initialValue);
+  }
+
+  // MappedTrackers
+  expect(policyData.mappedTrackers.length).toEqual(
+    input.MappedTrackers.length
+  );
+  for (let i = 0; i < input.MappedTrackers.length; i++) {
+    const mIn = input.MappedTrackers[i];
+    const mData = policyData.mappedTrackers[i];
+    expect(mData.name).toEqual(mIn.name);
+    expect(mData.keyType).toEqual(mIn.keyType);
+    expect(mData.valueType).toEqual(mIn.valueType);
+    expect(mData.initialKeys).toEqual(mIn.initialKeys);
+    expect(mData.initialValues).toEqual(mIn.initialValues);
+  }
+
+  // Rules
+  expect(policyData.rules.length).toEqual(input.Rules.length);
+  for (let i = 0; i < input.Rules.length; i++) {
+    const ruleIn = input.Rules[i];
+    const ruleData = policyData.rules[i];
+    expect(ruleData.Name).toEqual(ruleIn.Name);
+    expect(ruleData.Description).toEqual(ruleIn.Description);
+    expect(ruleData.condition).toEqual(ruleIn.condition);
+    expect(ruleData.callingFunction).toEqual(ruleIn.callingFunction);
+    expect(ruleData.positiveEffects).toEqual(ruleIn.positiveEffects);
+    expect(ruleData.negativeEffects).toEqual(ruleIn.negativeEffects);
+  }
+}
 
 describe("Rules Engine Interactions", async () => {
   const rulesEngineContract: `0x${string}` = DiamondAddress;
@@ -1100,15 +1172,21 @@ describe("Rules Engine Interactions", async () => {
       result.policyId
     );
 
-    const parsed = JSON.parse(retVal);
+    expect(retVal).toBeDefined();
+    expect(retVal!.Policy).toBeDefined();
+
+    const parsed = retVal?.JSON ? JSON.parse(retVal?.JSON) : null;
 
     const input = JSON.parse(policyJSON);
     input.Trackers[0].initialValue = "1000";
     input.Rules[0].negativeEffects = ["revert('Negative')"];
     input.Rules[0].positiveEffects = ["revert('Positive')"];
-
+    
+    expect(parsed).toEqual(input);
     expect(parsed.Policy).toEqual(input.Policy);
-    expect(retVal).toEqual(JSON.stringify(input, null, 2));
+
+    // Verify Policy data mirrors input fields
+    assertPolicyDataMatchesInput(retVal?.Policy!, input);
   });
 
   test("Can retrieve a full policy", async () => {
@@ -1203,7 +1281,10 @@ describe("Rules Engine Interactions", async () => {
       result.policyId
     );
 
-    const parsed = JSON.parse(retVal);
+    expect(retVal).toBeDefined();
+    expect(retVal!.Policy).toBeDefined();
+
+    const parsed = retVal?.JSON ? JSON.parse(retVal?.JSON) : null;
 
     const input = JSON.parse(policyJSON);
     // TODOupdate the input to match known limitations with the reverse parser
@@ -1212,8 +1293,11 @@ describe("Rules Engine Interactions", async () => {
 
     input.Rules[0].negativeEffects[0] = "revert('Negative')";
 
+    expect(parsed).toEqual(input);
     expect(parsed.Policy).toEqual(input.Policy);
-    expect(retVal).toEqual(JSON.stringify(input, null, 2));
+
+    // Verify Policy data mirrors input fields
+    assertPolicyDataMatchesInput(retVal?.Policy!, input);
   });
 
   test("Can retrieve policy metadata", async () => {
@@ -1278,6 +1362,102 @@ describe("Rules Engine Interactions", async () => {
     expect(retVal?.policyName).toEqual("Test Policy");
     expect(retVal?.policyDescription).toEqual("Test Policy Description");
   });
+
+  test("Can retrieve historical metadata", async () => {
+    var policyJSON = `
+                {
+                "Policy": "Test Policy",
+                "Description": "Test Policy Description",
+                "PolicyType": "open",
+                "CallingFunctions": [
+                  {
+                    "name": "transfer(address to, uint256 value)",
+                    "functionSignature": "transfer(address to, uint256 value)",
+                    "encodedValues": "address to, uint256 value"
+                  }
+                ],
+                "ForeignCalls": [
+                    {
+                        "name": "testSig(address)",
+                        "function": "testSig(address)",
+                        "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                        "returnType": "uint256",
+                        "valuesToPass": "to",
+                        "mappedTrackerKeyValues": "",
+                        "callingFunction": "transfer(address to, uint256 value)"
+                    }
+                ],
+                "Trackers": [
+                {
+                    "name": "testTracker",
+                    "type": "string",
+                    "initialValue": "test"
+                }
+                ],
+                "MappedTrackers": [],
+                "Rules": [
+                    {
+                        "Name": "Rule A",
+                        "Description": "Rule A Description",
+                        "condition": "TR:testTracker > 500",
+                        "positiveEffects": ["emit Success"],
+                        "negativeEffects": ["revert()"],
+                        "callingFunction": "transfer(address to, uint256 value)"
+                    }
+                ]
+                }`;
+
+    var result = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      policyJSON
+    );
+
+    const blockNumber = await getBlockNumber(config);
+    
+    expect(result.policyId).toBeGreaterThanOrEqual(0);
+    var retVal = await getPolicyMetadata(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      result.policyId
+    );
+    expect(retVal?.policyName).toEqual("Test Policy");
+    expect(retVal?.policyDescription).toEqual("Test Policy Description");
+
+    var updateResult = await updatePolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      result.policyId,
+      [],
+      [],
+      [[]],
+      "Updated Policy",
+      "Updated Policy Description",
+      1
+    );
+    var updatedMetadata = await getPolicyMetadata(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      result.policyId
+    );
+    expect(updatedMetadata?.policyName).toEqual("Updated Policy");
+    expect(updatedMetadata?.policyDescription).toEqual("Updated Policy Description");
+
+    var historicalMetadata = await getPolicyMetadata(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      result.policyId,
+      {blockNumber}
+    );
+    expect(historicalMetadata?.policyName).toEqual("Test Policy");
+    expect(historicalMetadata?.policyDescription).toEqual("Test Policy Description");
+
+  });
+
   test("Can check if a policy exists", async () => {
     var policyJSON = `
       {

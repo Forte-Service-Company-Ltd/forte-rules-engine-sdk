@@ -1,4 +1,4 @@
-import { Either, Left, PT, Right, RulesError, UnwrapEither } from "./types";
+import { Either, Left, PT, Right, UnwrapEither } from "./types";
 import { getAddress as _getAddress, isAddress as _isAddress } from 'viem';
 import { v4 as uuidv4 } from 'uuid';
 

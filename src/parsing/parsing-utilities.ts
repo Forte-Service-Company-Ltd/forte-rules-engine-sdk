@@ -1,11 +1,9 @@
 /// SPDX-License-Identifier: BUSL-1.1
 import {
-  ByteArray,
   encodeAbiParameters,
   isAddress,
   keccak256,
   parseAbiParameters,
-  toBytes,
 } from "viem";
 import {
   trackerIndexNameMapping,
@@ -13,10 +11,8 @@ import {
   EffectType,
   PlaceholderStruct,
   operandArray,
-  RawData,
   EffectDefinition,
   FunctionArgument,
-  ForeignCall,
   Tracker,
   RuleComponent,
 } from "../modules/types";

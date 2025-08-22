@@ -21,6 +21,7 @@ import {
   RulesEnginePolicyContract,
   RulesEngineForeignCallContract,
   TrackerMetadataStruct,
+  ContractBlockParameters,
 } from "./types";
 import { getAllTrackers, getTrackerMetadata } from "./trackers";
 import { getCallingFunctionMetadata } from "./calling-functions";
@@ -31,7 +32,6 @@ import {
   getRulesErrorMessages,
   validateForeignCallJSON,
 } from "./validation";
-import { ru } from "zod/dist/types/v4/locales";
 
 /**
  * @file ForeignCalls.ts
@@ -441,6 +441,7 @@ export const deleteForeignCall = async (
  * @param rulesEngineForeignCallContract - The contract instance containing the address and ABI for interaction.
  * @param policyId - The ID of the policy associated with the foreign call.
  * @param foreignCallId - The ID of the foreign call to retrieve.
+ * * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * @returns A promise that resolves to the result of the foreign call, or `null` if an error occurs.
  *
  * @throws Will log an error to the console if the contract interaction fails.
@@ -449,7 +450,8 @@ export const getForeignCall = async (
   config: Config,
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   policyId: number,
-  foreignCallId: number
+  foreignCallId: number,
+  blockParams?: ContractBlockParameters
 ): Promise<Maybe<ForeignCallOnChain>> => {
   try {
     const addFC = await readContract(config, {
@@ -457,6 +459,7 @@ export const getForeignCall = async (
       abi: rulesEngineForeignCallContract.abi,
       functionName: "getForeignCall",
       args: [policyId, foreignCallId],
+      ...blockParams
     });
 
     let foreignCallResult = addFC as ForeignCallOnChain;
@@ -474,6 +477,7 @@ export const getForeignCall = async (
  * @param rulesEngineForeignCallContract - The contract instance containing the address and ABI for interaction.
  * @param policyId - The ID of the policy associated with the foreign call.
  * @param foreignCallId - The ID of the foreign call to retrieve.
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * @returns A promise that resolves to the result of the foreign call, or `null` if an error occurs.
  *
  * @throws Will log an error to the console if the contract interaction fails.
@@ -482,7 +486,8 @@ export const getForeignCallMetadata = async (
   config: Config,
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   policyId: number,
-  foreignCallId: number
+  foreignCallId: number,
+  blockParams?: ContractBlockParameters
 ): Promise<string> => {
   try {
     const getMeta = await readContract(config, {
@@ -490,6 +495,7 @@ export const getForeignCallMetadata = async (
       abi: rulesEngineForeignCallContract.abi,
       functionName: "getForeignCallMetadata",
       args: [policyId, foreignCallId],
+      ...blockParams
     });
 
     let foreignCallResult = getMeta as string;
@@ -506,6 +512,7 @@ export const getForeignCallMetadata = async (
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEngineForeignCallContract - An object representing the Rules Engine Component Contract,
  * @param policyId - The ID of the policy for which foreign calls are to be retrieved.
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * containing its address and ABI.
  * @returns A promise that resolves to an array of foreign calls if successful, or `null` if an error occurs.
  *
@@ -514,7 +521,8 @@ export const getForeignCallMetadata = async (
 export const getAllForeignCalls = async (
   config: Config,
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
-  policyId: number
+  policyId: number,
+  blockParams?: ContractBlockParameters
 ): Promise<ForeignCallOnChain[]> => {
   try {
     const addFC = await readContract(config, {
@@ -522,6 +530,7 @@ export const getAllForeignCalls = async (
       abi: rulesEngineForeignCallContract.abi,
       functionName: "getAllForeignCalls",
       args: [policyId],
+      ...blockParams
     });
     let foreignCallResult = addFC as ForeignCallOnChain[];
     return foreignCallResult;
@@ -538,6 +547,7 @@ export const getAllForeignCalls = async (
  * @param rulesEngineForeignCallContract - An object representing the Rules Engine Component Contract,
  * @param foreignCallAddress - the address of the contract the foreign call belongs to.
  * @param functionSelector - The selector for the specific foreign call
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * @returns Array of addresses that make up the permission list
  *
  * @throws Will log an error to the console if the operation fails.
@@ -546,7 +556,8 @@ export const getForeignCallPermissionList = async (
   config: Config,
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   foreignCallAddress: Address,
-  functionSelector: string
+  functionSelector: string,
+  blockParams?: ContractBlockParameters
 ): Promise<Address[]> => {
   try {
     var selector = toFunctionSelector(functionSelector);
@@ -555,6 +566,7 @@ export const getForeignCallPermissionList = async (
       abi: rulesEngineForeignCallContract.abi,
       functionName: "getForeignCallPermissionList",
       args: [foreignCallAddress, selector],
+      ...blockParams
     });
     let foreignCallResult = addFC as Address[];
     return foreignCallResult;

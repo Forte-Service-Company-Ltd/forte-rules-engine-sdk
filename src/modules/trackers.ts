@@ -15,8 +15,9 @@ import {
   RulesEngineComponentContract,
   TrackerMetadataStruct,
   TrackerOnChain,
+  ContractBlockParameters,
 } from "./types";
-import { isLeft, isRight, unwrapEither } from "./utils";
+import { isLeft, unwrapEither } from "./utils";
 import {
   getRulesErrorMessages,
   validateMappedTrackerJSON,
@@ -280,6 +281,7 @@ export const deleteTracker = async (
  * @param rulesEngineComponentContract - The contract instance containing the address and ABI for interaction.
  * @param policyId - The ID of the policy associated with the tracker.
  * @param trackerId - The ID of the tracker to retrieve.
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * @returns A promise that resolves to the tracker result if successful, or `null` if an error occurs.
  *
  * @throws Will log an error to the console if the contract interaction fails.
@@ -288,7 +290,8 @@ export const getTracker = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  trackerId: number
+  trackerId: number,
+  blockParams?: ContractBlockParameters
 ): Promise<TrackerOnChain> => {
   try {
     const retrieveTR = await readContract(config, {
@@ -296,6 +299,7 @@ export const getTracker = async (
       abi: rulesEngineComponentContract.abi,
       functionName: "getTracker",
       args: [policyId, trackerId],
+      ...blockParams
     });
     return retrieveTR as TrackerOnChain;
   } catch (error) {
@@ -318,6 +322,7 @@ export const getTracker = async (
  * @param rulesEngineComponentContract - The contract instance containing the address and ABI for interaction.
  * @param policyId - The ID of the policy associated with the tracker.
  * @param trackerId - The ID of the tracker to retrieve.
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * @returns A promise that resolves to the tracker metadata result if successful, or `null` if an error occurs.
  *
  * @throws Will log an error to the console if the contract interaction fails.
@@ -326,7 +331,8 @@ export const getTrackerMetadata = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  trackerId: number
+  trackerId: number,
+  blockParams?: ContractBlockParameters
 ): Promise<TrackerMetadataStruct> => {
   try {
     const getMeta = await readContract(config, {
@@ -334,6 +340,7 @@ export const getTrackerMetadata = async (
       abi: rulesEngineComponentContract.abi,
       functionName: "getTrackerMetadata",
       args: [policyId, trackerId],
+      ...blockParams
     });
 
     let foreignCallResult = getMeta as TrackerMetadataStruct;
@@ -355,6 +362,7 @@ export const getTrackerMetadata = async (
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEngineComponentContract - An object representing the Rules Engine Component Contract,
  * @param policyId - The unique identifier of the policy for which trackers are to be retrieved.
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * including its address and ABI.
  * @returns A promise that resolves to an array of trackers if successful, or `null` if an error occurs.
  *
@@ -363,7 +371,8 @@ export const getTrackerMetadata = async (
 export const getAllTrackers = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
-  policyId: number
+  policyId: number,
+  blockParams?: ContractBlockParameters
 ): Promise<TrackerOnChain[]> => {
   try {
     const retrieveTR = await readContract(config, {
@@ -371,6 +380,7 @@ export const getAllTrackers = async (
       abi: rulesEngineComponentContract.abi,
       functionName: "getAllTrackers",
       args: [policyId],
+      ...blockParams
     });
 
     let trackerResult = retrieveTR as TrackerOnChain[];

@@ -12,17 +12,22 @@ import {
   RuleMetadataStruct,
   ForeignCallOnChain,
   TrackerMetadataStruct,
+  RuleDataAndJSON,
+  RuleData,
+  ForeignCallDataAndJSON,
+  ForeignCallData,
+  TrackerDataAndJSON,
+  MappedTrackerDataAndJSON,
+  TrackerData,
+  MappedTrackerData,
 } from "../modules/types";
 import {
   CallingFunctionJSON,
   ForeignCallJSON,
-  ForeignCallJSONReversed,
   MappedTrackerJSON,
   RuleJSON,
   TrackerJSON,
   validateCallingFunctionJSON,
-  validateFCFunctionInput,
-  validateForeignCallJSON,
   validateMappedTrackerJSON,
   validateTrackerJSON,
 } from "../modules/validation";
@@ -462,16 +467,20 @@ export const reverseParseEffect = (
 };
 
 /**
- * Converts a `RuleStruct` object into a JSON-like string representation.
+ * Convert on-chain RuleStruct + metadata into a { data, json } pair.
  *
- * @param functionString - The calling function signature as a string.
- * @param encodedValues - A string containing encoded values for the rule.
- * @param ruleS - The `RuleStruct` object containing rule details such as placeholders, positive effects, and negative effects.
- * @param plhArray - An array to store the names of placeholders extracted from the rule.
- * @param foreignCalls - An array of foreign calls used in the rule.
- * @param trackers - An array of trackers used in the rule.
- * @param mappings - An array of mappings that associate a `hex` signature with a function.
- * @returns An object of type `ruleJSON` containing the condition, positive effects, negative effects, calling function, and encoded values.
+ * Builds a human-readable `RuleJSON` and a `RuleData` that includes the id,
+ * by reverse-parsing the condition and effects and resolving placeholders.
+ *
+ * @param functionString - Calling function signature for the rule JSON.
+ * @param encodedValues - Encoded calling-function args used to derive names.
+ * @param ruleS - On-chain RuleStruct (instructionSet, placeholders, effects).
+ * @param ruleM - Rule metadata (name, description).
+ * @param foreignCalls - Foreign calls referenced by placeholders.
+ * @param trackers - Trackers referenced by placeholders.
+ * @param mappings - Hex-to-function mappings to resolve signatures.
+ * @param ruleId - Optional id to include in the returned RuleData.
+ * @returns RuleDataAndJSON: { data: RuleData, json: RuleJSON }.
  *
  * The function processes the `RuleStruct` object to:
  * - Extract placeholder names and append them to `plhArray`.
@@ -486,8 +495,9 @@ export function convertRuleStructToString(
   ruleM: RuleMetadataStruct,
   foreignCalls: ForeignCallOnChain[],
   trackers: TrackerOnChain[],
-  mappings: hexToFunctionString[]
-): RuleJSON {
+  mappings: hexToFunctionString[],
+  ruleId?: number
+): RuleDataAndJSON {
   var rJSON: RuleJSON = {
     Name: ruleM.ruleName,
     Description: ruleM.ruleDescription,
@@ -533,25 +543,20 @@ export function convertRuleStructToString(
     reverseParseEffect(effect, effectPlhArray)
   );
 
-  return rJSON;
+  const ruleData: RuleData = {
+    id: Number(ruleId),
+    ...rJSON
+  }
+
+  return {data: ruleData, json: rJSON};
 }
 
 /**
- * Converts an array of foreign call structures into formatted string representations
- * and appends them to the provided `callStrings` array.
+ * Convert on-chain foreign call entries into { data, json } pairs.
  *
- * @param callStrings - An array to which the formatted foreign call strings will be appended.
- * @param foreignCalls - An array of foreign call objects or `null`. Each object should contain
- *                       details such as `function`, `returnType`, `parameterTypes`, and `foreignCallAddress`.
- * @param functionMappings - An array of mappings that associate a `hex` signature with
- *                           a human-readable `functionSignature`.
- * @param names - An array of names corresponding to each foreign call, used for formatting the output.
- *
- * The function processes each foreign call by:
- * - Matching its `signature` with the corresponding `functionSignature` from the mappings.
- * - Resolving its `returnType` and `parameterTypes` to human-readable names using a predefined
- *   parameter type enumeration (`PT`).
- * - Formatting the foreign call details into a string and appending it to the `callStrings` array.
+ * Resolves function signatures and return types using `callingFunctionMappings`
+ * and `PT`, and maps each on-chain entry to the ForeignCallJSON shape along
+ * with an id-bearing ForeignCallData.
  *
  * The output string format is:
  * `Foreign Call <index> --> <foreignCallAddress> --> <functionSignature> --> <returnType> --> <parameterTypes>`
@@ -560,12 +565,15 @@ export function convertRuleStructToString(
  * ```
  * Foreign Call 1 --> 0x1234567890abcdef --> myFunction(uint256) --> uint256 --> uint256, string
  * ```
+ * @param foreignCallsOnChain - On-chain foreign call entries.
+ * @param callingFunctionMappings - Hex-to-function mappings for signatures and arg encodings.
+ * @returns Array of ForeignCallDataAndJSON.
  */
 export function convertForeignCallStructsToStrings(
   foreignCallsOnChain: ForeignCallOnChain[],
   callingFunctionMappings: hexToFunctionString[]
-): ForeignCallJSONReversed[] {
-  const foreignCalls: ForeignCallJSONReversed[] = foreignCallsOnChain.map(
+): ForeignCallDataAndJSON[] {
+  const foreignCalls: ForeignCallDataAndJSON[] = foreignCallsOnChain.map(
     (call, iter) => {
       const functionMeta = callingFunctionMappings.find(
         (mapping) => mapping.hex === call.signature
@@ -578,8 +586,7 @@ export function convertForeignCallStructsToStrings(
       const callingFunction = callingFunctionMappings.find(
         (mapping) => mapping.index == call.callingFunctionIndex
       );
-      console.log("CFCSTS functionMeta", functionMeta);
-      const inputs = {
+      const inputs: ForeignCallJSON = {
         name: functionMeta?.functionString || "",
         address: call.foreignCallAddress as Address,
         function: functionMeta?.functionString || "",
@@ -589,7 +596,15 @@ export function convertForeignCallStructsToStrings(
         callingFunction: callingFunction?.functionString || "",
       };
 
-      return inputs;
+      const foreignCallData: ForeignCallData = {
+        id: Number(call.foreignCallIndex),
+        ...inputs
+      };
+
+      return {
+        data: foreignCallData,
+        json: inputs
+      };
     }
   );
 
@@ -617,18 +632,23 @@ function retrieveDecoded(type: number, key: string): string {
 }
 
 /**
- * Converts tracker structures into human-readable strings.
+ * Convert on-chain tracker entries into JSON + data pairs.
  *
- * @param trackers - An array of tracker structures.
- * @param trackerStrings - An array to store the resulting strings.
- * @param trackerNames - An array of names corresponding to each tracker, used for formatting the output.
+ * - Non-mapped trackers are validated by `validateTrackerJSON`.
+ * - Mapped trackers are validated by `validateMappedTrackerJSON`.
+ * Keys/values are decoded according to pType.
+ *
+ * @param trackers - On-chain tracker entries.
+ * @param trackerNames - Metadata for non-mapped trackers (names/initial values).
+ * @param mappedTrackerNames - Metadata for mapped trackers (names/keys/values).
+ * @returns Object with { Trackers, MappedTrackers } arrays.
  */
 export function convertTrackerStructsToStrings(
   trackers: TrackerOnChain[],
   trackerNames: TrackerMetadataStruct[],
   mappedTrackerNames: TrackerMetadataStruct[]
-): { Trackers: TrackerJSON[]; MappedTrackers: MappedTrackerJSON[] } {
-  const Trackers = trackers
+): { Trackers: TrackerDataAndJSON[]; MappedTrackers: MappedTrackerDataAndJSON[] } {
+  const Trackers: TrackerDataAndJSON[] = trackers
     .filter((tracker) => !tracker.mapped)
     .map((tracker, iter) => {
       const trackerType =
@@ -639,21 +659,27 @@ export function convertTrackerStructsToStrings(
         trackerNames[iter].initialValue
       );
 
-      const inputs = {
+      const inputs: TrackerJSON = {
         name: trackerNames[iter].trackerName,
         type: trackerType,
         initialValue: initialValue,
       };
       const validatedInputs = validateTrackerJSON(JSON.stringify(inputs));
       if (isRight(validatedInputs)) {
-        return unwrapEither(validatedInputs);
+        const trackerJSON = unwrapEither(validatedInputs);
+        const trackerData: TrackerData = {
+          id: Number(tracker.trackerIndex),
+          ...trackerJSON,
+        };
+
+        return {data: trackerData, json: trackerJSON};
       } else {
         throw new Error(
           `Invalid tracker input: ${JSON.stringify(validatedInputs.left)}`
         );
       }
     });
-  const MappedTrackers = trackers
+  const MappedTrackers: MappedTrackerDataAndJSON[] = trackers
     .filter((tracker) => tracker.mapped)
     .map((tracker, iter) => {
       const valueType =
@@ -673,10 +699,9 @@ export function convertTrackerStructsToStrings(
       for (var key of mappedTrackerNames[iter].initialValues) {
         var decodedValue = retrieveDecoded(tracker.pType, key);
         values.push(decodedValue);
-        console.log(decodedValue);
       }
 
-      const inputs = {
+      const inputs: MappedTrackerJSON = {
         name: mappedTrackerNames[iter].trackerName,
         valueType,
         keyType,
@@ -685,7 +710,12 @@ export function convertTrackerStructsToStrings(
       };
       const validatedInputs = validateMappedTrackerJSON(JSON.stringify(inputs));
       if (isRight(validatedInputs)) {
-        return unwrapEither(validatedInputs);
+        const mappedTrackerJSON = unwrapEither(validatedInputs);
+        const mappedTrackerData: MappedTrackerData = {
+          id: Number(tracker.trackerIndex),
+          ...mappedTrackerJSON,
+        };
+        return {data: mappedTrackerData, json: mappedTrackerJSON};
       } else {
         throw new Error(
           `Invalid mapped tracker input: ${JSON.stringify(
@@ -701,11 +731,10 @@ export function convertTrackerStructsToStrings(
 }
 
 /**
- * Converts tracker structures into human-readable strings.
+ * Validate and convert calling function entries to JSON.
  *
- * @param trackers - An array of tracker structures.
- * @param trackerStrings - An array to store the resulting strings.
- * @param trackerNames - An array of names corresponding to each tracker, used for formatting the output.
+ * @param callingFunctions - Array of calling function hash mappings.
+ * @returns Array of validated CallingFunctionJSON objects.
  */
 export function convertCallingFunctionToStrings(
   callingFunctions: CallingFunctionHashMapping[]

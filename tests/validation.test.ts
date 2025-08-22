@@ -11,7 +11,6 @@ import {
 } from "../src/modules/validation";
 import { isLeft, isRight, unwrapEither } from "../src/modules/utils";
 import { RulesError } from "../src/modules/types";
-import { safeParse } from "zod/v4/core";
 
 const ruleJSON = `{
         "Name": "Rule A",
@@ -352,6 +351,61 @@ test("Can catch all wrong inputs for fields in foreign call JSON", () => {
     );
     expect(errors[6].message).toEqual(
       "Invalid input: expected string, received number: Field callingFunction"
+    );
+  }
+});
+
+test("Can catch foreign call function with no parameters", () => {
+  const invalidNoParamsFC = `{
+    "name": "NoParamCall",
+    "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+    "function": "testSig()",
+    "returnType": "uint256",
+    "valuesToPass": "",
+    "mappedTrackerKeyValues": "",
+    "callingFunction": "transfer(address to, uint256 value)"
+  }`;
+  const parsed = validateForeignCallJSON(invalidNoParamsFC);
+  // Empty params should be valid
+  expect(isRight(parsed)).toBeTruthy();
+});
+
+test("Fails validation when function has undefined parameters (no parens)", () => {
+  const invalidNoParens = `{
+    "name": "BadCall",
+    "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+    "function": "testSig",
+    "returnType": "uint256",
+    "valuesToPass": "",
+    "mappedTrackerKeyValues": "",
+    "callingFunction": "transfer(address to, uint256 value)"
+  }`;
+  const parsed = validateForeignCallJSON(invalidNoParens);
+  expect(isLeft(parsed)).toBeTruthy();
+  if (isLeft(parsed)) {
+    const errors = unwrapEither(parsed);
+    expect(errors[0].message).toEqual(
+      "Unsupported argument type: Field function"
+    );
+  }
+});
+
+test("Can catch foreign call function with no parenthesis", () => {
+  const invalidNoParamsFC = `{
+    "name": "NoParamCall",
+    "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+    "function": "testSig",
+    "returnType": "uint256",
+    "valuesToPass": "",
+    "mappedTrackerKeyValues": "",
+    "callingFunction": "transfer(address to, uint256 value)"
+  }`;
+  const parsed = validateForeignCallJSON(invalidNoParamsFC);
+  expect(isLeft(parsed)).toBeTruthy();
+  if (isLeft(parsed)) {
+    const errors = unwrapEither(parsed);
+    expect(errors[0].message).toEqual(
+      "Unsupported argument type: Field function"
     );
   }
 });

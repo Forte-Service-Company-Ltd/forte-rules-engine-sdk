@@ -9,7 +9,6 @@ import {
   keccak256,
 } from "viem";
 import {
-  Either,
   FCNameToID,
   ForeignCallDefinition,
   ForeignCallEncodedIndex,
@@ -17,10 +16,8 @@ import {
   matchArray,
   operandArray,
   PT,
-  pTypeEnum,
   RuleComponent,
   RuleDefinition,
-  RulesError,
   TrackerDefinition,
   trackerIndexNameMapping,
 } from "../modules/types";
@@ -44,10 +41,8 @@ import {
   PType,
   RuleJSON,
   splitFunctionInput,
-  supportedTrackerTypes,
   TrackerJSON,
 } from "../modules/validation";
-import { isLeft, makeLeft, makeRight, unwrapEither } from "../modules/utils";
 
 /**
  * @file parser.ts

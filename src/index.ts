@@ -29,6 +29,17 @@ export {
   trackerIndexNameMapping,
   TrackerDefinition,
   RawData,
+  RuleData,
+  RuleDataAndJSON,
+  ForeignCallData,
+  ForeignCallDataAndJSON,
+  TrackerData,
+  TrackerDataAndJSON,
+  MappedTrackerData,
+  MappedTrackerDataAndJSON,
+  CallingFunctionData,
+  CallingFunctionDataAndJSON,
+  PolicyData,
   matchArray,
   truMatchArray,
   operandArray,
@@ -37,6 +48,8 @@ export {
   Left,
   Right,
   Either,
+  PolicyResult,
+  ContractBlockParameters,
 } from './modules/types.js'
 
 export {

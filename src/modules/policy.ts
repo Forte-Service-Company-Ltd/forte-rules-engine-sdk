@@ -20,22 +20,25 @@ import {
   RulesEnginePolicyContract,
   RulesEngineComponentContract,
   FCNameToID,
-  TrackerDefinition,
   ForeignCallOnChain,
   TrackerOnChain,
   hexToFunctionString,
   RulesEngineRulesContract,
-  MappedTrackerDefinition,
   RulesEngineForeignCallContract,
   PolicyMetadataStruct,
   Maybe,
   ForeignCallEncodedIndex,
   TrackerMetadataStruct,
+  PolicyResult,
+  ContractBlockParameters,
+  CallingFunctionData,
+  CallingFunctionDataAndJSON,
+  ForeignCallDataAndJSON,
+  PolicyData,
 } from "./types";
 import {
   createForeignCall,
   getAllForeignCalls,
-  getForeignCall,
   getForeignCallMetadata,
 } from "./foreign-calls";
 import { createRule, getRuleMetadata } from "./rules";
@@ -63,8 +66,8 @@ import {
   PolicyJSON,
   validatePolicyJSON,
 } from "./validation";
-import { isLeft, isRight, unwrapEither } from "./utils";
-import { reverse } from "dns";
+import { isLeft, unwrapEither } from "./utils";
+import { id } from "zod/dist/types/v4/locales";
 
 /**
  * @file policy.ts
@@ -539,7 +542,7 @@ const reverseParseEncodedArgs = (
 };
 
 /**
- * Retrieves the full policy, including rules, trackers, and foreign calls, as a JSON string.
+ * Retrieves the full policy, including rules, trackers, and foreign calls.
  *
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEnginePolicyContract - The contract instance for interacting with the Rules Engine Policy.
@@ -547,7 +550,8 @@ const reverseParseEncodedArgs = (
  * @param rulesEngineComponentContract - The contract instance for interacting with the Rules Engine Component.
  * @param rulesEngineForeignCallContract - The contract instance for interacting with the Rules Engine Foreign Calls.
  * @param policyId - The ID of the policy to retrieve.
- * @returns A JSON string representing the full policy.
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
+ * @returns A PolicyResult object containing both the policy object and JSON string, or an empty string if an error occurs.
  */
 export const getPolicy = async (
   config: Config,
@@ -555,22 +559,25 @@ export const getPolicy = async (
   rulesEngineRulesContract: RulesEngineRulesContract,
   rulesEngineComponentContract: RulesEngineComponentContract,
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
-  policyId: number
-): Promise<string> => {
+  policyId: number,
+  blockParams?: ContractBlockParameters
+): Promise<Maybe<PolicyResult>> => {
   var allFunctionMappings: hexToFunctionString[] = [];
-  const callingFunctionJSONs: CallingFunctionJSON[] = [];
+  const callingFunctionsDataAndJSON: CallingFunctionDataAndJSON[] = [];
   try {
     const retrievePolicy = await readContract(config, {
       address: rulesEnginePolicyContract.address,
       abi: rulesEnginePolicyContract.abi,
       functionName: "getPolicy",
       args: [policyId],
+      ...blockParams
     });
 
     const policyMeta = await getPolicyMetadata(
       config,
       rulesEnginePolicyContract,
-      policyId
+      policyId,
+      blockParams
     );
     if (policyMeta == null) {
       throw new Error(`Policy with ID ${policyId} does not exist.`);
@@ -581,17 +588,19 @@ export const getPolicy = async (
     const PolicyType = await isClosedPolicy(
       config,
       rulesEnginePolicyContract,
-      policyId
+      policyId,
+      blockParams
     );
 
     var iter = 1;
 
-    for (var cfId in callingFunctions) {
+    for (var _cfId in callingFunctions) {
       var mapp = await getCallingFunctionMetadata(
         config,
         rulesEngineComponentContract,
         policyId,
-        iter
+        iter,
+        blockParams
       );
       var newMapping: hexToFunctionString = {
         hex: mapp.signature,
@@ -605,14 +614,22 @@ export const getPolicy = async (
         functionSignature: mapp.callingFunction,
         encodedValues: mapp.encodedValues,
       };
-      callingFunctionJSONs.push(callingFunctionJSON);
+      const callingFunctionData: CallingFunctionData = {
+        id: Number(iter),
+        ...callingFunctionJSON,
+      };
+      callingFunctionsDataAndJSON.push({
+        data: callingFunctionData,
+        json: callingFunctionJSON,
+      });
       iter++;
     }
 
     var trackers: TrackerOnChain[] = await getAllTrackers(
       config,
       rulesEngineComponentContract,
-      policyId
+      policyId,
+      blockParams
     );
 
     var trackerNames: TrackerMetadataStruct[] = [];
@@ -622,7 +639,8 @@ export const getPolicy = async (
         config,
         rulesEngineComponentContract,
         policyId,
-        tracker.trackerIndex
+        tracker.trackerIndex,
+        blockParams
       );
       if (tracker.mapped) {
         mappedTrackerNames.push(meta);
@@ -647,7 +665,8 @@ export const getPolicy = async (
     var foreignCalls: ForeignCallOnChain[] = await getAllForeignCalls(
       config,
       rulesEngineForeignCallContract,
-      policyId
+      policyId,
+      blockParams
     );
     var foreignCallNames: string[] = [];
     for (var fc of foreignCalls) {
@@ -655,14 +674,16 @@ export const getPolicy = async (
         config,
         rulesEngineForeignCallContract,
         policyId,
-        fc.foreignCallIndex
+        fc.foreignCallIndex,
+        blockParams
       );
 
       var daData = getCallingFunctionMetadata(
         config,
         rulesEngineComponentContract,
         policyId,
-        fc.callingFunctionIndex
+        fc.callingFunctionIndex,
+        blockParams
       );
 
       foreignCallNames.push(name);
@@ -680,7 +701,7 @@ export const getPolicy = async (
       };
       allFunctionMappings.push(newMapping);
     }
-    const callStrings: ForeignCallJSON[] = convertForeignCallStructsToStrings(
+    const callStrings: ForeignCallDataAndJSON[] = convertForeignCallStructsToStrings(
       foreignCalls,
       allFunctionMappings
     );
@@ -703,14 +724,16 @@ export const getPolicy = async (
           config,
           rulesEngineRulesContract,
           policyId,
-          ruleId
+          ruleId,
+          blockParams
         );
 
         const ruleM = await getRuleMetadata(
           config,
           rulesEngineRulesContract,
           policyId,
-          ruleId
+          ruleId,
+          blockParams
         );
         if (ruleS != null) {
           ruleJSONObjs.push(
@@ -721,7 +744,8 @@ export const getPolicy = async (
               ruleM!,
               foreignCalls,
               trackers,
-              allFunctionMappings
+              allFunctionMappings,
+              ruleId
             )
           );
         }
@@ -729,19 +753,35 @@ export const getPolicy = async (
       iter++;
     }
 
-    var jsonObj: PolicyJSON = {
+    var policyJSON: PolicyJSON = {
       Policy: policyMeta.policyName,
       Description: policyMeta.policyDescription,
       PolicyType: PolicyType ? "closed" : "open",
-      CallingFunctions: callingFunctionJSONs,
-      ForeignCalls: callStrings,
-      ...trackerJSONs,
-      Rules: ruleJSONObjs,
+      CallingFunctions: callingFunctionsDataAndJSON.map((cf) => cf.json),
+      ForeignCalls: callStrings.map((fc) => fc.json),
+      Trackers: trackerJSONs.Trackers.map((tracker) => tracker.json),
+      MappedTrackers: trackerJSONs.MappedTrackers.map((tracker) => tracker.json),
+      Rules: ruleJSONObjs.map((rule) => rule.json),
     };
-    return JSON.stringify(jsonObj, null, 2);
+
+    const policyData: PolicyData = {
+      id: Number(policyId),
+      name: policyMeta.policyName,
+      description: policyMeta.policyDescription,
+      policyType: PolicyType ? "closed" : "open",
+      rules: ruleJSONObjs.map((rule) => rule.data),
+      foreignCalls: callStrings.map((fc) => fc.data),
+      trackers: trackerJSONs.Trackers.map((tracker) => tracker.data),
+      mappedTrackers: trackerJSONs.MappedTrackers.map((tracker) => tracker.data),
+      callingFunctions: callingFunctionsDataAndJSON.map((cf) => cf.data),
+    }
+
+    const jsonString = JSON.stringify(policyJSON, null, 2);
+
+    return {Policy: policyData, JSON: jsonString};
   } catch (error) {
     console.error(error);
-    return "";
+    return null;
   }
 };
 
@@ -751,6 +791,7 @@ export const getPolicy = async (
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEnginePolicyContract - The contract instance containing the address and ABI for interaction.
  * @param policyId - The ID of the policy.
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * @returns A promise that resolves to the policy metadata result if successful, or `null` if an error occurs.
  *
  * @throws Will log an error to the console if the contract interaction fails.
@@ -758,7 +799,8 @@ export const getPolicy = async (
 export const getPolicyMetadata = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
-  policyId: number
+  policyId: number,
+  blockParams?: ContractBlockParameters
 ): Promise<Maybe<PolicyMetadataStruct>> => {
   try {
     const getMeta = await readContract(config, {
@@ -766,6 +808,7 @@ export const getPolicyMetadata = async (
       abi: rulesEnginePolicyContract.abi,
       functionName: "getPolicyMetadata",
       args: [policyId],
+      ...blockParams
     });
 
     let ruleResult = getMeta as PolicyMetadataStruct;
@@ -781,12 +824,14 @@ export const getPolicyMetadata = async (
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEnginePolicyContract - The contract instance for interacting with the Rules Engine Policy.
  * @param policyId - The ID of the policy to check.
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * @returns True if the policy exists, false otherwise.
  */
 export async function policyExists(
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
-  policyId: number
+  policyId: number,
+  blockParams?: ContractBlockParameters
 ): Promise<boolean> {
   try {
     let policyExists = await readContract(config, {
@@ -794,6 +839,7 @@ export async function policyExists(
       abi: rulesEnginePolicyContract.abi,
       functionName: "getPolicy",
       args: [policyId],
+      ...blockParams
     });
     if ((policyExists as any)[0] != null && (policyExists as any)[2] != null) {
       return true;
@@ -809,12 +855,14 @@ export async function policyExists(
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEnginePolicyContract - The contract instance for interacting with the Rules Engine Policy.
  * @param address - The address to check.
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * @returns array of all of the policy ids applied to the contract
  */
 export async function getAppliedPolicyIds(
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
-  address: string
+  address: string,
+  blockParams?: ContractBlockParameters
 ): Promise<number[]> {
   try {
     let appliedPolicies = await readContract(config, {
@@ -822,6 +870,7 @@ export async function getAppliedPolicyIds(
       abi: rulesEnginePolicyContract.abi,
       functionName: "getAppliedPolicyIds",
       args: [getAddress(address)],
+      ...blockParams
     });
     return appliedPolicies as number[];
   } catch (error) {
@@ -834,12 +883,14 @@ export async function getAppliedPolicyIds(
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEnginePolicyContract - The contract instance for interacting with the Rules Engine Policy.
  * @param policyId - The ID of the policy to check.
- * @returns array of all of the policy ids applied to the contract
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
+ * @returns True if the policy is closed, false otherwise
  */
 export async function isClosedPolicy(
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
-  policyId: number
+  policyId: number,
+  blockParams?: ContractBlockParameters
 ): Promise<boolean> {
   try {
     let isClosed = await readContract(config, {
@@ -847,6 +898,7 @@ export async function isClosedPolicy(
       abi: rulesEnginePolicyContract.abi,
       functionName: "isClosedPolicy",
       args: [policyId],
+      ...blockParams
     });
     return isClosed as boolean;
   } catch (error) {
@@ -940,13 +992,15 @@ export const openPolicy = async (
  * @param rulesEngineComponentContract - The contract instance for interacting with the Rules Engine Components.
  * @param policyId - The ID of the policy to check.
  * @param subscriber - The address to check
- * @returns array of all of the policy ids applied to the contract
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
+ * @returns True if the address is a subscriber to the closed policy, false otherwise
  */
 export async function isClosedPolicySubscriber(
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  subscriber: Address
+  subscriber: Address,
+  blockParams?: ContractBlockParameters
 ): Promise<boolean> {
   try {
     let isClosed = await readContract(config, {
@@ -954,6 +1008,7 @@ export async function isClosedPolicySubscriber(
       abi: rulesEngineComponentContract.abi,
       functionName: "isClosedPolicySubscriber",
       args: [policyId, subscriber],
+      ...blockParams
     });
     return isClosed as boolean;
   } catch (error) {
@@ -1089,12 +1144,14 @@ export const cementPolicy = async (
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEnginePolicyContract - The contract instance for interacting with the Rules Engine Policy.
  * @param policyId - The ID of the policy to check.
- * @returns whether or not the policy is cemented
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
+ * @returns True if the policy is cemented, false otherwise
  */
 export const isCementedPolicy = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
-  policyId: number
+  policyId: number,
+  blockParams?: ContractBlockParameters
 ): Promise<boolean> => {
   try {
     const retrievePolicy = await readContract(config, {
@@ -1102,6 +1159,7 @@ export const isCementedPolicy = async (
       abi: rulesEnginePolicyContract.abi,
       functionName: "isCementedPolicy",
       args: [policyId],
+      ...blockParams
     });
 
     return retrievePolicy as boolean;
