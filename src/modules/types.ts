@@ -184,7 +184,7 @@ export type CallingFunctionHashMapping = {
   encodedValues: string;
 };
 
-export interface CallingFunctionData extends CallingFunctionJSON{
+export interface CallingFunctionData extends CallingFunctionJSON {
   id: number;
 }
 
@@ -649,6 +649,17 @@ export const PT = [
   { name: "string[]", enumeration: pTypeEnum.DYNAMIC_TYPE_ARRAY },
   { name: "bytes[]", enumeration: pTypeEnum.DYNAMIC_TYPE_ARRAY },
 ];
+
+export const PTNames = PT.map(pt => pt.name);
+export type PTName = typeof PTNames[number];
+
+export const PTTracker = PT.filter(pt => pt.name !== "void");
+export const PTNamesTracker = PTTracker.map(pt => pt.name);
+export type PTNameTracker = typeof PTNamesTracker[number];
+
+export const PTTrackerKey = PTTracker.filter(pt => !pt.name.includes("[]"));
+export const PTNamesTrackerKey = PTTrackerKey.map(pt => pt.name);
+export type PTNameTrackerKey = typeof PTNamesTrackerKey[number];
 
 // -----------------------------------------------------------------------------
 // Error Types

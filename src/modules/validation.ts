@@ -319,7 +319,7 @@ export const validateFCFunctionInput = (input: string): boolean => {
 
   // Otherwise, validate each declared type against supported PType list
   const parts = inner.split(",").map((p) => p.trim()).filter(Boolean);
-  return parts.every((parameter) => PType.includes(parameter));
+  return parts.every((parameter) => (PType as string[]).includes(parameter));
 };
 
 export const foreignCallValidator = z.object({
@@ -380,37 +380,92 @@ export const foreignCallReverseValidator = foreignCallValidator.extend({
 export interface ForeignCallJSONReversed
   extends z.infer<typeof foreignCallValidator> { }
 
-export const supportedTrackerTypes: string[] = [
-  "uint256",
-  "string",
-  "address",
-  "bytes",
-  "bool",
-];
+
+export const paramTypes = PT.map((p) => p.name);
+export type ParameterTypes = typeof paramTypes[number];
+export const supportedTrackerTypes = paramTypes.filter(name => name !== "void");
+
+export type SupportedTrackers = typeof supportedTrackerTypes[number];
+
+export const supportedTrackerKeyTypes = supportedTrackerTypes.filter(t => !t.includes("[]"));
+
+export type SupportedTrackerKeys = typeof supportedTrackerKeyTypes[number];
+
 
 /**
  * Validates tracker initial value to ensure it matches the type specified.
  *
- * @param input - value to be validated.
+ * @param type - type of value to be validated.
+ * @param value - value to be validated.
  * @returns true if input is valid, false if input is invalid.
  */
-const validateTrackerValue = (data: any) => {
+const validateTrackerValue = (type: SupportedTrackers, value: any): boolean => {
   // Validate that the initialValue matches the type
-  switch (data.type) {
+  switch (type) {
     case "uint256":
-      return !isNaN(Number(data.initialValue));
+      return !isNaN(Number(value));
     case "string":
-      return typeof data.initialValue === "string";
+      return typeof value === "string";
     case "address":
-      return isAddress(data.initialValue);
+      return isAddress(value);
     case "bytes":
-      return typeof data.initialValue === "string"; // Assuming bytes are represented as hex strings
+      return typeof value === "string"; // Assuming bytes are represented as hex strings
     case "bool":
       return true;
     default:
-      return false; // Should never happen due to z.literal
+      return false; // Unsupported type
+
   }
 };
+
+const validateTrackerInitialValue = (data: any): boolean => {
+  if (data.type.includes("[]")) {
+    // For arrays, we assume initialValue is an array of values
+    if (!Array.isArray(data.initialValue)) {
+      return false; // Initial value must be an array for array types
+    }
+    return data.initialValue.every(
+      (value: any) => validateTrackerValue(data.type.replace("[]", ""), value)
+    );
+  } else {
+    // For non-array types, we validate the single initialValue
+    return validateTrackerValue(data.type, data.initialValue);
+  }
+}
+
+const validateMappedTrackerInitialInputs = (type: any, inputs: any): boolean => {
+  if (!Array.isArray(inputs)) {
+    return false; // Initial values must be an array for array types
+  }
+  if (type.includes("[]")) {
+    return inputs.every((
+      value: any) => Array.isArray(value) && value.every(
+        (v: any) => validateTrackerValue(type.replace("[]", ""), v)
+      )
+    );
+  } else {
+    return inputs.every(
+      (value: any) => validateTrackerValue(type.replace("[]", ""), value)
+    );
+  }
+}
+
+const validateMappedTrackerInitialValues = (data: any): boolean => {
+  return validateMappedTrackerInitialInputs(data.valueType, data.initialValues);
+}
+
+const validateMappedTrackerInitialKeys = (data: any): boolean => {
+  return validateMappedTrackerInitialInputs(data.keyType, data.initialKeys);
+}
+
+const validateMappedTrackerInitialLengths = (data: any): boolean => {
+  return data.initialKeys.length === data.initialValues.length;
+}
+
+const validateMappedTrackerUniqueKeys = (data: any): boolean => {
+  const uniqueKeys = new Set(data.initialKeys);
+  return uniqueKeys.size === data.initialKeys.length;
+}
 
 export const trackerValidator = z
   .object({
@@ -419,9 +474,9 @@ export const trackerValidator = z
       trimPossibleString,
       z.literal(supportedTrackerTypes, "Unsupported type")
     ),
-    initialValue: z.string().trim(),
+    initialValue: z.union([z.string().trim(), z.array(z.string().trim())]),
   })
-  .refine(validateTrackerValue, {
+  .refine(validateTrackerInitialValue, {
     message: "Initial Value doesn't match type",
   });
 
@@ -430,45 +485,31 @@ export interface TrackerJSON extends z.infer<typeof trackerValidator> { }
 export interface MappedTrackerJSON
   extends z.infer<typeof mappedTrackerValidator> { }
 
-const SupportedValues = [
-  z.object({
-    type: "uint256",
-    value: z.number(),
-  }),
-
-  z.object({
-    type: "string",
-    value: z.string(),
-  }),
-
-  z.object({
-    type: "string",
-    value: z.string(),
-  }),
-
-  z.object({
-    type: "address",
-    value: z.string(),
-  }),
-
-  z.object({
-    type: "uint256",
-    value: z.number(),
-  }),
-
-  z.object({
-    type: "uint256",
-    value: z.literal(["true", "false"]),
-  }),
-] as const;
-
 export const mappedTrackerValidator = z.object({
   name: z.string().trim(),
-  keyType: z.string().trim(),
-  valueType: z.string().trim(),
+  keyType: z.preprocess(
+    trimPossibleString,
+    z.literal(supportedTrackerKeyTypes, "Unsupported key type")
+  ),
+  valueType: z.preprocess(
+    trimPossibleString,
+    z.literal(supportedTrackerTypes, "Unsupported type")
+  ),
   initialKeys: z.array(z.string()),
-  initialValues: z.array(z.string()),
-});
+  initialValues: z.array(z.union([z.string().trim(), z.array(z.string().trim())])),
+})
+  .refine(validateMappedTrackerInitialValues, {
+    message: "Mapped Tracker Initial Values do not match type",
+  })
+  .refine(validateMappedTrackerInitialKeys, {
+    message: "Mapped Tracker Initial Keys do not match type",
+  })
+  .refine(validateMappedTrackerInitialLengths, {
+    message: "Mapped Tracker Initial Keys and Values must have the same length",
+  })
+  .refine(validateMappedTrackerUniqueKeys, {
+    message: "Mapped Tracker Initial Keys must be unique",
+  });
 
 /**
  * Parses a JSON string and returns Either a TrackerJSON object or an error.
