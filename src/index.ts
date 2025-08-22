@@ -29,7 +29,6 @@ export {
   trackerIndexNameMapping,
   TrackerDefinition,
   RawData,
-  // Data and JSON paired types
   RuleData,
   RuleDataAndJSON,
   ForeignCallData,

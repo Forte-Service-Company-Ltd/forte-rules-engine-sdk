@@ -467,16 +467,20 @@ export const reverseParseEffect = (
 };
 
 /**
- * Converts a `RuleStruct` object into a JSON-like string representation.
+ * Convert on-chain RuleStruct + metadata into a { data, json } pair.
  *
- * @param functionString - The calling function signature as a string.
- * @param encodedValues - A string containing encoded values for the rule.
- * @param ruleS - The `RuleStruct` object containing rule details such as placeholders, positive effects, and negative effects.
- * @param plhArray - An array to store the names of placeholders extracted from the rule.
- * @param foreignCalls - An array of foreign calls used in the rule.
- * @param trackers - An array of trackers used in the rule.
- * @param mappings - An array of mappings that associate a `hex` signature with a function.
- * @returns An object of type `ruleJSON` containing the condition, positive effects, negative effects, calling function, and encoded values.
+ * Builds a human-readable `RuleJSON` and a `RuleData` that includes the id,
+ * by reverse-parsing the condition and effects and resolving placeholders.
+ *
+ * @param functionString - Calling function signature for the rule JSON.
+ * @param encodedValues - Encoded calling-function args used to derive names.
+ * @param ruleS - On-chain RuleStruct (instructionSet, placeholders, effects).
+ * @param ruleM - Rule metadata (name, description).
+ * @param foreignCalls - Foreign calls referenced by placeholders.
+ * @param trackers - Trackers referenced by placeholders.
+ * @param mappings - Hex-to-function mappings to resolve signatures.
+ * @param ruleId - Optional id to include in the returned RuleData.
+ * @returns RuleDataAndJSON: { data: RuleData, json: RuleJSON }.
  *
  * The function processes the `RuleStruct` object to:
  * - Extract placeholder names and append them to `plhArray`.
@@ -548,21 +552,11 @@ export function convertRuleStructToString(
 }
 
 /**
- * Converts an array of foreign call structures into formatted string representations
- * and appends them to the provided `callStrings` array.
+ * Convert on-chain foreign call entries into { data, json } pairs.
  *
- * @param callStrings - An array to which the formatted foreign call strings will be appended.
- * @param foreignCalls - An array of foreign call objects or `null`. Each object should contain
- *                       details such as `function`, `returnType`, `parameterTypes`, and `foreignCallAddress`.
- * @param functionMappings - An array of mappings that associate a `hex` signature with
- *                           a human-readable `functionSignature`.
- * @param names - An array of names corresponding to each foreign call, used for formatting the output.
- *
- * The function processes each foreign call by:
- * - Matching its `signature` with the corresponding `functionSignature` from the mappings.
- * - Resolving its `returnType` and `parameterTypes` to human-readable names using a predefined
- *   parameter type enumeration (`PT`).
- * - Formatting the foreign call details into a string and appending it to the `callStrings` array.
+ * Resolves function signatures and return types using `callingFunctionMappings`
+ * and `PT`, and maps each on-chain entry to the ForeignCallJSON shape along
+ * with an id-bearing ForeignCallData.
  *
  * The output string format is:
  * `Foreign Call <index> --> <foreignCallAddress> --> <functionSignature> --> <returnType> --> <parameterTypes>`
@@ -571,6 +565,9 @@ export function convertRuleStructToString(
  * ```
  * Foreign Call 1 --> 0x1234567890abcdef --> myFunction(uint256) --> uint256 --> uint256, string
  * ```
+ * @param foreignCallsOnChain - On-chain foreign call entries.
+ * @param callingFunctionMappings - Hex-to-function mappings for signatures and arg encodings.
+ * @returns Array of ForeignCallDataAndJSON.
  */
 export function convertForeignCallStructsToStrings(
   foreignCallsOnChain: ForeignCallOnChain[],
@@ -635,11 +632,16 @@ function retrieveDecoded(type: number, key: string): string {
 }
 
 /**
- * Converts tracker structures into human-readable strings.
+ * Convert on-chain tracker entries into JSON + data pairs.
  *
- * @param trackers - An array of tracker structures.
- * @param trackerStrings - An array to store the resulting strings.
- * @param trackerNames - An array of names corresponding to each tracker, used for formatting the output.
+ * - Non-mapped trackers are validated by `validateTrackerJSON`.
+ * - Mapped trackers are validated by `validateMappedTrackerJSON`.
+ * Keys/values are decoded according to pType.
+ *
+ * @param trackers - On-chain tracker entries.
+ * @param trackerNames - Metadata for non-mapped trackers (names/initial values).
+ * @param mappedTrackerNames - Metadata for mapped trackers (names/keys/values).
+ * @returns Object with { Trackers, MappedTrackers } arrays.
  */
 export function convertTrackerStructsToStrings(
   trackers: TrackerOnChain[],
@@ -729,11 +731,10 @@ export function convertTrackerStructsToStrings(
 }
 
 /**
- * Converts tracker structures into human-readable strings.
+ * Validate and convert calling function entries to JSON.
  *
- * @param trackers - An array of tracker structures.
- * @param trackerStrings - An array to store the resulting strings.
- * @param trackerNames - An array of names corresponding to each tracker, used for formatting the output.
+ * @param callingFunctions - Array of calling function hash mappings.
+ * @returns Array of validated CallingFunctionJSON objects.
  */
 export function convertCallingFunctionToStrings(
   callingFunctions: CallingFunctionHashMapping[]
