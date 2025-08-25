@@ -453,6 +453,17 @@ test("Can validate tracker JSON", () => {
   }
 });
 
+test("Can validate array tracker JSON", () => {
+  const parsedJSON = JSON.parse(trackerJSON);
+  const parsedTracker = validateTrackerJSON(trackerJSON);
+  expect(isRight(parsedTracker)).toBeTruthy();
+  if (isRight(parsedTracker)) {
+    const tracker = unwrapEither(parsedTracker);
+
+    expect(tracker.name).toEqual(parsedJSON.name);
+  }
+});
+
 test("Can catch all missing required fields in tracker JSON", () => {
   const parsedTracker = validateTrackerJSON("{}");
   expect(isLeft(parsedTracker)).toBeTruthy();
@@ -465,7 +476,7 @@ test("Can catch all missing required fields in tracker JSON", () => {
     );
     expect(errors[1].message).toEqual("Unsupported type: Field type");
     expect(errors[2].message).toEqual(
-      "Invalid input: expected string, received undefined: Field initialValue"
+      "Invalid input: Field initialValue"
     );
   }
 });
@@ -487,7 +498,7 @@ test("Can catch all wrong inputs for fields in tracker JSON", () => {
     );
     expect(errors[1].message).toEqual("Unsupported type: Field type");
     expect(errors[2].message).toEqual(
-      "Invalid input: expected string, received number: Field initialValue"
+      "Invalid input: Field initialValue"
     );
   }
 });
@@ -519,7 +530,7 @@ test("Can return multiple errors if tracker JSON is invalid", () => {
       "Invalid input: expected string, received number: Field name"
     );
     expect(errors[1].message).toEqual(
-      "Invalid input: expected string, received undefined: Field initialValue"
+      "Invalid input: Field initialValue"
     );
   }
 });
@@ -850,4 +861,262 @@ test("Tests formatPrenConditionGroups catches AND and OR operators", () => {
   const isValid = validateCondition(str)
 
   expect(isValid).toBeFalsy();
+});
+
+const ADDRESS_ARRAY = ["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", "0xdadB0d80178819F2319190D340ce9A924f783711", "0x870585E3AF9dA7ff5dcd8f897EA0756f60F69cc1"]
+
+const BYTES_ARRAY = ["0x1234", "0x5678", "0x7890"];
+
+const STRING_ARRAY = ["test", "an", "arrayTracker"]
+
+const UINT_KEYS = ["1", "2", "3"]
+
+test("Tests can validate all Tracker types", () => {
+  const pTypesTestInputs = [
+    {
+      pType: "address",
+      success: "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+      failure: "test"
+    },
+    {
+      pType: "string",
+      success: "test",
+      failure: 123
+    },
+    {
+      pType: "uint256",
+      success: "123",
+      failure: "test"
+    },
+    {
+      pType: "bool",
+      success: "true",
+      failure: 123
+    },
+    {
+      pType: "bytes",
+      success: "0x1234",
+      failure: 123
+    },
+    {
+      pType: "address[]",
+      success: ADDRESS_ARRAY,
+      failure: [
+        "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+        "0xdadB0d80178819F2319190D340ce9A924f783711",
+        "test"
+      ]
+    },
+    {
+      pType: "uint256[]",
+      success: ["123", "456", "78"],
+      failure: ["123", "45", "test"]
+    },
+    {
+      pType: "bool[]",
+      success: ["true", "false", "true"],
+      failure: ["true", "false", null]
+    },
+    {
+      pType: "string[]",
+      success: STRING_ARRAY,
+      failure: ["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", "0xdadB0d80178819F2319190D340ce9A924f783711", 123]
+    },
+    {
+      pType: "bytes[]",
+      success: BYTES_ARRAY,
+      failure: ["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", "0xdadB0d80178819F2319190D340ce9A924f783711", 123]
+    },
+  ];
+  const testTracker = JSON.parse(trackerJSON);
+
+  pTypesTestInputs.forEach((input) => {
+    testTracker.type = input.pType;
+    testTracker.initialValue = input.success;
+    const trackerJSONSuccess = JSON.stringify(testTracker);
+    const parsedTrackerSuccess = validateTrackerJSON(trackerJSONSuccess);
+
+    expect(isRight(parsedTrackerSuccess), `Tracker Validation Failed for type: ${input.pType} and initial value ${input.success}`).toBeTruthy();
+
+    testTracker.type = input.pType;
+    testTracker.initialValue = input.failure;
+    const trackerJSONFailure = JSON.stringify(testTracker);
+    const parsedTrackerFailure = validateTrackerJSON(trackerJSONFailure);
+
+    expect(isLeft(parsedTrackerFailure), `Tracker Validation Passed for type: ${input.pType} and initial value ${input.failure}`).toBeTruthy();
+
+  })
+});
+
+test("Tests can validate all Mapped Tracker initial value types", () => {
+  const pTypesTestInputs = [
+    {
+      pType: "address",
+      success: [
+        UINT_KEYS,
+        ADDRESS_ARRAY
+      ],
+      failure: [["1"], ["test"]]
+    },
+    {
+      pType: "string",
+      success: [UINT_KEYS, STRING_ARRAY],
+      failure: [["1", "2", "3"], ["test", "an", 123]]
+    },
+    {
+      pType: "uint256",
+      success: [UINT_KEYS, ["123", "456", "789"]],
+      failure: [UINT_KEYS, ["1", "2", "test"]]
+    },
+    {
+      pType: "bool",
+      success: [UINT_KEYS, ["true", "false", "false"]],
+      failure: [UINT_KEYS, ["false", "true", null]]
+    },
+    {
+      pType: "bytes",
+      success: [UINT_KEYS, BYTES_ARRAY],
+      failure: [UINT_KEYS, ["0x1234", "0x5678", 123]]
+    },
+    {
+      pType: "address[]",
+      success: [UINT_KEYS, [ADDRESS_ARRAY, ADDRESS_ARRAY, ADDRESS_ARRAY]],
+      failure: [UINT_KEYS, [ADDRESS_ARRAY, ADDRESS_ARRAY, ["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", "0xdadB0d80178819F2319190D340ce9A924f783711", "test"]]]
+    },
+    {
+      pType: "uint256[]",
+      success: [UINT_KEYS, [["123", "456", "78"], ["1293", "4656", "278"], ["23", "45", "9"]]],
+      failure: [UINT_KEYS, [["123", "456", "78"], ["1293", "4656", "278"], ["23", "45", "test"]]]
+    },
+    {
+      pType: "bool[]",
+      success: [UINT_KEYS, [["true", "false", "true"], ["true", "false", "true"], ["true", "false", "true"]]],
+      failure: [UINT_KEYS, [["true", "false", "true"], ["true", "false", "true"], ["true", "false", null]]]
+    },
+    {
+      pType: "string[]",
+      success: [UINT_KEYS, [STRING_ARRAY, STRING_ARRAY, STRING_ARRAY]],
+      failure: [UINT_KEYS, [STRING_ARRAY, STRING_ARRAY, ["test", "an", 123]]]
+    },
+    {
+      pType: "bytes[]",
+      success: [UINT_KEYS, [BYTES_ARRAY, BYTES_ARRAY, BYTES_ARRAY]],
+      failure: [UINT_KEYS, [BYTES_ARRAY, BYTES_ARRAY, ["0x1234", "0x5678", 12]]]
+    },
+  ];
+  const testTracker = JSON.parse(mappedTrackerJSON);
+
+  pTypesTestInputs.forEach((input) => {
+    testTracker.valueType = input.pType;
+    testTracker.initialKeys = input.success[0];
+    testTracker.initialValues = input.success[1];
+    const trackerJSONSuccess = JSON.stringify(testTracker);
+    const parsedTrackerSuccess = validateMappedTrackerJSON(trackerJSONSuccess);
+
+    expect(isRight(parsedTrackerSuccess), `Tracker Validation Failed for type: ${input.pType} and initial value ${input.success}`).toBeTruthy();
+
+    testTracker.valueType = input.pType;
+    testTracker.initialKeys = input.failure[0];
+    testTracker.initialValues = input.failure[1];
+    const trackerJSONFailure = JSON.stringify(testTracker);
+    const parsedTrackerFailure = validateMappedTrackerJSON(trackerJSONFailure);
+
+    expect(isLeft(parsedTrackerFailure), `Tracker Validation Passed for type: ${input.pType} and initial value ${input.failure}`).toBeTruthy();
+
+  });
+});
+
+test("Tests can validate all Mapped Tracker initial key types", () => {
+  const pTypesTestInputs = [
+    {
+      pType: "address",
+      success: [
+        ADDRESS_ARRAY, ["123", "456", "78"]
+      ],
+      failure: [
+        ["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", "0xdadB0d80178819F2319190D340ce9A924f783711", "1"], ["123", "456", "78"]
+      ]
+    },
+    {
+      pType: "string",
+      success: [STRING_ARRAY, ["123", "456", "78"]],
+      failure: [["test", "an", 123], ["123", "456", "78"]]
+    },
+    {
+      pType: "uint256",
+      success: [["1", "23", "67"], ["123", "456", "78"]],
+      failure: [["1", "23", "test"], ["123", "456", "78"]]
+    },
+    {
+      pType: "bool",
+      success: [["true", "false"], ["123", "456"]],
+      failure: [["true", null], ["123", "78"]]
+    },
+    {
+      pType: "bytes",
+      success: [BYTES_ARRAY, ["123", "456", "78"]],
+      failure: [["0x1234", "0x5678", 1], ["123", "456", "78"]]
+    }
+  ]
+  const testTracker = JSON.parse(mappedTrackerJSON);
+
+  pTypesTestInputs.forEach((input) => {
+    testTracker.keyType = input.pType;
+    testTracker.initialKeys = input.success[0];
+    testTracker.initialValues = input.success[1];
+    const trackerJSONSuccess = JSON.stringify(testTracker);
+    const parsedTrackerSuccess = validateMappedTrackerJSON(trackerJSONSuccess);
+
+    expect(isRight(parsedTrackerSuccess), `Mapped Tracker Validation Failed for type: ${input.pType} and initial key ${input.success}`).toBeTruthy();
+
+    testTracker.keyType = input.pType;
+    testTracker.initialKeys = input.failure[0];
+    testTracker.initialValues = input.failure[1];
+    const trackerJSONFailure = JSON.stringify(testTracker);
+    const parsedTrackerFailure = validateMappedTrackerJSON(trackerJSONFailure);
+
+    expect(isLeft(parsedTrackerFailure), `Mapped Tracker Validation Passed for type: ${input.pType} and initial key ${input.failure}`).toBeTruthy();
+
+  });
+});
+
+test("Tests can catch Mapped Tracker invalid key type", () => {
+  const pTypesTestInputs = [
+    "address[]",
+    "string[]",
+    "uint256[]",
+    "bool[]",
+    "bytes[]"
+  ]
+  const testTracker = JSON.parse(mappedTrackerJSON);
+
+  pTypesTestInputs.forEach((input) => {
+
+    testTracker.keyType = input;
+    const trackerJSONFailure = JSON.stringify(testTracker);
+    const parsedTrackerFailure = validateMappedTrackerJSON(trackerJSONFailure);
+
+    expect(isLeft(parsedTrackerFailure), `Mapped Tracker Validation Passed for keytype: ${input}`).toBeTruthy();
+
+  });
+});
+
+test("Tests can catch all unequal mapped tracker initial keys and values length", () => {
+  const testTracker = JSON.parse(mappedTrackerJSON);
+
+  testTracker.initialKeys.push("100")
+
+  const parsedTracker = validateMappedTrackerJSON(JSON.stringify(testTracker));
+
+  expect(isLeft(parsedTracker), `Mapped Tracker Validation Passed for unequal initial keys and values length`).toBeTruthy();
+});
+
+test("Tests can catch mapped tracker duplicate keys", () => {
+  const testTracker = JSON.parse(mappedTrackerJSON);
+
+  testTracker.initialKeys.push("1")
+  testTracker.initialValues.push("100")
+
+  const parsedTracker = validateMappedTrackerJSON(JSON.stringify(testTracker));
+  expect(isLeft(parsedTracker), `Mapped Tracker Validation Passed with duplicate keys`).toBeTruthy();
 });

@@ -253,41 +253,67 @@ export function parseMappedTrackerSyntax(
   };
 }
 
+const getBigIntForBool = (value: string): bigint => {
+  if (value == "true") {
+    return 1n;
+  } else {
+    return 0n;
+  }
+}
+
+const getEncodedString = (value: string): string => {
+  const interim = BigInt(
+    keccak256(
+      encodeAbiParameters(parseAbiParameters("string"), [value])
+    )
+  );
+  return encodePacked(["uint256"], [BigInt(interim)]);
+}
+
+const getEncodedBytes = (value: string): string => {
+  var interim = BigInt(
+    keccak256(
+      encodeAbiParameters(parseAbiParameters("bytes"), [
+        toHex(stringToBytes(String(value))),
+      ])
+    )
+  );
+  return encodePacked(["uint256"], [BigInt(interim)]);
+}
+
+const getEncodedAddress = (value: string): string => {
+  const validatedAddress = getAddress(value);
+  var address = encodeAbiParameters(parseAbiParameters("address"), [
+    validatedAddress,
+  ]);
+
+  return address;
+}
+
 function encodeTrackerData(valueSet: any[], keyType: string): any[] {
   // const values: any[] = [];
   const values: any[] = valueSet.map((val) => {
-    // for (var val of valueSet) {
-    if (keyType == "uint256") {
+    if (keyType == "uint256[]") {
+      return (val as string[]).map(v => encodePacked(["uint256"], [BigInt(v)]));
+    } else if (keyType == "address[]") {
+      return (val as string[]).map(v => getEncodedAddress(v));
+    } else if (keyType == "bytes[]") {
+      return (val as string[]).map(v => getEncodedBytes(v));
+    } else if (keyType == "bool[]") {
+      return (val as string[]).map(v => getBigIntForBool(v));
+    } else if (keyType == "string[]") {
+
+      return (val as string[]).map(v => getEncodedString(v));
+    } else if (keyType == "uint256") {
       return encodePacked(["uint256"], [BigInt(val)]);
     } else if (keyType == "address") {
-      const validatedAddress = getAddress(val as string);
-      var address = encodeAbiParameters(parseAbiParameters("address"), [
-        validatedAddress,
-      ]);
-
-      return address;
+      return getEncodedAddress(val);
     } else if (keyType == "bytes") {
-      var interim = BigInt(
-        keccak256(
-          encodeAbiParameters(parseAbiParameters("bytes"), [
-            toHex(stringToBytes(String(val))),
-          ])
-        )
-      );
-      return encodePacked(["uint256"], [BigInt(interim)]);
+      return getEncodedBytes(val);
     } else if (keyType == "bool") {
-      if (val == "true") {
-        return encodePacked(["uint256"], [1n]);
-      } else {
-        return encodePacked(["uint256"], [0n]);
-      }
+      return getBigIntForBool(val as string);
     } else {
-      var interim = BigInt(
-        keccak256(
-          encodeAbiParameters(parseAbiParameters("string"), [val as string])
-        )
-      );
-      return encodePacked(["uint256"], [BigInt(interim)]);
+      return getEncodedString(val);
     }
   });
 
@@ -304,26 +330,45 @@ export function parseTrackerSyntax(syntax: TrackerJSON): TrackerDefinition {
   let trackerType = syntax.type;
 
   var trackerInitialValue: any;
-  if (trackerType == "uint256") {
+
+  if (trackerType == "string[]") {
+
+    trackerInitialValue = encodeAbiParameters(parseAbiParameters("string[]"), [
+      syntax.initialValue as string[],
+    ]);
+
+  } else if (trackerType == "bool[]") {
+    const encoded = (syntax.initialValue as string[]).map(val => getBigIntForBool(val));
+    trackerInitialValue = encodePacked(["uint256[]"], [encoded]);
+
+  } else if (trackerType == "bytes[]") {
+    const values = (syntax.initialValue as string[]).map(val => toHex(stringToBytes(String(val))));
+    trackerInitialValue = encodeAbiParameters(parseAbiParameters("bytes[]"), [
+      values
+    ]);
+  } else if (trackerType == "address[]") {
+    trackerInitialValue = (syntax.initialValue as string[]).map(getEncodedAddress);
+
+  } else if (trackerType == "uint256[]") {
+    const values = (syntax.initialValue as string[]).map(val => BigInt(val));
+    trackerInitialValue = encodePacked(
+      ["uint256[]"],
+      [values]
+    );
+  } else if (trackerType == "uint256") {
     trackerInitialValue = encodePacked(
       ["uint256"],
-      [BigInt(syntax.initialValue)]
+      [BigInt(syntax.initialValue as string)]
     );
   } else if (trackerType == "address") {
-    const validatedAddress = getAddress(syntax.initialValue);
-    trackerInitialValue = encodeAbiParameters(parseAbiParameters("address"), [
-      validatedAddress,
-    ]);
+    trackerInitialValue = getEncodedAddress(syntax.initialValue as string);
   } else if (trackerType == "bytes") {
     trackerInitialValue = encodeAbiParameters(parseAbiParameters("bytes"), [
       toHex(stringToBytes(String(syntax.initialValue))),
     ]);
   } else if (trackerType == "bool") {
-    if (syntax.initialValue == "true") {
-      trackerInitialValue = encodePacked(["uint256"], [1n]);
-    } else {
-      trackerInitialValue = encodePacked(["uint256"], [0n]);
-    }
+    trackerInitialValue = encodePacked(["uint256"], [getBigIntForBool(syntax.initialValue as string)]);
+
   } else {
     trackerInitialValue = encodeAbiParameters(parseAbiParameters("string"), [
       syntax.initialValue as string,

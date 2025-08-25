@@ -548,7 +548,7 @@ export function convertRuleStructToString(
     ...rJSON
   }
 
-  return {data: ruleData, json: rJSON};
+  return { data: ruleData, json: rJSON };
 }
 
 /**
@@ -590,7 +590,7 @@ export function convertForeignCallStructsToStrings(
         name: functionMeta?.functionString || "",
         address: call.foreignCallAddress as Address,
         function: functionMeta?.functionString || "",
-        returnType: returnTypeString || "",
+        returnType: returnTypeString || "string",
         valuesToPass: functionMeta?.encodedValues || "",
         mappedTrackerKeyValues: "",
         callingFunction: callingFunction?.functionString || "",
@@ -652,7 +652,7 @@ export function convertTrackerStructsToStrings(
     .filter((tracker) => !tracker.mapped)
     .map((tracker, iter) => {
       const trackerType =
-        PT.find((pt) => pt.enumeration === tracker.pType)?.name || "";
+        PT.find((pt) => pt.enumeration === tracker.pType)?.name || "string";
 
       var initialValue = retrieveDecoded(
         tracker.pType,
@@ -672,7 +672,7 @@ export function convertTrackerStructsToStrings(
           ...trackerJSON,
         };
 
-        return {data: trackerData, json: trackerJSON};
+        return { data: trackerData, json: trackerJSON };
       } else {
         throw new Error(
           `Invalid tracker input: ${JSON.stringify(validatedInputs.left)}`
@@ -683,9 +683,9 @@ export function convertTrackerStructsToStrings(
     .filter((tracker) => tracker.mapped)
     .map((tracker, iter) => {
       const valueType =
-        PT.find((pt) => pt.enumeration === tracker.pType)?.name || "";
+        PT.find((pt) => pt.enumeration === tracker.pType)?.name || "string";
       const keyType =
-        PT.find((pt) => pt.enumeration === tracker.trackerKeyType)?.name || "";
+        PT.find((pt) => pt.enumeration === tracker.trackerKeyType)?.name || "string";
 
       var keys = [];
 
@@ -715,7 +715,7 @@ export function convertTrackerStructsToStrings(
           id: Number(tracker.trackerIndex),
           ...mappedTrackerJSON,
         };
-        return {data: mappedTrackerData, json: mappedTrackerJSON};
+        return { data: mappedTrackerData, json: mappedTrackerJSON };
       } else {
         throw new Error(
           `Invalid mapped tracker input: ${JSON.stringify(
