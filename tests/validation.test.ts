@@ -870,11 +870,11 @@ test("Tests can validate all Tracker types", () => {
     { pType: "uint256", success: "123", failure: "test" },
     { pType: "bool", success: "true", failure: 123 },
     { pType: "bytes", success: "0x1234", failure: 123 },
-    { pType: "address[]", success: ["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC"], failure: ["test"] },
-    { pType: "uint256[]", success: ["123"], failure: ["test"] },
-    { pType: "bool[]", success: ["true"], failure: [null] },
-    { pType: "string[]", success: ["test"], failure: [123] },
-    { pType: "bytes[]", success: ["0x1234"], failure: [123] },
+    { pType: "address[]", success: ["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", "0xdadB0d80178819F2319190D340ce9A924f783711", "0x870585E3AF9dA7ff5dcd8f897EA0756f60F69cc1"], failure: ["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", "0xdadB0d80178819F2319190D340ce9A924f783711", "test"] },
+    { pType: "uint256[]", success: ["123", "456", "78"], failure: ["123", "45", "test"] },
+    { pType: "bool[]", success: ["true", "false", "true"], failure: ["true", "false", null] },
+    { pType: "string[]", success: ["test", "an", "arrayTracker"], failure: ["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", "0xdadB0d80178819F2319190D340ce9A924f783711", 123] },
+    { pType: "bytes[]", success: ["0x1234", "0x5678", "0x7890"], failure: ["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", "0xdadB0d80178819F2319190D340ce9A924f783711", 123] },
   ];
   const testTracker = JSON.parse(trackerJSON);
 
@@ -898,16 +898,16 @@ test("Tests can validate all Tracker types", () => {
 
 test("Tests can validate all Mapped Tracker initial value types", () => {
   const pTypesTestInputs = [
-    { pType: "address", success: [["1"], ["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC"]], failure: [["1"], ["test"]] },
-    { pType: "string", success: [["1"], ["test"]], failure: [["1"], [123]] },
-    { pType: "uint256", success: [["1"], ["123"]], failure: [["1"], ["test"]] },
-    { pType: "bool", success: [["1"], ["true"]], failure: [["1"], [null]] },
-    { pType: "bytes", success: [["1"], ["0x1234"]], failure: [["1"], [123]] },
-    { pType: "address[]", success: [["1"], [["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC"]]], failure: [["1"], [["test"]]] },
-    { pType: "uint256[]", success: [["1"], [["123"]]], failure: [["1"], [["test"]]] },
-    { pType: "bool[]", success: [["1"], [["true"]]], failure: [["1"], [[null]]] },
-    { pType: "string[]", success: [["1"], [["test"]]], failure: [["1"], [[123]]] },
-    { pType: "bytes[]", success: [["1"], [["0x1234"]]], failure: [["1"], [[123]]] },
+    { pType: "address", success: [["1", "2", "3"], ["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", "0xdadB0d80178819F2319190D340ce9A924f783711", "0x870585E3AF9dA7ff5dcd8f897EA0756f60F69cc1"]], failure: [["1"], ["test"]] },
+    { pType: "string", success: [["1", "2", "3"], ["test", "an", "trackerArray"]], failure: [["1", "2", "3"], ["test", "an", 123]] },
+    { pType: "uint256", success: [["1", "2", "3"], ["123", "456", "789"]], failure: [["1", "2", "3"], ["1", "2", "test"]] },
+    { pType: "bool", success: [["1", "2", "3"], ["true", "false", "false"]], failure: [["1", "2", "3"], ["false", "true", null]] },
+    { pType: "bytes", success: [["1", "2", "3"], ["0x1234", "0x5678", "0x9abc"]], failure: [["1", "2", "3"], ["0x1234", "0x5678", 123]] },
+    { pType: "address[]", success: [["1", "2", "3"], [["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", "0xdadB0d80178819F2319190D340ce9A924f783711", "0x870585E3AF9dA7ff5dcd8f897EA0756f60F69cc1"], ["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", "0xdadB0d80178819F2319190D340ce9A924f783711", "0x870585E3AF9dA7ff5dcd8f897EA0756f60F69cc1"], ["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", "0xdadB0d80178819F2319190D340ce9A924f783711", "0x870585E3AF9dA7ff5dcd8f897EA0756f60F69cc1"]]], failure: [["1", "2", "3"], [["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", "0xdadB0d80178819F2319190D340ce9A924f783711", "0x870585E3AF9dA7ff5dcd8f897EA0756f60F69cc1"], ["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", "0xdadB0d80178819F2319190D340ce9A924f783711", "0x870585E3AF9dA7ff5dcd8f897EA0756f60F69cc1"], ["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", "0xdadB0d80178819F2319190D340ce9A924f783711", "test"]]] },
+    { pType: "uint256[]", success: [["1", "2", "3"], [["123", "456", "78"], ["1293", "4656", "278"], ["23", "45", "9"]]], failure: [["1", "2", "3"], [["123", "456", "78"], ["1293", "4656", "278"], ["23", "45", "test"]]] },
+    { pType: "bool[]", success: [["1", "2", "3"], [["true", "false", "true"], ["true", "false", "true"], ["true", "false", "true"]]], failure: [["1", "2", "3"], [["true", "false", "true"], ["true", "false", "true"], ["true", "false", null]]] },
+    { pType: "string[]", success: [["1", "2", "3"], [["test", "an", "arrayTracker"], ["test", "an", "arrayTracker"], ["test", "an", "arrayTracker"]]], failure: [["1", "2", "3"], [["test", "an", "arrayTracker"], ["test", "an", "arrayTracker"], ["test", "an", 123]]] },
+    { pType: "bytes[]", success: [["1", "2", "3"], [["0x1234", "0x5678", "0x7890"], ["0x1234", "0x5678", "0x7890"], ["0x1234", "0x5678", "0x7890"]]], failure: [["1", "2", "3"], [["0x1234", "0x5678", "0x7890"], ["0x1234", "0x5678", "0x7890"], ["0x1234", "0x5678", 12]]] },
   ];
   const testTracker = JSON.parse(mappedTrackerJSON);
 
@@ -933,11 +933,11 @@ test("Tests can validate all Mapped Tracker initial value types", () => {
 
 test("Tests can validate all Mapped Tracker initial key types", () => {
   const pTypesTestInputs = [
-    { pType: "address", success: [["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC"], ["123"]], failure: [["1"], ["123"]] },
-    { pType: "string", success: [["test"], ["123"]], failure: [[123], ["123"]] },
-    { pType: "uint256", success: [["1"], ["123"]], failure: [["test"], ["123"]] },
-    { pType: "bool", success: [["true"], ["123"]], failure: [[null], ["123"]] },
-    { pType: "bytes", success: [["0x1234"], ["123"]], failure: [[1], ["123"]] }
+    { pType: "address", success: [["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", "0xdadB0d80178819F2319190D340ce9A924f783711", "0x870585E3AF9dA7ff5dcd8f897EA0756f60F69cc1"], ["123", "456", "78"]], failure: [["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC", "0xdadB0d80178819F2319190D340ce9A924f783711", "1"], ["123", "456", "78"]] },
+    { pType: "string", success: [["test", "an", "arrayTracker"], ["123", "456", "78"]], failure: [["test", "an", 123], ["123", "456", "78"]] },
+    { pType: "uint256", success: [["1", "23", "67"], ["123", "456", "78"]], failure: [["1", "23", "test"], ["123", "456", "78"]] },
+    { pType: "bool", success: [["true", "false"], ["123", "456"]], failure: [["true", null], ["123", "78"]] },
+    { pType: "bytes", success: [["0x1234", "0x5678", "0x7890"], ["123", "456", "78"]], failure: [["0x1234", "0x5678", 1], ["123", "456", "78"]] }
   ]
   const testTracker = JSON.parse(mappedTrackerJSON);
 

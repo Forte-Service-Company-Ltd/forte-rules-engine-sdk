@@ -347,7 +347,7 @@ export function parseTrackerSyntax(syntax: TrackerJSON): TrackerDefinition {
       values
     ]);
   } else if (trackerType == "address[]") {
-    const validatedAddress = (syntax.initialValue as string[]).map(getEncodedAddress);
+    trackerInitialValue = (syntax.initialValue as string[]).map(getEncodedAddress);
 
   } else if (trackerType == "uint256[]") {
     const values = (syntax.initialValue as string[]).map(val => BigInt(val));

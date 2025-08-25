@@ -445,7 +445,7 @@ const validateMappedTrackerInitialInputs = (type: any, inputs: any): boolean => 
     );
   } else {
     return inputs.every(
-      (value: any) => validateTrackerValue(type.replace("[]", ""), value)
+      (value: any) => validateTrackerValue(type, value)
     );
   }
 }
