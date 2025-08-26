@@ -44,6 +44,7 @@ export {
   truMatchArray,
   operandArray,
   pTypeEnum,
+  trackerArrayType,
   PT,
   Left,
   Right,

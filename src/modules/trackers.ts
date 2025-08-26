@@ -16,6 +16,7 @@ import {
   TrackerMetadataStruct,
   TrackerOnChain,
   ContractBlockParameters,
+  trackerArrayType,
 } from "./types";
 import { isLeft, unwrapEither } from "./utils";
 import {
@@ -45,6 +46,15 @@ import { encodePacked } from "viem";
  * @note This file is a critical component of the Rules Engine SDK, enabling seamless integration with the Rules Engine smart contracts.
  */
 
+/**
+ * 
+ * @param config - The configuration object containing network and wallet information.
+ * @param rulesEngineComponentContract - The contract instance for interacting with the rules engine component.
+ * @param policyId - The ID of the policy associated with the tracker.
+ * @param trSyntax - A JSON string representing the tracker syntax.
+ * @param confirmationCount - The number of confirmations to wait for after writing the contract.
+ * @returns A promise that resolves to the new tracker ID
+ */
 export const createMappedTracker = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
@@ -57,7 +67,6 @@ export const createMappedTracker = async (
     throw new Error(getRulesErrorMessages(unwrapEither(json)));
   }
   const parsedTracker = parseMappedTrackerSyntax(unwrapEither(json));
-
   var transactionTracker = {
     set: true,
     pType: parsedTracker.valueType,
@@ -72,17 +81,19 @@ export const createMappedTracker = async (
       addTR = await simulateContract(config, {
         address: rulesEngineComponentContract.address,
         abi: rulesEngineComponentContract.abi,
-        functionName: "createTracker",
+        functionName: "createMappedTracker",
         args: [
           policyId,
           transactionTracker,
           parsedTracker.name,
           parsedTracker.initialKeys,
           parsedTracker.initialValues,
+          parsedTracker.arrayValueType,
         ],
       });
       break;
     } catch (err) {
+      console.log(err)
       // TODO: Look into replacing this loop/sleep with setTimeout
       await sleep(1000);
     }
@@ -110,6 +121,7 @@ export const createMappedTracker = async (
  * @param rulesEngineComponentContract - The contract instance for interacting with the rules engine component.
  * @param policyId - The ID of the policy associated with the tracker.
  * @param trSyntax - A JSON string representing the tracker syntax.
+ * @param confirmationCount - The number of confirmations to wait for after writing the contract.
  * @returns A promise that resolves to the new tracker ID
  *
  * @throws Will retry indefinitely with a 1-second delay between attempts if an error occurs during the contract simulation.
@@ -142,7 +154,7 @@ export const createTracker = async (
         address: rulesEngineComponentContract.address,
         abi: rulesEngineComponentContract.abi,
         functionName: "createTracker",
-        args: [policyId, transactionTracker, tracker.name],
+        args: [policyId, transactionTracker, tracker.name, tracker.arrayValueType], 
       });
       break;
     } catch (err) {
@@ -352,6 +364,7 @@ export const getTrackerMetadata = async (
       initialValue: "",
       initialKeys: [],
       initialValues: [],
+      arrayType: 0,
     };
   }
 };

@@ -18,6 +18,7 @@ import {
   PT,
   RuleComponent,
   RuleDefinition,
+  trackerArrayType,
   TrackerDefinition,
   trackerIndexNameMapping,
 } from "../modules/types";
@@ -231,6 +232,7 @@ export function parseMappedTrackerSyntax(
 ): MappedTrackerDefinition {
   let keyType = syntax.keyType;
   let valueType = syntax.valueType;
+  var trackerArrayValueType: number = 0; // Default to VOID type
   var trackerInitialKeys: any[] = encodeTrackerData(
     syntax.initialKeys,
     keyType
@@ -243,13 +245,28 @@ export function parseMappedTrackerSyntax(
     .enumeration;
   const valueTypeEnum = (PT.find((_pt) => _pt.name == valueType) ?? PT[4])
     .enumeration;
-
+  // Determine trackerArrayType based on valueType
+  if (valueType === "uint256[]") {
+    trackerArrayValueType = trackerArrayType.UINT_ARRAY;
+  } else if (valueType === "address[]") {
+    trackerArrayValueType = trackerArrayType.ADDR_ARRAY;
+  } else if (valueType === "bytes[]") {
+    trackerArrayValueType = trackerArrayType.BYTES_ARRAY;
+  } else if (valueType === "bool[]") {
+    trackerArrayValueType = trackerArrayType.VOID;
+  } else if (valueType === "string[]") {
+    trackerArrayValueType = trackerArrayType.STR_ARRAY;
+  } else {
+    trackerArrayValueType = trackerArrayType.VOID;
+  }
+  
   return {
     name: syntax.name,
     keyType: keyTypeEnum,
     valueType: valueTypeEnum,
     initialKeys: trackerInitialKeys,
     initialValues: trackerInitialValues,
+    arrayValueType: trackerArrayValueType,
   };
 }
 
@@ -294,16 +311,20 @@ function encodeTrackerData(valueSet: any[], keyType: string): any[] {
   // const values: any[] = [];
   const values: any[] = valueSet.map((val) => {
     if (keyType == "uint256[]") {
-      return (val as string[]).map(v => encodePacked(["uint256"], [BigInt(v)]));
+     const values = val.map((v: string) => encodePacked(["uint256"], [BigInt(v)]));
+     return encodeAbiParameters(parseAbiParameters(["bytes[]"]), [values]); 
     } else if (keyType == "address[]") {
-      return (val as string[]).map(v => getEncodedAddress(v));
+      const values = val.map((v: string) => getEncodedAddress(v));
+      return encodeAbiParameters(parseAbiParameters(["bytes[]"]), [values]);
     } else if (keyType == "bytes[]") {
-      return (val as string[]).map(v => getEncodedBytes(v));
+      const values = val.map((v: string) => toHex(stringToBytes(String(v))));
+      return encodeAbiParameters(parseAbiParameters(["bytes[]"]), [values]);
     } else if (keyType == "bool[]") {
-      return (val as string[]).map(v => getBigIntForBool(v));
+      const values = val.map((v: string) => getBigIntForBool(v));
+      return encodePacked(["uint256[]"], [values]);
     } else if (keyType == "string[]") {
-
-      return (val as string[]).map(v => getEncodedString(v));
+      const values = val.map((v: string) => getEncodedString(v));
+      return encodeAbiParameters(parseAbiParameters(["bytes[]"]), [values]);
     } else if (keyType == "uint256") {
       return encodePacked(["uint256"], [BigInt(val)]);
     } else if (keyType == "address") {
@@ -330,24 +351,29 @@ export function parseTrackerSyntax(syntax: TrackerJSON): TrackerDefinition {
   let trackerType = syntax.type;
 
   var trackerInitialValue: any;
+  var trackerValueType: number;
 
   if (trackerType == "string[]") {
-
     trackerInitialValue = encodeAbiParameters(parseAbiParameters("string[]"), [
       syntax.initialValue as string[],
     ]);
+    trackerValueType = trackerArrayType.STR_ARRAY;
 
   } else if (trackerType == "bool[]") {
     const encoded = (syntax.initialValue as string[]).map(val => getBigIntForBool(val));
     trackerInitialValue = encodePacked(["uint256[]"], [encoded]);
+    trackerValueType = trackerArrayType.BOOL_ARRAY;
 
   } else if (trackerType == "bytes[]") {
     const values = (syntax.initialValue as string[]).map(val => toHex(stringToBytes(String(val))));
     trackerInitialValue = encodeAbiParameters(parseAbiParameters("bytes[]"), [
       values
     ]);
+    trackerValueType = trackerArrayType.BYTES_ARRAY;
+
   } else if (trackerType == "address[]") {
     trackerInitialValue = (syntax.initialValue as string[]).map(getEncodedAddress);
+    trackerValueType = trackerArrayType.ADDR_ARRAY;
 
   } else if (trackerType == "uint256[]") {
     const values = (syntax.initialValue as string[]).map(val => BigInt(val));
@@ -355,32 +381,42 @@ export function parseTrackerSyntax(syntax: TrackerJSON): TrackerDefinition {
       ["uint256[]"],
       [values]
     );
+    trackerValueType = trackerArrayType.UINT_ARRAY;
+
   } else if (trackerType == "uint256") {
-    trackerInitialValue = encodePacked(
-      ["uint256"],
+    trackerInitialValue = encodePacked(["uint256"],
       [BigInt(syntax.initialValue as string)]
     );
+    trackerValueType = trackerArrayType.VOID;
   } else if (trackerType == "address") {
     trackerInitialValue = getEncodedAddress(syntax.initialValue as string);
+    trackerValueType = trackerArrayType.VOID;
+
   } else if (trackerType == "bytes") {
     trackerInitialValue = encodeAbiParameters(parseAbiParameters("bytes"), [
       toHex(stringToBytes(String(syntax.initialValue))),
     ]);
+    trackerValueType = trackerArrayType.VOID;
+
   } else if (trackerType == "bool") {
     trackerInitialValue = encodePacked(["uint256"], [getBigIntForBool(syntax.initialValue as string)]);
+    trackerValueType = trackerArrayType.VOID;
 
   } else {
     trackerInitialValue = encodeAbiParameters(parseAbiParameters("string"), [
       syntax.initialValue as string,
     ]);
-    // trackerInitialValue = encodePacked(["uint256"], [BigInt(interim)]);
+
+    trackerValueType = trackerArrayType.VOID;
   }
   var trackerTypeEnum = 0;
   trackerTypeEnum = PT.find(pt => pt.name === trackerType)?.enumeration ?? 4;
+
   return {
     name: syntax.name,
     type: trackerTypeEnum,
     initialValue: trackerInitialValue,
+    arrayValueType: trackerValueType,
   };
 }
 
