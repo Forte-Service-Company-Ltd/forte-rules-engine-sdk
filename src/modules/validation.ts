@@ -211,20 +211,14 @@ const validateReferencedCalls = (input: any): boolean => {
   if (!fcCallingFunctions.every((fcName) => callingFunctionNames.includes(fcName))) {
     return false;
   }
-  // Collect all parameter names from all calling functions' encodedValues
-  // Example: "address from, address to, uint256 id" -> ["from", "to", "id"]
-  const callingFunctionEncodedValues: string[] = input.CallingFunctions
-    .flatMap((call: any) =>
-      (call.encodedValues || "")
-        .split(",")
-        .map((segment: string) => segment.trim())
-        .filter((segment: string) => segment.length > 0)
-        .map((segment: string) => {
-          const parts = segment.split(/\s+/).filter(Boolean);
-          // Parameter name assumed to be the last token
-          return parts[parts.length - 1];
-        })
-    );
+
+  const callingFunctionEncodedValues = input.CallingFunctions.reduce((acc: Record<string, string[]>, call: CallingFunctionJSON) => {
+    const typeValues = call.encodedValues.split(",");
+    const values: string[] = typeValues.map((v: string) => v.trim().split(" ")[1].trim());
+    acc[call.name] = values;
+    return acc;
+  }, {} as Record<string, string[]>);
+
   const foreignCallNames = input.ForeignCalls.map((call: any) => call.name);
   const trackerNames = input.Trackers.map((tracker: any) => tracker.name);
   const mappedTrackerNames = input.MappedTrackers.map((tracker: any) => tracker.name);
@@ -236,7 +230,7 @@ const validateReferencedCalls = (input: any): boolean => {
   }).every((isValid: boolean) => isValid);
 
   const validatedForeignCallValuesToPass = input.ForeignCalls.map((call: any) => {
-    return validateValuesToPass(callingFunctionEncodedValues, foreignCallNames, trackerNames, mappedTrackerNames, call.valuesToPass);
+    return validateValuesToPass(callingFunctionEncodedValues[call.callingFunction], foreignCallNames, trackerNames, mappedTrackerNames, call.valuesToPass);
   }).every((isValid: boolean) => isValid);
   return validatedInputs && validatedForeignCallValuesToPass; // If any input is invalid, return false
 
