@@ -1120,3 +1120,107 @@ test("Tests can catch mapped tracker duplicate keys", () => {
   const parsedTracker = validateMappedTrackerJSON(JSON.stringify(testTracker));
   expect(isLeft(parsedTracker), `Mapped Tracker Validation Passed with duplicate keys`).toBeTruthy();
 });
+
+test("Allows using any parameter name from calling function in valuesToPass", () => {
+  const input = JSON.parse(policyJSONFull);
+  // Ensure the first foreign call can reference the second parameter name 'value'
+  input.ForeignCalls[0].valuesToPass = "value";
+  const parsed = validatePolicyJSON(JSON.stringify(input));
+  expect(isRight(parsed)).toBeTruthy();
+});
+
+test("Allows referencing third parameter from calling function in valuesToPass", () => {
+  const policy = {
+    Policy: "Param Index Policy",
+    Description: "Checks third param in valuesToPass",
+    PolicyType: "open",
+    CallingFunctions: [
+      {
+        name: "transfer(address to, uint256 value, address spender)",
+        functionSignature: "transfer(address to, uint256 value, address spender)",
+        encodedValues: "address to, uint256 value, address spender",
+      },
+    ],
+    ForeignCalls: [
+      {
+        name: "UseSpender",
+        address: "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+        function: "testSig(address)",
+        returnType: "uint256",
+        valuesToPass: "spender",
+        mappedTrackerKeyValues: "",
+        callingFunction: "transfer(address to, uint256 value, address spender)",
+      },
+    ],
+    Trackers: [
+      {
+        name: "SimpleString",
+        type: "string",
+        initialValue: "x",
+      },
+    ],
+    MappedTrackers: [],
+    Rules: [
+      {
+        Name: "R",
+        Description: "D",
+        condition: "1 == 1",
+        positiveEffects: ["emit E"],
+        negativeEffects: [],
+        callingFunction: "transfer(address to, uint256 value, address spender)",
+      },
+    ],
+  };
+  const parsed = validatePolicyJSON(JSON.stringify(policy));
+  expect(isRight(parsed)).toBeTruthy();
+});
+
+test("Validates mapped and unmapped trackers in valuesToPass with mappedTrackerKeyValues (including TRU)", () => {
+  const policy = {
+    Policy: "Tracker ValuesToPass Policy",
+    Description: "Checks TR and TRU mapped/unmapped in valuesToPass",
+    PolicyType: "open",
+    CallingFunctions: [
+      {
+        name: "transfer(address to, uint256 value)",
+        functionSignature: "transfer(address to, uint256 value)",
+        encodedValues: "address to, uint256 value",
+      },
+    ],
+    ForeignCalls: [
+      {
+        name: "UseTrackers",
+        address: "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+        function: "testSig(string,uint256,string)",
+        returnType: "uint256",
+        valuesToPass: "TR:SimpleString, TR:SimpleMapped(to)",
+        mappedTrackerKeyValues: "to",
+        callingFunction: "transfer(address to, uint256 value)",
+      },
+    ],
+    Trackers: [
+      { name: "SimpleString", type: "string", initialValue: "hello" },
+    ],
+    MappedTrackers: [
+      {
+        name: "SimpleMapped",
+        keyType: "address",
+        valueType: "uint256",
+        initialKeys: ["0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC"],
+        initialValues: ["1"],
+      },
+    ],
+    Rules: [
+      {
+        Name: "R",
+        Description: "D",
+        condition: "1 == 1",
+        positiveEffects: ["emit E"],
+        negativeEffects: [],
+        callingFunction: "transfer(address to, uint256 value)",
+      },
+    ],
+  };
+  const parsed = validatePolicyJSON(JSON.stringify(policy));
+  expect(isRight(parsed)).toBeTruthy();
+});
