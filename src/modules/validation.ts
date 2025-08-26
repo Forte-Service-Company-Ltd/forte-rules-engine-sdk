@@ -172,7 +172,7 @@ const validateInputReferencedCalls = (foreignCallNames: string[], trackerNames: 
 }
 
 const validateValuesToPass = (
-  callingFunctionEncodedValues: string,
+  callingFunctionEncodedValues: string[],
   foreignCallNames: string[],
   trackerNames: string[],
   mappedTrackerNames: string[],
@@ -184,11 +184,11 @@ const validateValuesToPass = (
       return foreignCallNames.includes(value.replace("FC:", "").trim());
     } else if (value.startsWith("TR:") || value.startsWith("TRU:")) {
       value = value.replace(/^(TR|TRU):/, "").trim()
-      if (valuesToPass.includes("(")) {
+      if (value.includes("(")) {
         value = value.split("(")[0].trim();
         return mappedTrackerNames.includes(value);
       } else {
-        return trackerNames.includes(value);
+      return trackerNames.includes(value);
       }
     } else if (callingFunctionEncodedValues.includes(value)) {
       return true; // If it is a calling function value, it is valid
@@ -211,9 +211,20 @@ const validateReferencedCalls = (input: any): boolean => {
   if (!fcCallingFunctions.every((fcName) => callingFunctionNames.includes(fcName))) {
     return false;
   }
-  const callingFunctionEncodedValues = input.CallingFunctions.map(
-    (call: any) => call.encodedValues.split(" ")[1].replace(",", "").trim()
-  );
+  // Collect all parameter names from all calling functions' encodedValues
+  // Example: "address from, address to, uint256 id" -> ["from", "to", "id"]
+  const callingFunctionEncodedValues: string[] = input.CallingFunctions
+    .flatMap((call: any) =>
+      (call.encodedValues || "")
+        .split(",")
+        .map((segment: string) => segment.trim())
+        .filter((segment: string) => segment.length > 0)
+        .map((segment: string) => {
+          const parts = segment.split(/\s+/).filter(Boolean);
+          // Parameter name assumed to be the last token
+          return parts[parts.length - 1];
+        })
+    );
   const foreignCallNames = input.ForeignCalls.map((call: any) => call.name);
   const trackerNames = input.Trackers.map((tracker: any) => tracker.name);
   const mappedTrackerNames = input.MappedTrackers.map((tracker: any) => tracker.name);
