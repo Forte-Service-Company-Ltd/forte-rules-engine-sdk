@@ -148,18 +148,7 @@ export function buildARuleStruct(
   additionalForeignCalls: string[],
   additionalEffectForeignCalls: string[]
 ): RuleStruct {
-  var fcList = buildForeignCallList(ruleSyntax.condition);
 
-  if (ruleSyntax.positiveEffects != null) {
-    for (var eff of ruleSyntax.positiveEffects) {
-      fcList.push(...buildForeignCallList(eff));
-    }
-  }
-  if (ruleSyntax.negativeEffects != null) {
-    for (var eff of ruleSyntax.negativeEffects) {
-      fcList.push(...buildForeignCallList(eff));
-    }
-  }
   var output = parseRuleSyntax(
     ruleSyntax,
     trackerNameToID,
@@ -168,60 +157,6 @@ export function buildARuleStruct(
     additionalForeignCalls,
     additionalEffectForeignCalls
   );
-
-  var trList = buildTrackerList(ruleSyntax.condition);
-  if (ruleSyntax.positiveEffects != null) {
-    for (var eff of ruleSyntax.positiveEffects) {
-      trList.push(...buildTrackerList(eff));
-    }
-  }
-  if (ruleSyntax.negativeEffects != null) {
-    for (var eff of ruleSyntax.negativeEffects) {
-      trList.push(...buildTrackerList(eff));
-    }
-  }
-  var fcIDs = [];
-  var trIDs = [];
-  for (var name of fcList) {
-    for (var mapping of foreignCallNameToID) {
-      if (mapping.name == name) {
-        fcIDs.push(mapping.id);
-      }
-    }
-  }
-  for (var name of trList) {
-    for (var mapping of trackerNameToID) {
-      if (mapping.name == name) {
-        trIDs.push(mapping.id);
-      }
-    }
-  }
-  var iter = 0;
-  var tIter = 0;
-
-  iter = 0;
-  tIter = 0;
-
-  var fcEffectList: string[] = [];
-  if (ruleSyntax.positiveEffects != null) {
-    for (var eff of ruleSyntax.positiveEffects) {
-      fcEffectList.concat(buildForeignCallList(eff));
-    }
-  }
-  if (ruleSyntax.negativeEffects != null) {
-    for (var eff of ruleSyntax.negativeEffects) {
-      fcEffectList.concat(buildForeignCallList(eff));
-    }
-  }
-
-  var fcEffectIDs = [];
-  for (var name of fcEffectList) {
-    for (var mapping of foreignCallNameToID) {
-      if (mapping.name == name) {
-        fcEffectIDs.push(mapping.id);
-      }
-    }
-  }
 
   var rawData = {
     instructionSetIndex: [],
