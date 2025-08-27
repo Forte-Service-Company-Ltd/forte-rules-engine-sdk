@@ -293,6 +293,22 @@ export type PolicyMetadataStruct = {
 };
 
 // -----------------------------------------------------------------------------
+// Calling Function Types
+// -----------------------------------------------------------------------------
+
+/**
+ * Structure representing a foreign call as stored on-chain
+ */
+export type CallingFunctionOnChain = {
+  /** Whether the foreign call is set */
+  set: boolean;
+  /** Function signature */
+  signature: string;
+  /** Types of parameters */
+  parameterTypes: number[];
+};
+
+// -----------------------------------------------------------------------------
 // Foreign Call Types
 // -----------------------------------------------------------------------------
 
