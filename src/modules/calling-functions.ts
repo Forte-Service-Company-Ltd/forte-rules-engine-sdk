@@ -212,7 +212,6 @@ export const getCallingFunctions = async (
       args: [policyId],
       ...blockParams
     }) as any;
-    console.log("CF Data: ", getMeta[0].parameterType);
     let callingFunctionResult = getMeta as CallingFunctionOnChain[];
     return callingFunctionResult;
   } catch (error) {

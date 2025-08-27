@@ -1278,10 +1278,7 @@ describe("Rules Engine Interactions", async () => {
     );
 
     const input = JSON.parse(policyJSON);
-    const rawPolicy = await retrievePolicy(config, getRulesEnginePolicyContract(rulesEngineContract, client), result.policyId);
     const callingFunctions = await getCallingFunctions(config, getRulesEngineComponentContract(rulesEngineContract, client), result.policyId);
-
-    console.log("Calling Function: ", callingFunctions, rawPolicy[0][0]);
 
     expect(callingFunctions[0].parameterTypes.length).toEqual(input.CallingFunctions[0].encodedValues.split(",").length);
 
