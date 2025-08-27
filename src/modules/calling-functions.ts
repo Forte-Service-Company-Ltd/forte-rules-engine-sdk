@@ -205,15 +205,14 @@ export const getCallingFunctions = async (
   blockParams?: ContractBlockParameters
 ): Promise<CallingFunctionOnChain[]> => {
   try {
-    const getMeta = await readContract(config, {
+    const callingFunctions = await readContract(config, {
       address: rulesEngineComponentContract.address,
       abi: rulesEngineComponentContract.abi,
       functionName: "getAllCallingFunctions",
       args: [policyId],
       ...blockParams
-    }) as any;
-    let callingFunctionResult = getMeta as CallingFunctionOnChain[];
-    return callingFunctionResult;
+    }) as CallingFunctionOnChain[];
+    return callingFunctions;
   } catch (error) {
     console.error(error);
     return [];
