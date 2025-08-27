@@ -65,9 +65,8 @@ export const createCallingFunction = async (
   encodedValues: string,
   confirmationCount: number
 ): Promise<number> => {
-  var argsRaw = parseFunctionArguments(callingFunction);
-  var args: number[] = argsRaw.map((val) =>
-    determinePTEnumeration(val.rawType)
+  var args: number[] = encodedValues.split(",").map((val) =>
+    determinePTEnumeration(val.trim().split(" ")[0])
   );
   var addRule;
   while (true) {
