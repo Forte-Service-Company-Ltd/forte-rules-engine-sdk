@@ -32,16 +32,13 @@ import {
   deletePolicy,
   getPolicy,
   policyExists,
-
   isClosedPolicy,
   closePolicy,
-
   isClosedPolicySubscriber,
   removeClosedPolicySubscriber,
   cementPolicy,
   isCementedPolicy,
   getPolicyMetadata,
-  retrievePolicy,
 } from "../src/modules/policy";
 import {
   createRule,
