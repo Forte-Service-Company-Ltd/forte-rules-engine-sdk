@@ -427,6 +427,8 @@ export type TrackerMetadataStruct = {
   initialKeys: string[];
   /** Initial values for mapped trackers */
   initialValues: string[];
+  /** Array Value Type */
+  arrayType: number;
 };
 
 /**
@@ -451,6 +453,8 @@ export type TrackerDefinition = {
   type: number;
   /** Initial value of the tracker */
   initialValue: any;
+  /** Array Value Type */
+  arrayValueType: number;
 };
 
 /**
@@ -467,6 +471,8 @@ export type MappedTrackerDefinition = {
   initialKeys: any[];
   /** Initial values */
   initialValues: any[];
+  /** Array Value Type */
+  arrayValueType: number;
 };
 
 /**
@@ -631,6 +637,18 @@ export enum pTypeEnum {
   BYTES = 5,
   STATIC_TYPE_ARRAY = 6,
   DYNAMIC_TYPE_ARRAY = 7,
+}
+
+/**
+ * Tracker Array Type Enumeration
+ */
+export enum trackerArrayType {
+  VOID = 0,
+  ADDR_ARRAY = 1,
+  UINT_ARRAY = 2,
+  BOOL_ARRAY = 3,
+  STR_ARRAY = 4,
+  BYTES_ARRAY = 5,
 }
 
 /**

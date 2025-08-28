@@ -58,6 +58,7 @@ import {
   getAllTrackers,
   deleteTracker,
   getTrackerToRuleIds,
+  getTrackerMetadata,
 } from "../src/modules/trackers";
 import { sleep } from "../src/modules/contract-interaction-utils";
 import { Config, getBlockNumber } from "@wagmi/core";
@@ -72,7 +73,8 @@ import {
   proposeNewForeignCallAdmin,
   proposeNewPolicyAdmin,
 } from "../src/modules/admin";
-import { PolicyData } from "../src/modules/types";
+import { PolicyData, trackerArrayType } from "../src/modules/types";
+import { validatePolicyJSON } from "../src/modules/validation";
 
 // Hardcoded address of the diamond in diamondDeployedAnvilState.json
 var config: Config;
@@ -1258,6 +1260,7 @@ describe("Rules Engine Interactions", async () => {
       1,
       policyJSON
     );
+    console.log("Created policy with ID:", result.policyId);
     expect(result.policyId).toBeGreaterThanOrEqual(0);
     var resultFC = await getAllForeignCalls(
       config,
@@ -1923,5 +1926,98 @@ describe("Rules Engine Interactions", async () => {
       expect(isSubscriber).toEqual(false);
     }
   );
+
+  test("Can retrieve tracker array value types", options, async () => {
+    var policyJSON = `
+               {
+               "Policy": "Test Policy",
+               "Description": "Test Policy Description",
+               "PolicyType": "open",
+               "CallingFunctions": [
+                 {
+                   "name": "transfer(address to, uint256 value)",
+                   "functionSignature": "transfer(address to, uint256 value)",
+                   "encodedValues": "address to, uint256 value"
+                 }
+               ],
+               "ForeignCalls": [
+                 {
+                     "name": "AnotherTestForeignCall",
+                     "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                     "function": "AnotherTestForeignCall(address)",
+                     "returnType": "uint256",
+                     "valuesToPass": "to",
+                     "mappedTrackerKeyValues": "",
+                     "callingFunction": "transfer(address to, uint256 value)"
+                 },
+                 {
+                     "name": "ATestForeignCall",
+                     "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                     "function": "ATestForeignCall(address, uint256)",
+                     "returnType": "uint256",
+                     "valuesToPass": "FC:AnotherTestForeignCall, TR:trackerOne",
+                     "mappedTrackerKeyValues": "",
+                     "callingFunction": "transfer(address to, uint256 value)"
+                 }
+
+               ],
+               "Trackers": [
+               {
+                "name": "trackerOne",
+                "type": "uint256[]",
+                "initialValue": ["123"]
+                }],
+               "MappedTrackers": [
+                   {
+                    "name": "mappedTrackerOne",
+                    "keyType": "address",
+                    "valueType": "uint256[]",
+                    "initialKeys": ["0xb7f8bc63bbcad18155201308c8f3540b07f84f5e"],
+                    "initialValues": [["1"]]
+                    }],
+               "Rules": [
+                   {
+                       "Name": "Rule A",
+                       "Description": "Rule A Description",
+                       "condition": "FC:ATestForeignCall > 1000",
+                       "positiveEffects": ["emit Success", "FC:AnotherTestForeignCall", "TRU:mappedTrackerOne(to) += 1"],
+                       "negativeEffects": ["revert(\\\"Negative\\\")", "TRU:trackerOne += 12"],
+                       "callingFunction": "transfer(address to, uint256 value)"
+                   }
+               ]
+               }`;
+    validatePolicyJSON(policyJSON);
+    var result = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      policyJSON
+    );
+    expect(result.policyId).toBeGreaterThan(0);
+    var resultTR = await getAllTrackers(
+      config,
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      result.policyId
+    );
+    expect(resultTR?.length).toEqual(2);
+    var trackerMetadata = await getTrackerMetadata(
+      config,
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      result.policyId,
+      1, // Tracker ID for testTracker
+    );
+    var mappedTrackerMetadata = await getTrackerMetadata(
+      config,
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      result.policyId,
+      2, // Tracker ID for mappedTrackerOne
+    );
+
+    expect(trackerMetadata.arrayType).toEqual(trackerArrayType.UINT_ARRAY);
+    expect(mappedTrackerMetadata.arrayType).toEqual(trackerArrayType.UINT_ARRAY);
+  });
 
 });
