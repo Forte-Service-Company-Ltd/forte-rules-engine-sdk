@@ -17,6 +17,7 @@ import {
   PT,
   RulesEngineComponentContract,
   ContractBlockParameters,
+  CallingFunctionOnChain,
 } from "./types";
 
 /**
@@ -65,9 +66,8 @@ export const createCallingFunction = async (
   encodedValues: string,
   confirmationCount: number
 ): Promise<number> => {
-  var argsRaw = parseFunctionArguments(callingFunction);
-  var args: number[] = argsRaw.map((val) =>
-    determinePTEnumeration(val.rawType)
+  const args: number[] = encodedValues.split(",").map((val) =>
+    determinePTEnumeration(val.trim().split(" ")[0])
   );
   var addRule;
   while (true) {
@@ -185,5 +185,36 @@ export const getCallingFunctionMetadata = async (
       signature: "",
       encodedValues: "",
     };
+  }
+};
+
+/**
+ * retrieves calling functions for a policy from the rules engine component contract.
+ *
+ * @param config - The configuration object containing network and wallet information.
+ * @param rulesEngineComponentContract - The contract instance containing the address and ABI
+ * @param policyId - The ID of the policy which the calling function belongs to.
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
+ * @returns A promise that resolves to CallingFunctionHashMapping.
+ *
+ */
+export const getCallingFunctions = async (
+  config: Config,
+  rulesEngineComponentContract: RulesEngineComponentContract,
+  policyId: number,
+  blockParams?: ContractBlockParameters
+): Promise<CallingFunctionOnChain[]> => {
+  try {
+    const callingFunctions = await readContract(config, {
+      address: rulesEngineComponentContract.address,
+      abi: rulesEngineComponentContract.abi,
+      functionName: "getAllCallingFunctions",
+      args: [policyId],
+      ...blockParams
+    }) as CallingFunctionOnChain[];
+    return callingFunctions;
+  } catch (error) {
+    console.error(error);
+    return [];
   }
 };

@@ -2,7 +2,6 @@
 import { getAddress, toFunctionSelector, toHex } from "viem";
 import { expect, test, describe, beforeAll, beforeEach } from "vitest";
 import {
-  getConfig,
   DiamondAddress,
   connectConfig,
   createTestConfig,
@@ -25,6 +24,7 @@ import {
 import {
   createCallingFunction,
   deleteCallingFunction,
+  getCallingFunctions,
 } from "../src/modules/calling-functions";
 import {
   createPolicy,
@@ -32,13 +32,9 @@ import {
   deletePolicy,
   getPolicy,
   policyExists,
-  getAppliedPolicyIds,
-  setPolicies,
   isClosedPolicy,
   closePolicy,
-  openPolicy,
   isClosedPolicySubscriber,
-  addClosedPolicySubscriber,
   removeClosedPolicySubscriber,
   cementPolicy,
   isCementedPolicy,
@@ -63,14 +59,11 @@ import {
 import { sleep } from "../src/modules/contract-interaction-utils";
 import { Config, getBlockNumber } from "@wagmi/core";
 import {
-  confirmNewCallingContractAdmin,
-  confirmNewForeignCallAdmin,
+
   confirmNewPolicyAdmin,
-  isCallingContractAdmin,
-  isForeignCallAdmin,
+
   isPolicyAdmin,
-  proposeNewCallingContractAdmin,
-  proposeNewForeignCallAdmin,
+
   proposeNewPolicyAdmin,
 } from "../src/modules/admin";
 import { PolicyData, trackerArrayType } from "../src/modules/types";
@@ -1088,7 +1081,7 @@ describe("Rules Engine Interactions", async () => {
       policyJSON
     );
     expect(result.policyId).toBeGreaterThan(0);
-    
+
     var resultTR = await getAllTrackers(
       config,
       getRulesEngineComponentContract(rulesEngineContract, client),
@@ -1106,7 +1099,7 @@ describe("Rules Engine Interactions", async () => {
     );
     expect(ruleIds.length).toEqual(1);
 
-    
+
   });
   test("Can retrieve a full simple policy", async () => {
     var policyJSON = `
@@ -1183,7 +1176,7 @@ describe("Rules Engine Interactions", async () => {
     input.Trackers[0].initialValue = "1000";
     input.Rules[0].negativeEffects = ["revert('Negative')"];
     input.Rules[0].positiveEffects = ["revert('Positive')"];
-    
+
     expect(parsed).toEqual(input);
     expect(parsed.Policy).toEqual(input.Policy);
 
@@ -1284,12 +1277,17 @@ describe("Rules Engine Interactions", async () => {
       result.policyId
     );
 
+    const input = JSON.parse(policyJSON);
+    const callingFunctions = await getCallingFunctions(config, getRulesEngineComponentContract(rulesEngineContract, client), result.policyId);
+
+    expect(callingFunctions[0].parameterTypes.length).toEqual(input.CallingFunctions[0].encodedValues.split(",").length);
+
     expect(retVal).toBeDefined();
     expect(retVal!.Policy).toBeDefined();
 
     const parsed = retVal?.JSON ? JSON.parse(retVal?.JSON) : null;
 
-    const input = JSON.parse(policyJSON);
+
     // TODOupdate the input to match known limitations with the reverse parser
     input.ForeignCalls[0].function = input.ForeignCalls[0].name;
     input.ForeignCalls[1].function = input.ForeignCalls[1].name;
@@ -1421,7 +1419,7 @@ describe("Rules Engine Interactions", async () => {
     );
 
     const blockNumber = await getBlockNumber(config);
-    
+
     expect(result.policyId).toBeGreaterThanOrEqual(0);
     var retVal = await getPolicyMetadata(
       config,
@@ -1454,7 +1452,7 @@ describe("Rules Engine Interactions", async () => {
       config,
       getRulesEnginePolicyContract(rulesEngineContract, client),
       result.policyId,
-      {blockNumber}
+      { blockNumber }
     );
     expect(historicalMetadata?.policyName).toEqual("Test Policy");
     expect(historicalMetadata?.policyDescription).toEqual("Test Policy Description");
