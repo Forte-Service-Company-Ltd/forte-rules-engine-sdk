@@ -141,7 +141,7 @@ export function parseTrackers(
     if (tracker) {
       tIndex = tracker.id;
     }
-    if (![...names, ...trackers].some(name => name.name == name)) {
+    if (![...names, ...trackers].some(item => item.name == name)) {
       return {
         name,
         tIndex,
