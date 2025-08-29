@@ -63,7 +63,7 @@ export function parseFunctionArguments(
         rawType,
       };
     } else {
-      return null
+      return null;
     }
   }).filter(p => p != null);
 }
