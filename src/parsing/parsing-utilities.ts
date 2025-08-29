@@ -15,6 +15,8 @@ import {
   FunctionArgument,
   Tracker,
   RuleComponent,
+  PTNamesTracker,
+  Maybe,
 } from "../modules/types";
 import { convertHumanReadableToInstructionSet } from "./internal-parsing-logic";
 import { getRandom } from "../modules/utils";
@@ -47,38 +49,25 @@ export function parseFunctionArguments(
   encodedValues: string,
   condition?: string
 ): FunctionArgument[] {
-  var params = encodedValues.split(", ");
-  var names = [];
-  var typeIndex = 0;
-  var supported = [
-    "uint256",
-    "string",
-    "address",
-    "bytes",
-    "bool",
-    "uint256[]",
-    "string[]",
-    "address[]",
-    "bytes[]",
-    "bool[]",
-  ];
-  for (var param of params) {
-    var typeName = param.split(" ");
-    if (
-      supported.includes(typeName[0].trim()) &&
-      (condition == null || condition.includes(typeName[1]))
-    ) {
-      names.push({
-        name: typeName[1],
-        tIndex: typeIndex,
-        rawType: typeName[0].trim(),
-      });
-    }
-    typeIndex++;
-  }
+  // handle empty args
+  if (encodedValues === "") return [];
 
-  return names;
+  return encodedValues.trim().split(",").map((param, tIndex) => {
+    const parts = param.trim().split(" ");
+    const name = parts[1].trim();
+    const rawType = parts[0].trim();
+    if (PTNamesTracker.includes(rawType) && (condition == null || condition.includes(name))) {
+      return {
+        name,
+        tIndex,
+        rawType,
+      };
+    } else {
+      return null
+    }
+  }).filter(p => p != null);
 }
+
 
 /**
  * Parses tracker references in a rule condition string and adds them to the argument list.
@@ -98,7 +87,7 @@ export function parseTrackers(
   const truRegex = /TRU:[a-zA-Z]+/g;
 
   const matches = [...new Set(condition.match(trRegex) || [])];
-  const trackers: Tracker[] = [];
+
 
   const trMappedRegex = /TR:[a-zA-Z]+\([^()]+\)/g;
   const truMappedRegex = /TRU:[a-zA-Z]+\([^()]+\)/g;
@@ -117,55 +106,54 @@ export function parseTrackers(
     return acc.replace(match, initialSplit + " | " + match.split("(")[0]);
   }, condition);
 
-  for (var match of matches) {
-    var type = "address";
-    var index = 0;
-    for (var ind of indexMap) {
-      if ("TR:" + ind.name == match) {
-        index = ind.id;
-        if (ind.type == 0) {
-          type = "address";
-        } else if (ind.type == 1) {
-          type = "string";
-        } else if (ind.type == 3) {
-          type = "bool";
-        } else if (ind.type == 5) {
-          type = "bytes";
-        } else {
-          type = "uint256";
-        }
+  const trackers: Tracker[] = matches.map(name => {
+    let rawTypeTwo = "address";
+    let tIndex = 0;
+    const tracker = indexMap.find(index => "TR:" + index.name == name);
+    if (tracker) {
+      tIndex = tracker.id;
+      if (tracker.type == 0) {
+        rawTypeTwo = "address";
+      } else if (tracker.type == 1) {
+        rawTypeTwo = "string";
+      } else if (tracker.type == 3) {
+        rawTypeTwo = "bool";
+      } else if (tracker.type == 5) {
+        rawTypeTwo = "bytes";
+      } else {
+        rawTypeTwo = "uint256";
       }
     }
-    trackers.push({
-      name: match,
-      tIndex: index,
+    return {
+      name,
+      tIndex,
       rawType: "tracker",
-      rawTypeTwo: type,
-    });
-  }
+      rawTypeTwo,
+    };
+  });
 
   const updateMatchesSet = [...new Set([...(condition.match(truRegex) || [])])];
 
-  for (var match of updateMatchesSet) {
-    var index = 0;
-    match = match.replace("TRU:", "TR:");
-    for (var ind of indexMap) {
-      if ("TR:" + ind.name == match) {
-        index = ind.id;
+  const updatedTrackers: Tracker[] = updateMatchesSet.map((name: string): Maybe<Tracker> => {
+    let tIndex = 0;
+    name = name.replace("TRU:", "TR:");
+    const tracker = indexMap.find(index => "TR:" + index.name == name);
+    if (tracker) {
+      tIndex = tracker.id;
+    }
+    if (![...names, ...trackers].some(name => name.name == name)) {
+      return {
+        name,
+        tIndex,
+        rawType: "tracker"
       }
     }
-    var found = false;
-    for (var name of [...names, ...trackers]) {
-      if (name.name == match) {
-        found = true;
-        break;
-      }
-    }
-    if (!found) {
-      trackers.push({ name: match, tIndex: index, rawType: "tracker" });
-    }
-  }
-  return [trCondition, trackers];
+
+    return null
+
+  }).filter(t => t != null)
+
+  return [trCondition, [...trackers, ...updatedTrackers]];
 }
 
 export function parseGlobalVariables(condition: string): RuleComponent[] {
