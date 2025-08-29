@@ -149,7 +149,7 @@ export function parseTrackers(
       }
     }
 
-    return null
+    return null;
 
   }).filter(t => t != null)
 
