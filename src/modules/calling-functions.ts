@@ -204,11 +204,10 @@ export const getCallingFunctions = async (
   policyId: number,
   blockParams?: ContractBlockParameters
 ): Promise<CallingFunctionOnChain[]> => {
-  const abi = [...rulesEngineComponentContract.abi] as const;
   try {
     const callingFunctions = await readContract(config, {
       address: rulesEngineComponentContract.address,
-      abi,
+      abi: rulesEngineComponentContract.abi,
       functionName: "getAllCallingFunctions",
       args: [policyId],
       ...blockParams
