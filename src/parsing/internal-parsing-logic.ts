@@ -173,6 +173,8 @@ function convertASTToInstructionSet(
     searchExpressions.push(split);
     var expCount = 0;
     var previousIndex = -1;
+
+    // PPRF searchExpressions is ony more than 1 element if its a mapped tracker
     for (var expr of searchExpressions) {
       plhIndex = 0;
 
@@ -188,6 +190,7 @@ function convertASTToInstructionSet(
             // Check if the expression is an exact match for one of our placeholders
             // This will cover all placeholders except foreign calls and tracker updates
             // these two get their own cases (found below)
+            // PPRF handle tracker expressions
             if (expr.trim().includes("TR:")) {
               if (
                 place.typeSpecificIndex == parameter.tIndex &&
@@ -243,6 +246,7 @@ function convertASTToInstructionSet(
           }
 
           // Check if the expression is a foreign call
+          // PPRF handle foreign call expressions
         } else if (parameter.fcPlaceholder) {
           if (parameter.fcPlaceholder == split.trim()) {
             foundMatch = true;
@@ -273,6 +277,7 @@ function convertASTToInstructionSet(
           }
 
           // Check if the expression is a tracker update
+          // PPRF handle tracker update expressions
         } else if (expr.trim().includes("TRU:")) {
           foundMatch = true;
           var trackerName = split.trim().replace("TRU:", "TR:");
