@@ -29,14 +29,25 @@ import {
   CallingFunctionDataAndJSON,
   ForeignCallDataAndJSON,
   PolicyData,
-} from './types'
-import { createForeignCall, getAllForeignCalls, getForeignCallMetadata } from './foreign-calls'
-import { createRule, getRuleMetadata } from './rules'
-import { createMappedTracker, getAllTrackers, getTrackerMetadata } from './trackers'
-import { sleep } from './contract-interaction-utils'
-import { createCallingFunction, getCallingFunctionMetadata } from './calling-functions'
-import { getRule } from './rules'
-import { createTracker } from './trackers'
+} from "./types";
+import {
+  createForeignCall,
+  getAllForeignCalls,
+  getForeignCallMetadata,
+} from "./foreign-calls";
+import { createRule, getRuleMetadata, getAllRules } from "./rules";
+import {
+  createMappedTracker,
+  getAllTrackers,
+  getTrackerMetadata,
+} from "./trackers";
+import { sleep } from "./contract-interaction-utils";
+import {
+  createCallingFunction,
+  getCallingFunctionMetadata,
+} from "./calling-functions";
+import { getRule } from "./rules";
+import { createTracker } from "./trackers";
 import {
   convertRuleStructToString,
   convertForeignCallStructsToStrings,
@@ -234,7 +245,14 @@ export const createPolicy = async (
       }
     }
 
-    for (var rule of policyJSON.Rules) {
+    // Sort rules by order field if provided, otherwise maintain original order
+    const sortedRules = [...policyJSON.Rules].sort((a, b) => {
+      const orderA = a.order !== undefined ? a.order : Number.MAX_SAFE_INTEGER;
+      const orderB = b.order !== undefined ? b.order : Number.MAX_SAFE_INTEGER;
+      return orderA - orderB;
+    })
+
+    for (var rule of sortedRules) {
       const ruleId = await createRule(
         config,
         rulesEnginePolicyContract,
@@ -265,6 +283,7 @@ export const createPolicy = async (
       }
       callingFunctionSelectors.push(toFunctionSelector(cf))
     }
+    
     policyId = await updatePolicy(
       config,
       rulesEnginePolicyContract,
@@ -529,10 +548,16 @@ export const getPolicy = async (
     if (policyMeta == null) {
       throw new Error(`Policy with ID ${policyId} does not exist.`)
     }
-    let policyResult = retrievePolicy as any
-    let callingFunctions: any = policyResult[0]
-    let ruleIds2DArray: any = policyResult[2]
-    const PolicyType = await isClosedPolicy(config, rulesEnginePolicyContract, policyId, blockParams)
+    let policyResult = retrievePolicy as any;
+    let callingFunctions: any = policyResult[0];
+    let ruleIds2DArray: any = policyResult[2];
+    
+    const PolicyType = await isClosedPolicy(
+      config,
+      rulesEnginePolicyContract,
+      policyId,
+      blockParams
+    );
 
     var iter = 1
 
@@ -630,8 +655,16 @@ export const getPolicy = async (
     }
     const callStrings: ForeignCallDataAndJSON[] = convertForeignCallStructsToStrings(foreignCalls, allFunctionMappings)
 
-    var iter = 0
-    var ruleJSONObjs = []
+    var iter = 0;
+    var ruleJSONObjs = [];
+    
+    const allRulesFromContract = await getAllRules(
+      config,
+      rulesEngineRulesContract,
+      policyId,
+      blockParams
+    );
+    
     for (var innerArray of ruleIds2DArray) {
       var functionString = ''
       var encodedValues: string = ''
@@ -643,21 +676,32 @@ export const getPolicy = async (
           break
         }
       }
-      for (var ruleId of innerArray) {
-        var ruleS = await getRule(config, rulesEngineRulesContract, policyId, ruleId, blockParams)
+      
+      // Use the index to get rules from getAllRules result
+      const rulesForThisFunction = allRulesFromContract?.[iter] || [];
+      for (let ruleIndex = 0; ruleIndex < rulesForThisFunction.length; ruleIndex++) {
+        const actualRuleId = ruleIndex + 1; // Rule IDs start from 1
+        const ruleS = rulesForThisFunction[ruleIndex];
 
-        const ruleM = await getRuleMetadata(config, rulesEngineRulesContract, policyId, ruleId, blockParams)
-        if (ruleS != null) {
+        const ruleM = await getRuleMetadata(
+          config,
+          rulesEngineRulesContract,
+          policyId,
+          actualRuleId,
+          blockParams
+        );
+        
+        if (ruleS != null && ruleM != null) {
           ruleJSONObjs.push(
             convertRuleStructToString(
               functionString,
               encodedValues,
               ruleS,
-              ruleM!,
+              ruleM,
               foreignCalls,
               trackers,
               allFunctionMappings,
-              ruleId
+              actualRuleId
             )
           )
         }

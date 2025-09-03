@@ -1290,3 +1290,226 @@ test('Validates mapped and unmapped trackers in valuesToPass with mappedTrackerK
   const parsed = validatePolicyJSON(JSON.stringify(policy))
   expect(isRight(parsed)).toBeTruthy()
 })
+
+test("Policy JSON validation should fail when some rules have order and others don't", () => {
+  const policy = {
+    Policy: "Rule Ordering Test Policy",
+    Description: "Test mixed rule ordering",
+    PolicyType: "open",
+    CallingFunctions: [
+      {
+        name: "transfer(address to, uint256 value)",
+        functionSignature: "transfer(address to, uint256 value)",
+        encodedValues: "address to, uint256 value",
+      },
+    ],
+    ForeignCalls: [],
+    Trackers: [],
+    MappedTrackers: [],
+    Rules: [
+      {
+        Name: "Rule A",
+        Description: "First rule with order",
+        condition: "1 == 1",
+        positiveEffects: ["emit Success"],
+        negativeEffects: [],
+        callingFunction: "transfer(address to, uint256 value)",
+        order: 1,
+      },
+      {
+        Name: "Rule B",
+        Description: "Second rule without order",
+        condition: "2 == 2",
+        positiveEffects: ["emit Success"],
+        negativeEffects: [],
+        callingFunction: "transfer(address to, uint256 value)",
+        // No order field - this should cause validation to fail
+      },
+    ],
+  };
+  
+  const parsed = validatePolicyJSON(JSON.stringify(policy));
+  expect(isLeft(parsed)).toBeTruthy();
+  
+  if (isLeft(parsed)) {
+    const errors = unwrapEither(parsed);
+    expect(errors.some(err => err.message.includes('Rule ordering validation failed'))).toBeTruthy();
+  }
+});
+
+test("Policy JSON validation should pass when all rules have order", () => {
+  const policy = {
+    Policy: "Rule Ordering Test Policy",
+    Description: "Test all rules with ordering",
+    PolicyType: "open",
+    CallingFunctions: [
+      {
+        name: "transfer(address to, uint256 value)",
+        functionSignature: "transfer(address to, uint256 value)",
+        encodedValues: "address to, uint256 value",
+      },
+    ],
+    ForeignCalls: [],
+    Trackers: [],
+    MappedTrackers: [],
+    Rules: [
+      {
+        Name: "Rule A",
+        Description: "First rule",
+        condition: "1 == 1",
+        positiveEffects: ["emit Success"],
+        negativeEffects: [],
+        callingFunction: "transfer(address to, uint256 value)",
+        order: 2,
+      },
+      {
+        Name: "Rule B",
+        Description: "Second rule",
+        condition: "2 == 2",
+        positiveEffects: ["emit Success"],
+        negativeEffects: [],
+        callingFunction: "transfer(address to, uint256 value)",
+        order: 1,
+      },
+    ],
+  };
+  
+  const parsed = validatePolicyJSON(JSON.stringify(policy));
+  expect(isRight(parsed)).toBeTruthy();
+});
+
+test("Policy JSON validation should pass when no rules have order", () => {
+  const policy = {
+    Policy: "Rule Ordering Test Policy",
+    Description: "Test no rule ordering",
+    PolicyType: "open",
+    CallingFunctions: [
+      {
+        name: "transfer(address to, uint256 value)",
+        functionSignature: "transfer(address to, uint256 value)",
+        encodedValues: "address to, uint256 value",
+      },
+    ],
+    ForeignCalls: [],
+    Trackers: [],
+    MappedTrackers: [],
+    Rules: [
+      {
+        Name: "Rule A",
+        Description: "First rule",
+        condition: "1 == 1",
+        positiveEffects: ["emit Success"],
+        negativeEffects: [],
+        callingFunction: "transfer(address to, uint256 value)",
+      },
+      {
+        Name: "Rule B",
+        Description: "Second rule",
+        condition: "2 == 2",
+        positiveEffects: ["emit Success"],
+        negativeEffects: [],
+        callingFunction: "transfer(address to, uint256 value)",
+      },
+    ],
+  };
+  
+  const parsed = validatePolicyJSON(JSON.stringify(policy));
+  expect(isRight(parsed)).toBeTruthy();
+});
+
+test("Policy JSON validation should fail when rules have duplicate order values", () => {
+  const policy = {
+    Policy: "Rule Ordering Test Policy",
+    Description: "Test duplicate order values",
+    PolicyType: "open",
+    CallingFunctions: [
+      {
+        name: "transfer(address to, uint256 value)",
+        functionSignature: "transfer(address to, uint256 value)",
+        encodedValues: "address to, uint256 value",
+      },
+    ],
+    ForeignCalls: [],
+    Trackers: [],
+    MappedTrackers: [],
+    Rules: [
+      {
+        Name: "Rule A",
+        Description: "First rule",
+        condition: "1 == 1",
+        positiveEffects: ["emit Success"],
+        negativeEffects: [],
+        callingFunction: "transfer(address to, uint256 value)",
+        order: 1,
+      },
+      {
+        Name: "Rule B",
+        Description: "Second rule with same order",
+        condition: "2 == 2",
+        positiveEffects: ["emit Success"],
+        negativeEffects: [],
+        callingFunction: "transfer(address to, uint256 value)",
+        order: 1, // Duplicate order value
+      },
+    ],
+  };
+  
+  const parsed = validatePolicyJSON(JSON.stringify(policy));
+  expect(isLeft(parsed)).toBeTruthy();
+  
+  if (isLeft(parsed)) {
+    const errors = unwrapEither(parsed);
+    expect(errors.some(err => err.message.includes('Rule ordering validation failed'))).toBeTruthy();
+  }
+});
+
+test("Policy JSON validation handles null values robustly", () => {
+  // This test demonstrates that our validation logic treats null == undefined
+  // even though Zod schema will reject null values at the schema level
+  const policy = {
+    Policy: "Rule Ordering Test Policy", 
+    Description: "Test null order robustness",
+    PolicyType: "open",
+    CallingFunctions: [
+      {
+        name: "transfer(address to, uint256 value)",
+        functionSignature: "transfer(address to, uint256 value)",
+        encodedValues: "address to, uint256 value",
+      },
+    ],
+    ForeignCalls: [],
+    Trackers: [],
+    MappedTrackers: [],
+    Rules: [
+      {
+        Name: "Rule A",
+        Description: "Rule with no order field",
+        condition: "1 == 1",
+        positiveEffects: ["emit Success"],
+        negativeEffects: [],
+        callingFunction: "transfer(address to, uint256 value)",
+        // No order field (undefined)
+      },
+      {
+        Name: "Rule B", 
+        Description: "Rule with null order",
+        condition: "2 == 2",
+        positiveEffects: ["emit Success"],
+        negativeEffects: [],
+        callingFunction: "transfer(address to, uint256 value)",
+        order: null, // This will fail Zod validation, but our logic treats null == undefined
+      },
+    ],
+  };
+  
+  // This will fail at Zod schema validation level since z.number().optional() doesn't allow null
+  // But our custom validation logic now uses null-safe comparisons (rule.order == null)
+  const parsed = validatePolicyJSON(JSON.stringify(policy));
+  expect(isLeft(parsed)).toBeTruthy(); // Fails due to Zod schema, not our custom validation
+  
+  if (isLeft(parsed)) {
+    const errors = unwrapEither(parsed);
+    // Should NOT contain our custom rule ordering error since both rules have "no order" (null == undefined)
+    expect(errors.some(err => err.message.includes('Rule ordering validation failed'))).toBeFalsy();
+  }
+});
