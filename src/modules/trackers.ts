@@ -1,30 +1,17 @@
 /// SPDX-License-Identifier: BUSL-1.1
-import {
-  simulateContract,
-  waitForTransactionReceipt,
-  writeContract,
-  readContract,
-  Config,
-} from "@wagmi/core";
-import { sleep } from "./contract-interaction-utils";
-import {
-  parseMappedTrackerSyntax,
-  parseTrackerSyntax,
-} from "../parsing/parser";
+import { simulateContract, waitForTransactionReceipt, writeContract, readContract, Config } from '@wagmi/core'
+import { sleep } from './contract-interaction-utils'
+import { parseMappedTrackerSyntax, parseTrackerSyntax } from '../parsing/parser'
 import {
   RulesEngineComponentContract,
   TrackerMetadataStruct,
   TrackerOnChain,
   ContractBlockParameters,
   trackerArrayType,
-} from "./types";
-import { isLeft, unwrapEither } from "./utils";
-import {
-  getRulesErrorMessages,
-  validateMappedTrackerJSON,
-  validateTrackerJSON,
-} from "./validation";
-import { encodePacked } from "viem";
+} from './types'
+import { isLeft, unwrapEither } from './utils'
+import { getRulesErrorMessages, validateMappedTrackerJSON, validateTrackerJSON } from './validation'
+import { encodePacked } from 'viem'
 
 /**
  * @file Trackers.ts
@@ -47,7 +34,7 @@ import { encodePacked } from "viem";
  */
 
 /**
- * 
+ *
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEngineComponentContract - The contract instance for interacting with the rules engine component.
  * @param policyId - The ID of the policy associated with the tracker.
@@ -62,26 +49,26 @@ export const createMappedTracker = async (
   mappedTrackerSyntax: string,
   confirmationCount: number
 ): Promise<number> => {
-  const json = validateMappedTrackerJSON(mappedTrackerSyntax);
+  const json = validateMappedTrackerJSON(mappedTrackerSyntax)
   if (isLeft(json)) {
-    throw new Error(getRulesErrorMessages(unwrapEither(json)));
+    throw new Error(getRulesErrorMessages(unwrapEither(json)))
   }
-  const parsedTracker = parseMappedTrackerSyntax(unwrapEither(json));
+  const parsedTracker = parseMappedTrackerSyntax(unwrapEither(json))
   var transactionTracker = {
     set: true,
     pType: parsedTracker.valueType,
     mapped: true,
     trackerKeyType: parsedTracker.keyType,
-    trackerValue: encodePacked(["uint256"], [BigInt(0)]),
+    trackerValue: encodePacked(['uint256'], [BigInt(0)]),
     trackerIndex: 0,
-  };
-  var addTR;
+  }
+  var addTR
   while (true) {
     try {
       addTR = await simulateContract(config, {
         address: rulesEngineComponentContract.address,
         abi: rulesEngineComponentContract.abi,
-        functionName: "createMappedTracker",
+        functionName: 'createMappedTracker',
         args: [
           policyId,
           transactionTracker,
@@ -90,29 +77,29 @@ export const createMappedTracker = async (
           parsedTracker.initialValues,
           parsedTracker.arrayValueType,
         ],
-      });
-      break;
+      })
+      break
     } catch (err) {
       console.log(err)
       // TODO: Look into replacing this loop/sleep with setTimeout
-      await sleep(1000);
+      await sleep(1000)
     }
   }
   if (addTR != null) {
     const returnHash = await writeContract(config, {
       ...addTR.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
+    })
 
-    let trackerResult = addTR.result;
-    return trackerResult;
+    let trackerResult = addTR.result
+    return trackerResult
   }
-  return -1;
-};
+  return -1
+}
 
 /**
  * Asynchronously creates a tracker in the rules engine component contract.
@@ -134,11 +121,11 @@ export const createTracker = async (
   trSyntax: string,
   confirmationCount: number
 ): Promise<number> => {
-  const json = validateTrackerJSON(trSyntax);
+  const json = validateTrackerJSON(trSyntax)
   if (isLeft(json)) {
-    throw new Error(getRulesErrorMessages(unwrapEither(json)));
+    throw new Error(getRulesErrorMessages(unwrapEither(json)))
   }
-  const tracker = parseTrackerSyntax(unwrapEither(json));
+  const tracker = parseTrackerSyntax(unwrapEither(json))
   var transactionTracker = {
     set: true,
     pType: tracker.type,
@@ -146,37 +133,37 @@ export const createTracker = async (
     trackerKeyType: tracker.type,
     trackerValue: tracker.initialValue,
     trackerIndex: 0,
-  };
-  var addTR;
+  }
+  var addTR
   while (true) {
     try {
       addTR = await simulateContract(config, {
         address: rulesEngineComponentContract.address,
         abi: rulesEngineComponentContract.abi,
-        functionName: "createTracker",
-        args: [policyId, transactionTracker, tracker.name, tracker.arrayValueType], 
-      });
-      break;
+        functionName: 'createTracker',
+        args: [policyId, transactionTracker, tracker.name, tracker.arrayValueType],
+      })
+      break
     } catch (err) {
       // TODO: Look into replacing this loop/sleep with setTimeout
-      await sleep(1000);
+      await sleep(1000)
     }
   }
   if (addTR != null) {
     const returnHash = await writeContract(config, {
       ...addTR.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
+    })
 
-    let trackerResult = addTR.result;
-    return trackerResult;
+    let trackerResult = addTR.result
+    return trackerResult
   }
-  return -1;
-};
+  return -1
+}
 /**
  * Asynchronously updates a tracker in the rules engine component contract.
  *
@@ -198,11 +185,11 @@ export const updateTracker = async (
   trSyntax: string,
   confirmationCount: number
 ): Promise<number> => {
-  const json = validateTrackerJSON(trSyntax);
+  const json = validateTrackerJSON(trSyntax)
   if (isLeft(json)) {
-    throw new Error(getRulesErrorMessages(unwrapEither(json)));
+    throw new Error(getRulesErrorMessages(unwrapEither(json)))
   }
-  const tracker = parseTrackerSyntax(unwrapEither(json));
+  const tracker = parseTrackerSyntax(unwrapEither(json))
   var transactionTracker = {
     set: true,
     pType: tracker.type,
@@ -210,35 +197,35 @@ export const updateTracker = async (
     trackerKeyType: tracker.type,
     trackerValue: tracker.initialValue,
     trackerIndex: trackerId,
-  };
-  var addTR;
+  }
+  var addTR
   while (true) {
     try {
       addTR = await simulateContract(config, {
         address: rulesEngineComponentContract.address,
         abi: rulesEngineComponentContract.abi,
-        functionName: "updateTracker",
+        functionName: 'updateTracker',
         args: [policyId, trackerId, transactionTracker],
-      });
-      break;
+      })
+      break
     } catch (err) {
       // TODO: Look into replacing this loop/sleep with setTimeout
-      await sleep(1000);
+      await sleep(1000)
     }
   }
   if (addTR != null) {
     const returnHash = await writeContract(config, {
       ...addTR.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
-    return trackerId;
+    })
+    return trackerId
   }
-  return -1;
-};
+  return -1
+}
 
 /**
  * Deletes a tracker associated with a specific policy in the rules engine component contract.
@@ -260,31 +247,31 @@ export const deleteTracker = async (
   trackerId: number,
   confirmationCount: number
 ): Promise<number> => {
-  var addFC;
+  var addFC
   try {
     addFC = await simulateContract(config, {
       address: rulesEngineComponentContract.address,
       abi: rulesEngineComponentContract.abi,
-      functionName: "deleteTracker",
+      functionName: 'deleteTracker',
       args: [policyId, trackerId],
-    });
+    })
   } catch (err) {
-    return -1;
+    return -1
   }
 
   if (addFC != null) {
     const returnHash = await writeContract(config, {
       ...addFC.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
+    })
   }
 
-  return 0;
-};
+  return 0
+}
 
 /**
  * Retrieves a tracker from the Rules Engine Component Contract based on the provided policy ID and tracker ID.
@@ -309,23 +296,23 @@ export const getTracker = async (
     const retrieveTR = await readContract(config, {
       address: rulesEngineComponentContract.address,
       abi: rulesEngineComponentContract.abi,
-      functionName: "getTracker",
+      functionName: 'getTracker',
       args: [policyId, trackerId],
-      ...blockParams
-    });
-    return retrieveTR as TrackerOnChain;
+      ...blockParams,
+    })
+    return retrieveTR as TrackerOnChain
   } catch (error) {
-    console.error(error);
+    console.error(error)
     return {
       set: false,
       pType: 0,
       trackerKeyType: 0,
-      trackerValue: "",
+      trackerValue: '',
       trackerIndex: -1,
       mapped: false,
-    };
+    }
   }
-};
+}
 
 /**
  * Retrieves the metadata for a tracker from the Rules Engine Component Contract based on the provided policy ID and tracker ID.
@@ -350,24 +337,24 @@ export const getTrackerMetadata = async (
     const getMeta = await readContract(config, {
       address: rulesEngineComponentContract.address,
       abi: rulesEngineComponentContract.abi,
-      functionName: "getTrackerMetadata",
+      functionName: 'getTrackerMetadata',
       args: [policyId, trackerId],
-      ...blockParams
-    });
+      ...blockParams,
+    })
 
-    let foreignCallResult = getMeta as TrackerMetadataStruct;
-    return foreignCallResult;
+    let foreignCallResult = getMeta as TrackerMetadataStruct
+    return foreignCallResult
   } catch (error) {
-    console.error(error);
+    console.error(error)
     return {
-      trackerName: "",
-      initialValue: "",
+      trackerName: '',
+      initialValue: '',
       initialKeys: [],
       initialValues: [],
       arrayType: 0,
-    };
+    }
   }
-};
+}
 
 /**
  * Retrieves all trackers associated with a specific policy ID from the Rules Engine Component Contract.
@@ -391,18 +378,18 @@ export const getAllTrackers = async (
     const retrieveTR = await readContract(config, {
       address: rulesEngineComponentContract.address,
       abi: rulesEngineComponentContract.abi,
-      functionName: "getAllTrackers",
+      functionName: 'getAllTrackers',
       args: [policyId],
-      ...blockParams
-    });
+      ...blockParams,
+    })
 
-    let trackerResult = retrieveTR as TrackerOnChain[];
-    return trackerResult;
+    let trackerResult = retrieveTR as TrackerOnChain[]
+    return trackerResult
   } catch (error) {
-    console.error(error);
-    return [];
+    console.error(error)
+    return []
   }
-};
+}
 
 /**
  * Retrieves the rule IDs associated with a specific tracker from the Rules Engine Component Contract
@@ -420,18 +407,20 @@ export const getTrackerToRuleIds = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  trackerId: number
+  trackerId: number,
+  blockParams?: ContractBlockParameters
 ): Promise<number[]> => {
   try {
     const retrieveRuleIds = await readContract(config, {
       address: rulesEngineComponentContract.address,
       abi: rulesEngineComponentContract.abi,
-      functionName: "getTrackerToRuleIds",
+      functionName: 'getTrackerToRuleIds',
       args: [policyId, trackerId],
-    });
-    return retrieveRuleIds as number[];
+      ...blockParams,
+    })
+    return retrieveRuleIds as number[]
   } catch (error) {
-    console.error(error);
-    return [];
+    console.error(error)
+    return []
   }
-};
+}

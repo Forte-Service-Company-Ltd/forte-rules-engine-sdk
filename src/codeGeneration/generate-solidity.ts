@@ -1,8 +1,8 @@
 /// SPDX-License-Identifier: BUSL-1.1
-import * as fs from "fs";
-import * as path from "path";
-import { getRulesErrorMessages, validatePolicyJSON } from "../modules/validation";
-import { isLeft, unwrapEither } from "../modules/utils";
+import * as fs from 'fs'
+import * as path from 'path'
+import { getRulesErrorMessages, validatePolicyJSON } from '../modules/validation'
+import { isLeft, unwrapEither } from '../modules/utils'
 import { SOLIDITY_TEMPLATE } from './template'
 
 /**
@@ -52,10 +52,7 @@ import { SOLIDITY_TEMPLATE } from './template'
  *
  * @throws Will throw an error if the input JSON string is invalid or if file operations fail.
  */
-export function generateModifier(
-  policyS: string,
-  outputFileName: string
-): void {
+export function generateModifier(policyS: string, outputFileName: string): void {
   var functionNames: String[] = []
   const validatedPolicySyntax = validatePolicyJSON(policyS)
   if (isLeft(validatedPolicySyntax)) {

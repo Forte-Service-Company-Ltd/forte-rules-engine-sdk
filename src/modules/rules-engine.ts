@@ -21,7 +21,7 @@
  * @note This file is a critical component of the Rules Engine SDK, enabling seamless integration with the Rules Engine smart contracts.
  */
 
-import { Address, getContract } from "viem";
+import { Address, getContract } from 'viem'
 import {
   FCNameToID,
   CallingFunctionHashMapping,
@@ -42,7 +42,7 @@ import {
   TrackerMetadataStruct,
   ContractBlockParameters,
   PolicyResult,
-} from "./types";
+} from './types'
 import {
   createPolicy as createPolicyInternal,
   updatePolicy as updatePolicyInternal,
@@ -61,7 +61,7 @@ import {
   cementPolicy as cementPolicyInternal,
   isCementedPolicy as isCementedPolicyInternal,
   getPolicyMetadata as getPolicyMetadataInternal,
-} from "./policy";
+} from './policy'
 
 import {
   createRule as createRuleInternal,
@@ -70,7 +70,7 @@ import {
   getRule as getRuleInternal,
   getAllRules as getAllRulesInternal,
   getRuleMetadata as getRuleMetadataInternal,
-} from "./rules";
+} from './rules'
 
 import {
   createForeignCall as createForeignCallInternal,
@@ -84,7 +84,7 @@ import {
   addMultipleAdminsToPermissionList as addMultipleAdminsToPermissionListInternal,
   removeMultipleAdminsFromPermissionList as removeMultipleAdminsFromPermissionListInternal,
   removeAllFromPermissionList as removeAllFromPermissionListInternal,
-} from "./foreign-calls";
+} from './foreign-calls'
 
 import {
   createTracker as createTrackerInternal,
@@ -93,7 +93,8 @@ import {
   getTracker as getTrackerInternal,
   getAllTrackers as getAllTrackersInternal,
   getTrackerMetadata as getTrackerMetadataInternal,
-} from "./trackers";
+  getTrackerToRuleIds as getTrackerToRuleIdsInternal,
+} from './trackers'
 
 import {
   proposeNewPolicyAdmin as proposeNewPolicyAdminInternal,
@@ -105,23 +106,23 @@ import {
   proposeNewForeignCallAdmin as proposeNewForeignCallAdminInternal,
   confirmNewForeignCallAdmin as confirmNewForeignCallAdminInternal,
   isForeignCallAdmin as isForeignCallAdminInternal,
-} from "./admin";
+} from './admin'
 
 import {
   createCallingFunction as createCallingFunctionInternal,
   getCallingFunctionMetadata as getCallingFunctionMetadataInternal,
-} from "./calling-functions";
-import { Config } from "@wagmi/core";
+} from './calling-functions'
+import { Config } from '@wagmi/core'
 
-var config: Config;
+var config: Config
 
 export class RulesEngine {
-  private rulesEnginePolicyContract: RulesEnginePolicyContract;
-  private rulesEngineComponentContract: RulesEngineComponentContract;
-  private rulesEngineRulesContract: RulesEngineRulesContract;
-  private rulesEngineAdminContract: RulesEngineAdminContract;
-  private rulesEngineForeignCallContract: RulesEngineForeignCallContract;
-  private confirmationCount: number;
+  private rulesEnginePolicyContract: RulesEnginePolicyContract
+  private rulesEngineComponentContract: RulesEngineComponentContract
+  private rulesEngineRulesContract: RulesEngineRulesContract
+  private rulesEngineAdminContract: RulesEngineAdminContract
+  private rulesEngineForeignCallContract: RulesEngineForeignCallContract
+  private confirmationCount: number
 
   /**
    * @constructor
@@ -130,51 +131,46 @@ export class RulesEngine {
    * @param {any} client - The client instance for interacting with the blockchain.
    * @param {number} localConfirmationCount - The number of confirmations (blocks that have passed) to wait before resolving transaction receipts (default is 1).
    */
-  constructor(
-    rulesEngineAddress: Address,
-    localConfig: Config,
-    client: any,
-    localConfirmationCount: number = 1
-  ) {
+  constructor(rulesEngineAddress: Address, localConfig: Config, client: any, localConfirmationCount: number = 1) {
     this.rulesEnginePolicyContract = getContract({
       address: rulesEngineAddress,
       abi: RulesEnginePolicyABI,
       client,
-    });
+    })
     this.rulesEngineComponentContract = getContract({
       address: rulesEngineAddress,
       abi: RulesEngineComponentABI,
       client,
-    });
+    })
     this.rulesEngineRulesContract = getContract({
       address: rulesEngineAddress,
       abi: RulesEngineRulesABI,
       client,
-    });
+    })
     this.rulesEngineAdminContract = getContract({
       address: rulesEngineAddress,
       abi: RulesEngineAdminABI,
       client,
-    });
+    })
     this.rulesEngineForeignCallContract = getContract({
       address: rulesEngineAddress,
       abi: RulesEngineForeignCallABI,
       client,
-    });
-    config = localConfig;
-    this.confirmationCount = localConfirmationCount;
+    })
+    config = localConfig
+    this.confirmationCount = localConfirmationCount
   }
   public getRulesEnginePolicyContract(): RulesEnginePolicyContract {
-    return this.rulesEnginePolicyContract;
+    return this.rulesEnginePolicyContract
   }
   public getRulesEngineComponentContract(): RulesEngineComponentContract {
-    return this.rulesEngineComponentContract;
+    return this.rulesEngineComponentContract
   }
   public getRulesEngineRulesContract(): RulesEngineRulesContract {
-    return this.rulesEngineRulesContract;
+    return this.rulesEngineRulesContract
   }
   public getRulesEngineForeignCallContract(): RulesEngineForeignCallContract {
-    return this.rulesEngineForeignCallContract;
+    return this.rulesEngineForeignCallContract
   }
   /**
    * Creates a policy in the Rules Engine.
@@ -191,7 +187,7 @@ export class RulesEngine {
       this.rulesEngineForeignCallContract,
       this.confirmationCount,
       policyJSON
-    );
+    )
   }
 
   /**
@@ -201,11 +197,7 @@ export class RulesEngine {
    * @returns True if the policy exists, false otherwise.
    */
   policyExists(policyId: number): Promise<boolean> {
-    return policyExistsInternal(
-      config,
-      this.rulesEnginePolicyContract,
-      policyId
-    );
+    return policyExistsInternal(config, this.rulesEnginePolicyContract, policyId)
   }
 
   /**
@@ -235,7 +227,7 @@ export class RulesEngine {
       name,
       description,
       this.confirmationCount
-    );
+    )
   }
 
   /**
@@ -251,7 +243,7 @@ export class RulesEngine {
       policyIds,
       contractAddressForPolicy,
       this.confirmationCount
-    );
+    )
   }
 
   /**
@@ -267,7 +259,7 @@ export class RulesEngine {
       policyId,
       contractAddressForPolicy,
       this.confirmationCount
-    );
+    )
   }
 
   /**
@@ -277,12 +269,7 @@ export class RulesEngine {
    * @returns `0` if successful, `-1` if an error occurs.
    */
   deletePolicy(policyId: number): Promise<number> {
-    return deletePolicyInternal(
-      config,
-      this.rulesEnginePolicyContract,
-      policyId,
-      this.confirmationCount
-    );
+    return deletePolicyInternal(config, this.rulesEnginePolicyContract, policyId, this.confirmationCount)
   }
 
   /**
@@ -301,7 +288,7 @@ export class RulesEngine {
       this.rulesEngineForeignCallContract,
       policyId,
       blockParams
-    );
+    )
   }
 
   /**
@@ -317,13 +304,8 @@ export class RulesEngine {
     policyId: number,
     blockParams?: ContractBlockParameters
   ): Promise<Maybe<PolicyMetadataStruct>> => {
-    return getPolicyMetadataInternal(
-      config,
-      this.rulesEnginePolicyContract,
-      policyId,
-      blockParams
-    );
-  };
+    return getPolicyMetadataInternal(config, this.rulesEnginePolicyContract, policyId, blockParams)
+  }
 
   /**
    * Retrieves the IDs of all of the policies that have been applied to a contract address.
@@ -332,12 +314,7 @@ export class RulesEngine {
    * @returns array of all of the policy ids applied to the contract
    */
   getAppliedPolicyIds(address: string, blockParams?: ContractBlockParameters): Promise<number[]> {
-    return getAppliedPolicyIdsInternal(
-      config,
-      this.rulesEnginePolicyContract,
-      address,
-      blockParams
-    );
+    return getAppliedPolicyIdsInternal(config, this.rulesEnginePolicyContract, address, blockParams)
   }
 
   /**
@@ -347,12 +324,7 @@ export class RulesEngine {
    * @returns True if the policy is closed, false otherwise
    */
   isClosedPolicy(policyId: number, blockParams?: ContractBlockParameters): Promise<boolean> {
-    return isClosedPolicyInternal(
-      config,
-      this.rulesEnginePolicyContract,
-      policyId,
-      blockParams
-    );
+    return isClosedPolicyInternal(config, this.rulesEnginePolicyContract, policyId, blockParams)
   }
 
   /**
@@ -362,12 +334,7 @@ export class RulesEngine {
    * @returns `0` if successful, `-1` if an error occurs.
    */
   openPolicy(policyId: number): Promise<number> {
-    return openPolicyInternal(
-      config,
-      this.rulesEnginePolicyContract,
-      policyId,
-      this.confirmationCount
-    );
+    return openPolicyInternal(config, this.rulesEnginePolicyContract, policyId, this.confirmationCount)
   }
 
   /**
@@ -377,12 +344,7 @@ export class RulesEngine {
    * @returns `0` if successful, `-1` if an error occurs.
    */
   closePolicy(policyId: number): Promise<number> {
-    return closePolicyInternal(
-      config,
-      this.rulesEnginePolicyContract,
-      policyId,
-      this.confirmationCount
-    );
+    return closePolicyInternal(config, this.rulesEnginePolicyContract, policyId, this.confirmationCount)
   }
 
   /**
@@ -403,7 +365,7 @@ export class RulesEngine {
       policyId,
       subscriber,
       blockParams
-    );
+    )
   }
 
   /** Adds a subscriber to the closed policy.
@@ -412,17 +374,14 @@ export class RulesEngine {
    * @param subscriber - The address of the subscriber to add.
    * @returns `0` if successful, `-1` if an error occurs.
    */
-  addClosedPolicySubscriber(
-    policyId: number,
-    subscriber: Address
-  ): Promise<number> {
+  addClosedPolicySubscriber(policyId: number, subscriber: Address): Promise<number> {
     return addClosedPolicySubscriberInternal(
       config,
       this.rulesEngineComponentContract,
       policyId,
       subscriber,
       this.confirmationCount
-    );
+    )
   }
 
   /**
@@ -432,17 +391,14 @@ export class RulesEngine {
    * @param subscriber - The address of the subscriber to remove.
    * @returns `0` if successful, `-1` if an error occurs.
    */
-  removeClosedPolicySubscriber(
-    policyId: number,
-    subscriber: Address
-  ): Promise<number> {
+  removeClosedPolicySubscriber(policyId: number, subscriber: Address): Promise<number> {
     return removeClosedPolicySubscriberInternal(
       config,
       this.rulesEngineComponentContract,
       policyId,
       subscriber,
       this.confirmationCount
-    );
+    )
   }
 
   /**
@@ -475,7 +431,7 @@ export class RulesEngine {
       foreignCallNameToID,
       trackerNameToID,
       this.confirmationCount
-    );
+    )
   }
 
   /**
@@ -508,7 +464,7 @@ export class RulesEngine {
       foreignCallNameToID,
       trackerNameToID,
       this.confirmationCount
-    );
+    )
   }
 
   /**
@@ -523,13 +479,7 @@ export class RulesEngine {
    * @throws This function does not throw errors directly but returns `-1` in case of an exception.
    */
   deleteRule(policyId: number, ruleId: number): Promise<number> {
-    return deleteRuleInternal(
-      config,
-      this.rulesEngineRulesContract,
-      policyId,
-      ruleId,
-      this.confirmationCount
-    );
+    return deleteRuleInternal(config, this.rulesEngineRulesContract, policyId, ruleId, this.confirmationCount)
   }
 
   /**
@@ -541,13 +491,7 @@ export class RulesEngine {
    * @returns The retrieved rule as a `RuleStruct`, or `null` if retrieval fails.
    */
   getRule(policyId: number, ruleId: number, blockParams?: ContractBlockParameters): Promise<Maybe<RuleStruct>> {
-    return getRuleInternal(
-      config,
-      this.rulesEngineRulesContract,
-      policyId,
-      ruleId,
-      blockParams
-    );
+    return getRuleInternal(config, this.rulesEngineRulesContract, policyId, ruleId, blockParams)
   }
 
   /**
@@ -565,13 +509,7 @@ export class RulesEngine {
     ruleId: number,
     blockParams?: ContractBlockParameters
   ): Promise<Maybe<RuleMetadataStruct>> {
-    return getRuleMetadataInternal(
-      config,
-      this.rulesEngineRulesContract,
-      policyId,
-      ruleId,
-      blockParams
-    );
+    return getRuleMetadataInternal(config, this.rulesEngineRulesContract, policyId, ruleId, blockParams)
   }
 
   /**
@@ -584,7 +522,7 @@ export class RulesEngine {
    * @throws Will log an error to the console if the operation fails.
    */
   getAllRules(policyId: number, blockParams?: ContractBlockParameters): Promise<Maybe<any[]>> {
-    return getAllRulesInternal(config, this.rulesEngineRulesContract, policyId, blockParams);
+    return getAllRulesInternal(config, this.rulesEngineRulesContract, policyId, blockParams)
   }
 
   /**
@@ -611,7 +549,7 @@ export class RulesEngine {
       policyId,
       fcSyntax,
       this.confirmationCount
-    );
+    )
   }
 
   /**
@@ -630,11 +568,7 @@ export class RulesEngine {
    *
    * @throws Will throw an error if the JSON parsing of `fcSyntax` fails.
    */
-  updateForeignCall(
-    policyId: number,
-    foreignCallId: number,
-    fcSyntax: string
-  ): Promise<number> {
+  updateForeignCall(policyId: number, foreignCallId: number, fcSyntax: string): Promise<number> {
     return updateForeignCallInternal(
       config,
       this.rulesEnginePolicyContract,
@@ -644,7 +578,7 @@ export class RulesEngine {
       foreignCallId,
       fcSyntax,
       this.confirmationCount
-    );
+    )
   }
 
   /**
@@ -665,7 +599,7 @@ export class RulesEngine {
       policyId,
       foreignCallId,
       this.confirmationCount
-    );
+    )
   }
 
   /**
@@ -679,13 +613,7 @@ export class RulesEngine {
    * @throws Will log an error to the console if the contract interaction fails.
    */
   getForeignCall(policyId: number, foreignCallId: number, blockParams?: ContractBlockParameters): Promise<Maybe<any>> {
-    return getForeignCallInternal(
-      config,
-      this.rulesEngineForeignCallContract,
-      policyId,
-      foreignCallId,
-      blockParams
-    );
+    return getForeignCallInternal(config, this.rulesEngineForeignCallContract, policyId, foreignCallId, blockParams)
   }
 
   /**
@@ -698,12 +626,7 @@ export class RulesEngine {
    * @throws Will log an error to the console if the operation fails.
    */
   getAllForeignCalls(policyId: number, blockParams?: ContractBlockParameters): Promise<Maybe<any[]>> {
-    return getAllForeignCallsInternal(
-      config,
-      this.rulesEngineForeignCallContract,
-      policyId,
-      blockParams
-    );
+    return getAllForeignCallsInternal(config, this.rulesEngineForeignCallContract, policyId, blockParams)
   }
 
   /**
@@ -726,7 +649,7 @@ export class RulesEngine {
       policyId,
       foreignCallId,
       blockParams
-    );
+    )
   }
 
   /**
@@ -750,7 +673,7 @@ export class RulesEngine {
       foreignCallAddress,
       functionSelector,
       blockParams
-    );
+    )
   }
 
   /**
@@ -777,7 +700,7 @@ export class RulesEngine {
       functionSelector,
       policyAdminToAdd,
       this.confirmationCount
-    );
+    )
   }
 
   /**
@@ -804,7 +727,7 @@ export class RulesEngine {
       functionSelector,
       policyAdminsToAdd,
       this.confirmationCount
-    );
+    )
   }
 
   /**
@@ -831,7 +754,7 @@ export class RulesEngine {
       functionSelector,
       policyAdminsToRemove,
       this.confirmationCount
-    );
+    )
   }
 
   /**
@@ -845,17 +768,14 @@ export class RulesEngine {
    *
    * @throws Will log an error to the console if the operation fails.
    */
-  removeAllFromPermissionList(
-    foreignCallAddress: Address,
-    functionSelector: string
-  ): Promise<number> {
+  removeAllFromPermissionList(foreignCallAddress: Address, functionSelector: string): Promise<number> {
     return removeAllFromPermissionListInternal(
       config,
       this.rulesEngineForeignCallContract,
       foreignCallAddress,
       functionSelector,
       this.confirmationCount
-    );
+    )
   }
 
   /**
@@ -869,13 +789,7 @@ export class RulesEngine {
    *         Ensure proper error handling or timeout mechanisms are implemented to avoid infinite loops.
    */
   createTracker(policyId: number, trSyntax: string): Promise<number> {
-    return createTrackerInternal(
-      config,
-      this.rulesEngineComponentContract,
-      policyId,
-      trSyntax,
-      this.confirmationCount
-    );
+    return createTrackerInternal(config, this.rulesEngineComponentContract, policyId, trSyntax, this.confirmationCount)
   }
 
   /**
@@ -889,11 +803,7 @@ export class RulesEngine {
    * @throws Will retry indefinitely with a 1-second delay between attempts if an error occurs during the contract simulation.
    *         Ensure proper error handling or timeout mechanisms are implemented to avoid infinite loops.
    */
-  updateTracker(
-    policyId: number,
-    trackerId: number,
-    trSyntax: string
-  ): Promise<number> {
+  updateTracker(policyId: number, trackerId: number, trSyntax: string): Promise<number> {
     return updateTrackerInternal(
       config,
       this.rulesEngineComponentContract,
@@ -901,7 +811,7 @@ export class RulesEngine {
       trackerId,
       trSyntax,
       this.confirmationCount
-    );
+    )
   }
 
   /**
@@ -916,13 +826,7 @@ export class RulesEngine {
    * @throws This function does not explicitly throw errors but will return `-1` if an error occurs during the simulation phase.
    */
   deleteTracker(policyId: number, trackerId: number): Promise<number> {
-    return deleteTrackerInternal(
-      config,
-      this.rulesEngineComponentContract,
-      policyId,
-      trackerId,
-      this.confirmationCount
-    );
+    return deleteTrackerInternal(config, this.rulesEngineComponentContract, policyId, trackerId, this.confirmationCount)
   }
 
   /**
@@ -936,13 +840,7 @@ export class RulesEngine {
    * @throws Will log an error to the console if the contract interaction fails.
    */
   getTracker(policyId: number, trackerId: number, blockParams?: ContractBlockParameters): Promise<Maybe<any>> {
-    return getTrackerInternal(
-      config,
-      this.rulesEngineComponentContract,
-      policyId,
-      trackerId,
-      blockParams
-    );
+    return getTrackerInternal(config, this.rulesEngineComponentContract, policyId, trackerId, blockParams)
   }
 
   /**
@@ -955,12 +853,7 @@ export class RulesEngine {
    * @throws Will log an error to the console if the operation fails.
    */
   getAllTrackers(policyId: number, blockParams?: ContractBlockParameters): Promise<Maybe<any[]>> {
-    return getAllTrackersInternal(
-      config,
-      this.rulesEngineComponentContract,
-      policyId,
-      blockParams
-    );
+    return getAllTrackersInternal(config, this.rulesEngineComponentContract, policyId, blockParams)
   }
 
   /**
@@ -978,13 +871,25 @@ export class RulesEngine {
     trackerId: number,
     blockParams?: ContractBlockParameters
   ): Promise<Maybe<TrackerMetadataStruct>> {
-    return getTrackerMetadataInternal(
-      config,
-      this.rulesEngineComponentContract,
-      policyId,
-      trackerId,
-      blockParams
-    );
+    return getTrackerMetadataInternal(config, this.rulesEngineComponentContract, policyId, trackerId, blockParams)
+  }
+
+  /**
+   * Retrieves the rule IDs associated with a specific tracker from the Rules Engine Component Contract
+   * based on the provided policy ID and tracker ID.
+   *
+   * @param policyId - The ID of the policy associated with the tracker.
+   * @param trackerId - The ID of the tracker for which rule IDs are to be retrieved.
+   * @returns A promise that resolves to an array of rule IDs if successful, or an empty array if an error occurs.
+   *
+   * @throws Will log an error to the console if the contract interaction fails.
+   */
+  getTrackerToRuleIds(
+    policyId: number,
+    trackerId: number,
+    blockParams?: ContractBlockParameters
+  ): Promise<Maybe<number[]>> {
+    return getTrackerToRuleIdsInternal(config, this.rulesEngineComponentContract, policyId, trackerId, blockParams)
   }
 
   /**
@@ -1001,11 +906,7 @@ export class RulesEngine {
    *
    * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
    */
-  createCallingFunction(
-    policyId: number,
-    callingFunction: string,
-    encodedValues: string
-  ): Promise<number> {
+  createCallingFunction(policyId: number, callingFunction: string, encodedValues: string): Promise<number> {
     return createCallingFunctionInternal(
       config,
       this.rulesEngineComponentContract,
@@ -1013,7 +914,7 @@ export class RulesEngine {
       callingFunction,
       encodedValues,
       this.confirmationCount
-    );
+    )
   }
 
   /**
@@ -1037,7 +938,7 @@ export class RulesEngine {
       policyId,
       callingFunctionId,
       blockParams
-    );
+    )
   }
 
   /**
@@ -1058,7 +959,7 @@ export class RulesEngine {
       policyId,
       newAdminAddress,
       this.confirmationCount
-    );
+    )
   }
 
   /**
@@ -1072,12 +973,7 @@ export class RulesEngine {
    * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
    */
   confirmNewPolicyAdmin(policyId: number) {
-    confirmNewPolicyAdminInternal(
-      config,
-      this.rulesEngineAdminContract,
-      policyId,
-      this.confirmationCount
-    );
+    confirmNewPolicyAdminInternal(config, this.rulesEngineAdminContract, policyId, this.confirmationCount)
   }
 
   /**
@@ -1092,13 +988,7 @@ export class RulesEngine {
    *
    */
   isPolicyAdmin(policyId: number, adminAddress: Address, blockParams?: ContractBlockParameters): Promise<boolean> {
-    return isPolicyAdminInternal(
-      config,
-      this.rulesEngineAdminContract,
-      policyId,
-      adminAddress,
-      blockParams
-    );
+    return isPolicyAdminInternal(config, this.rulesEngineAdminContract, policyId, adminAddress, blockParams)
   }
 
   /**
@@ -1112,17 +1002,14 @@ export class RulesEngine {
    *
    * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
    */
-  proposeCallingContractAdmin(
-    callingContractAddress: Address,
-    newAdminAddress: Address
-  ) {
+  proposeCallingContractAdmin(callingContractAddress: Address, newAdminAddress: Address) {
     proposeCallingContractAdminInternal(
       config,
       this.rulesEngineAdminContract,
       callingContractAddress,
       newAdminAddress,
       this.confirmationCount
-    );
+    )
   }
 
   /**
@@ -1141,7 +1028,7 @@ export class RulesEngine {
       this.rulesEngineAdminContract,
       callingContractAddress,
       this.confirmationCount
-    );
+    )
   }
 
   /**
@@ -1160,13 +1047,7 @@ export class RulesEngine {
     account: Address,
     blockParams?: ContractBlockParameters
   ): Promise<boolean> {
-    return isCallingContractAdminInternal(
-      config,
-      this.rulesEngineAdminContract,
-      callingContract,
-      account,
-      blockParams
-    );
+    return isCallingContractAdminInternal(config, this.rulesEngineAdminContract, callingContract, account, blockParams)
   }
 
   /**
@@ -1181,11 +1062,7 @@ export class RulesEngine {
    *
    * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
    */
-  proposeForeignCallAdmin(
-    foreignCallAddress: Address,
-    newAdminAddress: Address,
-    foreignCallSelector: string
-  ) {
+  proposeForeignCallAdmin(foreignCallAddress: Address, newAdminAddress: Address, foreignCallSelector: string) {
     proposeNewForeignCallAdminInternal(
       config,
       this.rulesEngineAdminContract,
@@ -1193,7 +1070,7 @@ export class RulesEngine {
       newAdminAddress,
       foreignCallSelector,
       this.confirmationCount
-    );
+    )
   }
 
   /**
@@ -1207,17 +1084,14 @@ export class RulesEngine {
    *
    * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
    */
-  confirmNewForeignCallAdmin(
-    foreignCallAddress: Address,
-    foreignCallSelector: string
-  ) {
+  confirmNewForeignCallAdmin(foreignCallAddress: Address, foreignCallSelector: string) {
     confirmNewForeignCallAdminInternal(
       config,
       this.rulesEngineAdminContract,
       foreignCallAddress,
       foreignCallSelector,
       this.confirmationCount
-    );
+    )
   }
 
   /**
@@ -1245,7 +1119,7 @@ export class RulesEngine {
       account,
       foreignCallSelector,
       blockParams
-    );
+    )
   }
 
   /**
@@ -1255,12 +1129,7 @@ export class RulesEngine {
    * @returns `0` if successful, `-1` if an error occurs.
    */
   cementPolicy(policyId: number): Promise<number> {
-    return cementPolicyInternal(
-      config,
-      this.rulesEnginePolicyContract,
-      policyId,
-      this.confirmationCount
-    );
+    return cementPolicyInternal(config, this.rulesEnginePolicyContract, policyId, this.confirmationCount)
   }
 
   /**
@@ -1270,11 +1139,6 @@ export class RulesEngine {
    * @returns True if the policy is cemented, false otherwise
    */
   isCementedPolicy(policyId: number, blockParams?: ContractBlockParameters): Promise<boolean> {
-    return isCementedPolicyInternal(
-      config,
-      this.rulesEnginePolicyContract,
-      policyId,
-      blockParams
-    );
+    return isCementedPolicyInternal(config, this.rulesEnginePolicyContract, policyId, blockParams)
   }
 }
