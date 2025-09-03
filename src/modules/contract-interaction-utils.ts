@@ -1,20 +1,7 @@
 /// SPDX-License-Identifier: BUSL-1.1
-import {
-  getContract,
-  Address,
-  toHex,
-  encodeAbiParameters,
-  parseAbiParameters,
-  stringToBytes,
-  getAddress,
-} from "viem";
+import { getContract, Address, toHex, encodeAbiParameters, parseAbiParameters, stringToBytes, getAddress } from 'viem'
 
-import {
-  parseRuleSyntax,
-  cleanInstructionSet,
-  buildForeignCallList,
-  buildTrackerList,
-} from "../parsing/parser";
+import { parseRuleSyntax, cleanInstructionSet, buildForeignCallList, buildTrackerList } from '../parsing/parser'
 
 import {
   EffectStruct,
@@ -31,8 +18,8 @@ import {
   RulesEngineRulesABI,
   RulesEngineRulesContract,
   RuleStruct,
-} from "./types";
-import { RuleJSON } from "./validation";
+} from './types'
+import { RuleJSON } from './validation'
 
 /**
  * @file ContractInteractionUtils.ts
@@ -60,55 +47,40 @@ import { RuleJSON } from "./validation";
  */
 
 //TODO: Make the client usages type specific
-export const getRulesEnginePolicyContract = (
-  address: Address,
-  client: any,
-): RulesEnginePolicyContract =>
+export const getRulesEnginePolicyContract = (address: Address, client: any): RulesEnginePolicyContract =>
   getContract({
     address,
     abi: RulesEnginePolicyABI,
     client,
-  });
+  })
 
-export const getRulesEngineRulesContract = (
-  address: Address,
-  client: any,
-): RulesEngineRulesContract =>
+export const getRulesEngineRulesContract = (address: Address, client: any): RulesEngineRulesContract =>
   getContract({
     address,
     abi: RulesEngineRulesABI,
     client,
-  });
+  })
 
-export const getRulesEngineComponentContract = (
-  address: Address,
-  client: any,
-): RulesEngineComponentContract =>
+export const getRulesEngineComponentContract = (address: Address, client: any): RulesEngineComponentContract =>
   getContract({
     address,
     abi: RulesEngineComponentABI,
     client,
-  });
+  })
 
-export const getRulesEngineAdminContract = (
-  address: Address,
-  client: any,
-): RulesEngineAdminContract =>
+export const getRulesEngineAdminContract = (address: Address, client: any): RulesEngineAdminContract =>
   getContract({
     address,
     abi: RulesEngineAdminABI,
     client,
-  });
+  })
 
-export const getRulesEngineForeignCallContract = (
-  address: Address,
-  client: any,
-): RulesEngineForeignCallContract =>
+export const getRulesEngineForeignCallContract = (address: Address, client: any): RulesEngineForeignCallContract =>
   getContract({
     address,
     abi: RulesEngineForeignCallABI,
     client,
-  });
+  })
 
 /**
  * Pauses the execution of an asynchronous function for a specified duration.
@@ -117,7 +89,7 @@ export const getRulesEngineForeignCallContract = (
  * @returns A promise that resolves after the specified duration.
  */
 export async function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 /**
@@ -146,7 +118,7 @@ export function buildARuleStruct(
   trackerNameToID: FCNameToID[],
   encodedValues: string,
   additionalForeignCalls: string[],
-  additionalEffectForeignCalls: string[],
+  additionalEffectForeignCalls: string[]
 ): RuleStruct {
   var output = parseRuleSyntax(
     ruleSyntax,
@@ -154,15 +126,15 @@ export function buildARuleStruct(
     foreignCallNameToID,
     encodedValues,
     additionalForeignCalls,
-    additionalEffectForeignCalls,
-  );
+    additionalEffectForeignCalls
+  )
 
   var rawData = {
     instructionSetIndex: [],
     argumentTypes: [],
     dataValues: [],
-  };
-  const instructionSet = cleanInstructionSet(output.instructionSet);
+  }
+  const instructionSet = cleanInstructionSet(output.instructionSet)
   const rule = {
     instructionSet,
     rawData: rawData,
@@ -170,8 +142,8 @@ export function buildARuleStruct(
     effectPlaceHolders: output.effectPlaceHolders,
     posEffects: effect.positiveEffects,
     negEffects: effect.negativeEffects,
-  };
-  return rule;
+  }
+  return rule
 }
 
 /**
@@ -202,7 +174,7 @@ export function buildAnEffectStruct(
   foreignCallNameToID: FCNameToID[],
   encodedValues: string,
   additionalForeignCalls: string[],
-  additionalEffectForeignCalls: string[],
+  additionalEffectForeignCalls: string[]
 ): EffectStructs {
   var output = parseRuleSyntax(
     ruleSyntax,
@@ -210,35 +182,27 @@ export function buildAnEffectStruct(
     foreignCallNameToID,
     encodedValues,
     additionalForeignCalls,
-    additionalEffectForeignCalls,
-  );
-  var pEffects: EffectStruct[] = [];
-  var nEffects: EffectStruct[] = [];
+    additionalEffectForeignCalls
+  )
+  var pEffects: EffectStruct[] = []
+  var nEffects: EffectStruct[] = []
 
   for (var pEffect of output.positiveEffects) {
-    const instructionSet = cleanInstructionSet(pEffect.instructionSet);
-    var param: any;
+    const instructionSet = cleanInstructionSet(pEffect.instructionSet)
+    var param: any
 
     if (pEffect.pType == 0) {
       // address
-      param = encodeAbiParameters(parseAbiParameters("address"), [
-        getAddress(String(pEffect.parameterValue)),
-      ]);
+      param = encodeAbiParameters(parseAbiParameters('address'), [getAddress(String(pEffect.parameterValue))])
     } else if (pEffect.pType == 1) {
       // string
-      param = encodeAbiParameters(parseAbiParameters("string"), [
-        String(pEffect.parameterValue),
-      ]);
+      param = encodeAbiParameters(parseAbiParameters('string'), [String(pEffect.parameterValue)])
     } else if (pEffect.pType == 5) {
       // bytes
-      param = encodeAbiParameters(parseAbiParameters("bytes"), [
-        toHex(stringToBytes(String(pEffect.parameterValue))),
-      ]);
+      param = encodeAbiParameters(parseAbiParameters('bytes'), [toHex(stringToBytes(String(pEffect.parameterValue)))])
     } else {
       // uint
-      param = encodeAbiParameters(parseAbiParameters("uint256"), [
-        BigInt(pEffect.parameterValue),
-      ]);
+      param = encodeAbiParameters(parseAbiParameters('uint256'), [BigInt(pEffect.parameterValue)])
     }
 
     const effect = {
@@ -250,33 +214,25 @@ export function buildAnEffectStruct(
       text: toHex(stringToBytes(pEffect.text, { size: 32 })),
       errorMessage: pEffect.text,
       instructionSet,
-    };
-    pEffects.push(effect);
+    }
+    pEffects.push(effect)
   }
   for (var nEffect of output.negativeEffects) {
-    var param: any;
+    var param: any
     if (nEffect.pType == 0) {
       // address
-      param = encodeAbiParameters(parseAbiParameters("address"), [
-        getAddress(String(nEffect.parameterValue)),
-      ]);
+      param = encodeAbiParameters(parseAbiParameters('address'), [getAddress(String(nEffect.parameterValue))])
     } else if (nEffect.pType == 1) {
       // string
-      param = encodeAbiParameters(parseAbiParameters("string"), [
-        String(nEffect.parameterValue),
-      ]);
+      param = encodeAbiParameters(parseAbiParameters('string'), [String(nEffect.parameterValue)])
     } else if (nEffect.pType == 5) {
       // bytes
-      param = encodeAbiParameters(parseAbiParameters("bytes"), [
-        toHex(stringToBytes(String(nEffect.parameterValue))),
-      ]);
+      param = encodeAbiParameters(parseAbiParameters('bytes'), [toHex(stringToBytes(String(nEffect.parameterValue)))])
     } else {
       // uint
-      param = encodeAbiParameters(parseAbiParameters("uint256"), [
-        BigInt(nEffect.parameterValue),
-      ]);
+      param = encodeAbiParameters(parseAbiParameters('uint256'), [BigInt(nEffect.parameterValue)])
     }
-    const instructionSet = cleanInstructionSet(nEffect.instructionSet);
+    const instructionSet = cleanInstructionSet(nEffect.instructionSet)
     const effect = {
       valid: true,
       dynamicParam: false,
@@ -286,9 +242,9 @@ export function buildAnEffectStruct(
       text: toHex(stringToBytes(nEffect.text, { size: 32 })),
       errorMessage: nEffect.text,
       instructionSet,
-    };
-    nEffects.push(effect);
+    }
+    nEffects.push(effect)
   }
 
-  return { positiveEffects: pEffects, negativeEffects: nEffects };
+  return { positiveEffects: pEffects, negativeEffects: nEffects }
 }

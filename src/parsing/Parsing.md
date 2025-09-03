@@ -10,11 +10,11 @@
    - Validates required fields: `Policy`, `Description`, `PolicyType`, `CallingFunctions`, `ForeignCalls`, `Trackers`, `Rules`.
 
    ```typescript
-   import { policyJSONValidator } from "./validators";
+   import { policyJSONValidator } from './validators'
 
    export function validatePolicyJSON(policyJSON: string): boolean {
-     const parsedJSON = JSON.parse(policyJSON);
-     return policyJSONValidator.safeParse(parsedJSON).success;
+     const parsedJSON = JSON.parse(policyJSON)
+     return policyJSONValidator.safeParse(parsedJSON).success
    }
    ```
 
@@ -25,7 +25,7 @@
 
 ```typescript
 export function createPolicy(policyJSON: string): string {
-  return createPolicyInternal(policyJSON);
+  return createPolicyInternal(policyJSON)
 }
 ```
 
@@ -52,23 +52,13 @@ export function createCallingFunction(functionData: any): CallingFunction {
   - Create tracker entries in the contract using `createTracker()` or `createMappedTracker()`
 
 ```typescript
-export function parseMappedTrackerSyntax(
-  syntax: MappedTrackerJSON,
-): MappedTrackerDefinition {
-  let keyType = syntax.keyType;
-  let valueType = syntax.valueType;
-  var trackerInitialKeys: any[] = encodeTrackerData(
-    syntax.initialKeys,
-    keyType,
-  );
-  var trackerInitialValues: any[] = encodeTrackerData(
-    syntax.initialValues,
-    valueType,
-  );
-  const keyTypeEnum = (PT.find((_pt) => _pt.name == keyType) ?? PT[4])
-    .enumeration;
-  const valueTypeEnum = (PT.find((_pt) => _pt.name == valueType) ?? PT[4])
-    .enumeration;
+export function parseMappedTrackerSyntax(syntax: MappedTrackerJSON): MappedTrackerDefinition {
+  let keyType = syntax.keyType
+  let valueType = syntax.valueType
+  var trackerInitialKeys: any[] = encodeTrackerData(syntax.initialKeys, keyType)
+  var trackerInitialValues: any[] = encodeTrackerData(syntax.initialValues, valueType)
+  const keyTypeEnum = (PT.find((_pt) => _pt.name == keyType) ?? PT[4]).enumeration
+  const valueTypeEnum = (PT.find((_pt) => _pt.name == valueType) ?? PT[4]).enumeration
 
   return {
     name: syntax.name,
@@ -76,7 +66,7 @@ export function parseMappedTrackerSyntax(
     valueType: valueTypeEnum,
     initialKeys: trackerInitialKeys,
     initialValues: trackerInitialValues,
-  };
+  }
 }
 ```
 
@@ -86,9 +76,7 @@ export function parseMappedTrackerSyntax(
   - Map foreign call names to IDs for rule processing
 
 ```typescript
-export function parseForeignCallDefinition(
-  foreignCall: ForeignCallJSON,
-): ForeignCallDefinition {
+export function parseForeignCallDefinition(foreignCall: ForeignCallJSON): ForeignCallDefinition {
   // Logic to parse and return a foreign call definition
 }
 ```
@@ -124,9 +112,7 @@ export function parseRuleSyntax(syntax: RuleSyntaxJSON): RuleDefinition {
   - Build raw data structures for contract execution
 
 ```typescript
-export function convertHumanReadableToInstructionSet(
-  condition: string,
-): InstructionSet {
+export function convertHumanReadableToInstructionSet(condition: string): InstructionSet {
   // Logic to convert human-readable conditions to instruction sets
 }
 ```
@@ -198,8 +184,8 @@ This flow transforms a human-readable policy JSON into a fully deployed, executa
 
   ```typescript
   export function parseForeignCalls(condition: string): {
-    updatedCondition: string;
-    foreignCallNames: string[];
+    updatedCondition: string
+    foreignCallNames: string[]
   } {
     // Logic to parse foreign calls and return updated condition
   }
@@ -212,8 +198,8 @@ This flow transforms a human-readable policy JSON into a fully deployed, executa
 
   ```typescript
   export function parseTrackers(condition: string): {
-    updatedCondition: string;
-    trackerComponents: TrackerComponent[];
+    updatedCondition: string
+    trackerComponents: TrackerComponent[]
   } {
     // Logic to parse trackers and return updated condition
   }
@@ -226,8 +212,8 @@ This flow transforms a human-readable policy JSON into a fully deployed, executa
 
   ```typescript
   export function parseGlobalVariables(condition: string): {
-    updatedCondition: string;
-    globalVariableComponents: GlobalVariable[];
+    updatedCondition: string
+    globalVariableComponents: GlobalVariable[]
   } {
     // Logic to parse global variables and return updated condition
   }
@@ -238,9 +224,7 @@ This flow transforms a human-readable policy JSON into a fully deployed, executa
 - Builds a list of placeholders from `ruleComponents` using `buildPlaceholderList`.
 
   ```typescript
-  export function buildPlaceholderList(
-    components: RuleComponent[],
-  ): PlaceholderList {
+  export function buildPlaceholderList(components: RuleComponent[]): PlaceholderList {
     // Logic to build a placeholder list
   }
   ```
@@ -253,8 +237,8 @@ This flow transforms a human-readable policy JSON into a fully deployed, executa
 
   ```typescript
   export function parseEffect(effect: EffectSyntax): {
-    updatedEffect: string;
-    effectComponents: EffectComponent[];
+    updatedEffect: string
+    effectComponents: EffectComponent[]
   } {
     // Logic to parse a single effect
   }
@@ -286,10 +270,7 @@ This flow transforms a human-readable policy JSON into a fully deployed, executa
 - Converts the human-readable condition (`fcCondition`) and `ruleComponents` into an instruction set using `convertHumanReadableToInstructionSet`.
 
   ```typescript
-  export function convertHumanReadableToInstructionSet(
-    condition: string,
-    components: RuleComponent[],
-  ): InstructionSet {
+  export function convertHumanReadableToInstructionSet(condition: string, components: RuleComponent[]): InstructionSet {
     // Logic to convert condition and components into an instruction set
   }
   ```
@@ -317,14 +298,14 @@ This flow transforms a human-readable policy JSON into a fully deployed, executa
     instructionSet: InstructionSet,
     positiveEffects: Effect[],
     negativeEffects: Effect[],
-    placeholders: PlaceholderList,
+    placeholders: PlaceholderList
   ): RuleDefinition {
     return {
       instructionSet,
       positiveEffects,
       negativeEffects,
       placeholders,
-    };
+    }
   }
   ```
 
@@ -335,8 +316,8 @@ This flow transforms a human-readable policy JSON into a fully deployed, executa
 - The `keyType` and `valueType` are extracted from the syntax object.
 
   ```typescript
-  let keyType = syntax.keyType;
-  let valueType = syntax.valueType;
+  let keyType = syntax.keyType
+  let valueType = syntax.valueType
   ```
 
 2.  Encode Initial Keys and Values
@@ -344,14 +325,8 @@ This flow transforms a human-readable policy JSON into a fully deployed, executa
 - The `initialKeys` and `initialValues` from the syntax object are encoded using the `encodeTrackerData` function, which takes the data and its type as arguments.
 
   ```typescript
-  var trackerInitialKeys: any[] = encodeTrackerData(
-    syntax.initialKeys,
-    keyType,
-  );
-  var trackerInitialValues: any[] = encodeTrackerData(
-    syntax.initialValues,
-    valueType,
-  );
+  var trackerInitialKeys: any[] = encodeTrackerData(syntax.initialKeys, keyType)
+  var trackerInitialValues: any[] = encodeTrackerData(syntax.initialValues, valueType)
   ```
 
 3. Map Key and Value Types to Enumerations
@@ -360,10 +335,8 @@ This flow transforms a human-readable policy JSON into a fully deployed, executa
 - If no match is found, a default enumeration (PT[4]) is used.
 
   ```typescript
-  const keyTypeEnum = (PT.find((_pt) => _pt.name == keyType) ?? PT[4])
-    .enumeration;
-  const valueTypeEnum = (PT.find((_pt) => _pt.name == valueType) ?? PT[4])
-    .enumeration;
+  const keyTypeEnum = (PT.find((_pt) => _pt.name == keyType) ?? PT[4]).enumeration
+  const valueTypeEnum = (PT.find((_pt) => _pt.name == valueType) ?? PT[4]).enumeration
   ```
 
 4.  Return the Mapped Tracker Definition
@@ -379,7 +352,7 @@ This flow transforms a human-readable policy JSON into a fully deployed, executa
     valueType: valueTypeEnum,
     initialKeys: trackerInitialKeys,
     initialValues: trackerInitialValues,
-  };
+  }
   ```
 
 ### Parse Tracker Syntax
@@ -389,7 +362,7 @@ This flow transforms a human-readable policy JSON into a fully deployed, executa
 - The function starts by extracting the `type` from the `syntax` object.
 
   ```typescript
-  let trackerType = syntax.type;
+  let trackerType = syntax.type
   ```
 
 2.  Encode the Initial Value Based on Type
@@ -459,8 +432,7 @@ This flow transforms a human-readable policy JSON into a fully deployed, executa
 - If no match is found, a default value of `4` is used.
 
   ```typescript
-  var trackerTypeEnum =
-    PT.find((pt) => pt.name === trackerType)?.enumeration ?? 4;
+  var trackerTypeEnum = PT.find((pt) => pt.name === trackerType)?.enumeration ?? 4
   ```
 
 4. Return the Tracker Definition
@@ -475,7 +447,7 @@ This flow transforms a human-readable policy JSON into a fully deployed, executa
     name: syntax.name,
     type: trackerTypeEnum,
     initialValue: trackerInitialValue,
-  };
+  }
   ```
 
 #### Parse Foreign Call Definition
@@ -489,8 +461,8 @@ This flow transforms a human-readable policy JSON into a fully deployed, executa
   - If a match is found, the `eType` is set to `1`, and the `index` is set to the corresponding `id`.
 
   ```typescript
-  if ("FC:" + fcMap.name.trim() == encodedIndex.trim()) {
-    return { eType: 1, index: fcMap.id };
+  if ('FC:' + fcMap.name.trim() == encodedIndex.trim()) {
+    return { eType: 1, index: fcMap.id }
   }
   ```
 
@@ -501,11 +473,11 @@ This flow transforms a human-readable policy JSON into a fully deployed, executa
   - Otherwise, `eType` is set to `2`.
 
   ```typescript
-  if ("TR:" + trMap.name.trim() == encodedIndex.trim()) {
+  if ('TR:' + trMap.name.trim() == encodedIndex.trim()) {
     if (trMap.type == 1) {
-      return { eType: 4, index: trMap.id };
+      return { eType: 4, index: trMap.id }
     } else {
-      return { eType: 2, index: trMap.id };
+      return { eType: 2, index: trMap.id }
     }
   }
   ```
@@ -516,7 +488,7 @@ This flow transforms a human-readable policy JSON into a fully deployed, executa
 
   ```typescript
   if (functionArg.trim() == encodedIndex.trim()) {
-    return { eType: 0, index: iter };
+    return { eType: 0, index: iter }
   }
   ```
 
@@ -530,27 +502,23 @@ The result is stored in the encodedIndices array.
   - Store the result in the `mappedTrackerKeyIndices` array.
 
   ```typescript
-  mappedTrackerKeyIndices = syntax.mappedTrackerKeyValues
-    .split(",")
-    .map((encodedIndex: string) => {
-      // Same logic as `valuesToPass`
-    }) as ForeignCallEncodedIndex[];
+  mappedTrackerKeyIndices = syntax.mappedTrackerKeyValues.split(',').map((encodedIndex: string) => {
+    // Same logic as `valuesToPass`
+  }) as ForeignCallEncodedIndex[]
   ```
 
 3. Determine Return Type
 
 - The `returnType` is determined by finding the index of `syntax.returnType` in the `PType` array.
   ```typescript
-  const returnType: number = PType.indexOf(syntax.returnType);
+  const returnType: number = PType.indexOf(syntax.returnType)
   ```
 
 4. Extract Parameter Types
 
 - The `function` field from `syntax` is split into individual input types using `splitFunctionInput`. Each input type is mapped to its enumeration using `determinePTEnumeration`.
   ```typescript
-  var parameterTypes: number[] = splitFunctionInput(syntax.function).map(
-    (val) => determinePTEnumeration(val),
-  );
+  var parameterTypes: number[] = splitFunctionInput(syntax.function).map((val) => determinePTEnumeration(val))
   ```
 
 5. Return the Foreign Call Definition
@@ -568,7 +536,7 @@ The result is stored in the encodedIndices array.
     parameterTypes,
     encodedIndices,
     mappedTrackerKeyIndices,
-  };
+  }
   ```
 
 #### Parse Calling Function
@@ -578,7 +546,7 @@ The result is stored in the encodedIndices array.
 - The `encodedValues` string from the `syntax` object is split into an array of strings using `", "` as the delimiter. This creates an array of individual encoded value entries.
 
   ```typescript
-  var initialSplit = syntax.encodedValues.split(", ");
+  var initialSplit = syntax.encodedValues.split(', ')
   ```
 
 2. Extract Variable Names
@@ -590,8 +558,8 @@ The result is stored in the encodedIndices array.
 
   ```typescript
   for (var ind of initialSplit) {
-    var variable = ind.trim().split(" ")[1];
-    variableNames.push(variable);
+    var variable = ind.trim().split(' ')[1]
+    variableNames.push(variable)
   }
   ```
 
@@ -600,7 +568,7 @@ The result is stored in the encodedIndices array.
 - The function returns the `variableNames` array, which contains all the extracted variable names.
 
   ```typescript
-  return variableNames;
+  return variableNames
   ```
 
 #### Buid Foreign Call List
@@ -612,7 +580,7 @@ The result is stored in the encodedIndices array.
   - It captures the entire FC expression until the next whitespace or invalid character.
 
   ```typescript
-  const fcRegex = /FC:[a-zA-Z]+[^\s]+/g;
+  const fcRegex = /FC:[a-zA-Z]+[^\s]+/g
   ```
 
 2. Match All FC Expressions
@@ -620,7 +588,7 @@ The result is stored in the encodedIndices array.
 - The `condition.matchAll(fcRegex)` method is used to find all matches of the `fcRegex` in the `condition` string. This returns an iterator of matches.
 
   ```typescript
-  const matches = condition.matchAll(fcRegex);
+  const matches = condition.matchAll(fcRegex)
   ```
 
 3. Extract FC Names
@@ -632,9 +600,9 @@ The result is stored in the encodedIndices array.
 
   ```typescript
   for (const match of matches) {
-    const fullFcExpr = match[0];
-    var name = fullFcExpr.split(":")[1];
-    names.push(name);
+    const fullFcExpr = match[0]
+    var name = fullFcExpr.split(':')[1]
+    names.push(name)
   }
   ```
 
@@ -643,7 +611,7 @@ The result is stored in the encodedIndices array.
 - The function returns the `names` array, which contains all the extracted FC names.
 
   ```typescript
-  return names;
+  return names
   ```
 
 #### Build Tracker List
@@ -655,8 +623,8 @@ The result is stored in the encodedIndices array.
   - `truRegex` matches tracker expressions in the format `TRU:<name>`.
 
   ```typescript
-  const trRegex = /TR:[a-zA-Z]+/g;
-  const truRegex = /TRU:[a-zA-Z]+/g;
+  const trRegex = /TR:[a-zA-Z]+/g
+  const truRegex = /TRU:[a-zA-Z]+/g
   ```
 
 2. Match TR Expressions
@@ -666,13 +634,13 @@ The result is stored in the encodedIndices array.
   - The extracted name is added to the `names` array.
 
   ```typescript
-  var matches = condition.match(trRegex);
-  var names: string[] = [];
+  var matches = condition.match(trRegex)
+  var names: string[] = []
   if (matches != null) {
     for (const match of matches) {
-      const fullTRExpr = match;
-      var name = fullTRExpr.replace("TR:", "");
-      names.push(name);
+      const fullTRExpr = match
+      var name = fullTRExpr.replace('TR:', '')
+      names.push(name)
     }
   }
   ```
@@ -684,12 +652,12 @@ The result is stored in the encodedIndices array.
   - The extracted name is added to the `names` array.
 
   ```typescript
-  matches = condition.match(truRegex);
+  matches = condition.match(truRegex)
   if (matches != null) {
     for (const match of matches) {
-      const fullTRExpr = match;
-      var name = fullTRExpr.replace("TRU:", "");
-      names.push(name);
+      const fullTRExpr = match
+      var name = fullTRExpr.replace('TRU:', '')
+      names.push(name)
     }
   }
   ```
@@ -699,7 +667,7 @@ The result is stored in the encodedIndices array.
 - The function returns the `names` array, which contains all the extracted tracker names from both `TR` and `TRU` expressions.
 
   ```typescript
-  return names;
+  return names
   ```
 
 #### Clean Instruction Set
@@ -760,8 +728,8 @@ Mapping Logic:
   - It is replaced in the `syntax` string with a placeholder (`PLA` + index).
 - Example:
   ```typescript
-  Input: "A AND B OR C";
-  Output: "A PLA0 B PLA1 C";
+  Input: 'A AND B OR C'
+  Output: 'A PLA0 B PLA1 C'
   ```
 
 2. Create Initial Abstract Syntax Tree (AST)
@@ -772,8 +740,8 @@ Mapping Logic:
   - No elements: The original `syntax` string is added as a single node.
 - Example:
   ```typescript
-  Input: "A PLA0 B PLA1 C";
-  Output: ["A", "PLA0", "B", "PLA1", "C"];
+  Input: 'A PLA0 B PLA1 C'
+  Output: ['A', 'PLA0', 'B', 'PLA1', 'C']
   ```
 
 3. Recursive Parsing of the AST
@@ -795,7 +763,7 @@ Mapping Logic:
 
   function intify(value: string): number {
     // Implementation to convert string to integer
-    return parseInt(value, 10);
+    return parseInt(value, 10)
   }
   ```
 
@@ -808,17 +776,17 @@ Mapping Logic:
 
   ```typescript
   function convertASTToInstructionSet(ast: any[]): {
-    instructionSet: any[];
-    mem: any[];
-    iterator: number;
+    instructionSet: any[]
+    mem: any[]
+    iterator: number
   } {
     const astAccumulator = {
       instructionSet: [],
       mem: [],
       iterator: 0,
-    };
+    }
     // Implementation to convert AST to instruction set
-    return astAccumulator;
+    return astAccumulator
   }
   ```
 

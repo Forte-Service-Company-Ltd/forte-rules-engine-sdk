@@ -1,6 +1,6 @@
 /// SPDX-License-Identifier: BUSL-1.1
 
-import { Address, decodeAbiParameters, parseAbiParameters } from "viem";
+import { Address, decodeAbiParameters, parseAbiParameters } from 'viem'
 import {
   stringReplacement,
   RuleStruct,
@@ -20,7 +20,7 @@ import {
   MappedTrackerDataAndJSON,
   TrackerData,
   MappedTrackerData,
-} from "../modules/types";
+} from '../modules/types'
 import {
   CallingFunctionJSON,
   ForeignCallJSON,
@@ -30,9 +30,9 @@ import {
   validateCallingFunctionJSON,
   validateMappedTrackerJSON,
   validateTrackerJSON,
-} from "../modules/validation";
-import { parseFunctionArguments } from "./parsing-utilities";
-import { isRight, unwrapEither } from "../modules/utils";
+} from '../modules/validation'
+import { parseFunctionArguments } from './parsing-utilities'
+import { isRight, unwrapEither } from '../modules/utils'
 
 /**
  * @file reverse-parsing-logic.ts
@@ -63,120 +63,120 @@ import { isRight, unwrapEither } from "../modules/utils";
 export function reverseParseInstructionSet(
   instructionSet: number[],
   placeHolderArray: string[],
-  stringReplacements: stringReplacement[],
+  stringReplacements: stringReplacement[]
 ): string {
-  var currentAction = -1;
-  var currentActionIndex = 0;
-  var currentMemAddress = 0;
-  var memAddressesMap = [];
-  var currentInstructionValues: any[] = [];
-  var retVal = "";
-  var instructionNumber = 0;
-  var truUpdated = false;
-  var keyIndex = -1;
-  var valueIndex = -1;
-  var instructionCount = instructionSet.length;
+  var currentAction = -1
+  var currentActionIndex = 0
+  var currentMemAddress = 0
+  var memAddressesMap = []
+  var currentInstructionValues: any[] = []
+  var retVal = ''
+  var instructionNumber = 0
+  var truUpdated = false
+  var keyIndex = -1
+  var valueIndex = -1
+  var instructionCount = instructionSet.length
   for (var instruction of instructionSet) {
     if (currentAction == -1) {
-      currentAction = Number(instruction);
+      currentAction = Number(instruction)
       switch (currentAction) {
         case 0:
-          currentActionIndex = 1;
-          break;
+          currentActionIndex = 1
+          break
         case 1:
-          currentActionIndex = 1;
-          break;
+          currentActionIndex = 1
+          break
         case 2:
-          currentActionIndex = 1;
-          break;
+          currentActionIndex = 1
+          break
         case 3:
-          currentActionIndex = 2;
-          break;
+          currentActionIndex = 2
+          break
         case 4:
-          currentActionIndex = 2;
-          break;
+          currentActionIndex = 2
+          break
         case 5:
-          currentActionIndex = 2;
-          break;
+          currentActionIndex = 2
+          break
         case 6:
-          currentActionIndex = 2;
-          break;
+          currentActionIndex = 2
+          break
         case 7:
-          currentActionIndex = 2;
-          break;
+          currentActionIndex = 2
+          break
         case 8:
-          currentActionIndex = 2;
-          break;
+          currentActionIndex = 2
+          break
         case 9:
-          currentActionIndex = 2;
-          break;
+          currentActionIndex = 2
+          break
         case 10:
-          currentActionIndex = 2;
-          break;
+          currentActionIndex = 2
+          break
         case 11:
-          currentActionIndex = 2;
-          break;
+          currentActionIndex = 2
+          break
         case 12:
-          currentActionIndex = 2;
-          break;
+          currentActionIndex = 2
+          break
         case 17:
-          currentActionIndex = 3;
-          break;
+          currentActionIndex = 3
+          break
         case 18:
-          currentActionIndex = 4;
-          break;
+          currentActionIndex = 4
+          break
         default:
-          currentActionIndex = 2;
-          break;
+          currentActionIndex = 2
+          break
       }
     } else {
       switch (currentAction) {
         case 0:
-          var found = false;
+          var found = false
           for (var raw of stringReplacements) {
             if (raw.instructionSetIndex == instructionNumber) {
               memAddressesMap.push({
                 memAddr: currentMemAddress,
                 value: raw.originalData,
-              });
-              found = true;
-              break;
+              })
+              found = true
+              break
             }
           }
           if (!found) {
             memAddressesMap.push({
               memAddr: currentMemAddress,
               value: instruction,
-            });
+            })
           }
-          currentMemAddress += 1;
-          break;
+          currentMemAddress += 1
+          break
         case 1:
           for (var memValue of memAddressesMap) {
             if (memValue.memAddr == instruction) {
-              currentInstructionValues.push(memValue.value);
+              currentInstructionValues.push(memValue.value)
             }
           }
           if (currentActionIndex == 1) {
-            var currentString = "NOT " + currentInstructionValues[0];
+            var currentString = 'NOT ' + currentInstructionValues[0]
             memAddressesMap.push({
               memAddr: currentMemAddress,
               value: currentString,
-            });
-            retVal = currentString;
-            currentMemAddress += 1;
-            currentInstructionValues = [];
+            })
+            retVal = currentString
+            currentMemAddress += 1
+            currentInstructionValues = []
           }
-          break;
+          break
         case 2:
           memAddressesMap.push({
             memAddr: currentMemAddress,
             value: placeHolderArray[instruction],
-          });
-          keyIndex = instruction;
-          currentMemAddress += 1;
-          retVal = placeHolderArray[instruction];
-          break;
+          })
+          keyIndex = instruction
+          currentMemAddress += 1
+          retVal = placeHolderArray[instruction]
+          break
         case 3:
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
@@ -184,30 +184,26 @@ export function reverseParseInstructionSet(
             memAddressesMap,
             currentActionIndex,
             currentInstructionValues,
-            " = ",
-          );
+            ' = '
+          )
           if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
+            currentMemAddress += 1
+            currentInstructionValues = []
           }
-          break;
+          break
         case 4:
           if (currentActionIndex == 2) {
-            valueIndex = instruction;
+            valueIndex = instruction
           } else {
-            var newMem =
-              placeHolderArray[valueIndex] +
-              "(" +
-              placeHolderArray[keyIndex] +
-              ")";
+            var newMem = placeHolderArray[valueIndex] + '(' + placeHolderArray[keyIndex] + ')'
             memAddressesMap.push({
               memAddr: currentMemAddress,
               value: newMem,
-            });
-            currentMemAddress += 1;
+            })
+            currentMemAddress += 1
           }
 
-          break;
+          break
         case 5:
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
@@ -215,13 +211,13 @@ export function reverseParseInstructionSet(
             memAddressesMap,
             currentActionIndex,
             currentInstructionValues,
-            " + ",
-          );
+            ' + '
+          )
           if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
+            currentMemAddress += 1
+            currentInstructionValues = []
           }
-          break;
+          break
         case 6:
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
@@ -229,13 +225,13 @@ export function reverseParseInstructionSet(
             memAddressesMap,
             currentActionIndex,
             currentInstructionValues,
-            " - ",
-          );
+            ' - '
+          )
           if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
+            currentMemAddress += 1
+            currentInstructionValues = []
           }
-          break;
+          break
         case 7:
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
@@ -243,13 +239,13 @@ export function reverseParseInstructionSet(
             memAddressesMap,
             currentActionIndex,
             currentInstructionValues,
-            " * ",
-          );
+            ' * '
+          )
           if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
+            currentMemAddress += 1
+            currentInstructionValues = []
           }
-          break;
+          break
         case 8:
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
@@ -257,13 +253,13 @@ export function reverseParseInstructionSet(
             memAddressesMap,
             currentActionIndex,
             currentInstructionValues,
-            " / ",
-          );
+            ' / '
+          )
           if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
+            currentMemAddress += 1
+            currentInstructionValues = []
           }
-          break;
+          break
         case 9:
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
@@ -271,13 +267,13 @@ export function reverseParseInstructionSet(
             memAddressesMap,
             currentActionIndex,
             currentInstructionValues,
-            " < ",
-          );
+            ' < '
+          )
           if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
+            currentMemAddress += 1
+            currentInstructionValues = []
           }
-          break;
+          break
         case 10:
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
@@ -285,13 +281,13 @@ export function reverseParseInstructionSet(
             memAddressesMap,
             currentActionIndex,
             currentInstructionValues,
-            " > ",
-          );
+            ' > '
+          )
           if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
+            currentMemAddress += 1
+            currentInstructionValues = []
           }
-          break;
+          break
         case 11:
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
@@ -299,13 +295,13 @@ export function reverseParseInstructionSet(
             memAddressesMap,
             currentActionIndex,
             currentInstructionValues,
-            " == ",
-          );
+            ' == '
+          )
           if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
+            currentMemAddress += 1
+            currentInstructionValues = []
           }
-          break;
+          break
         case 12:
           retVal = logicalOperatorReverseInterpretation(
             instruction,
@@ -313,13 +309,13 @@ export function reverseParseInstructionSet(
             memAddressesMap,
             currentActionIndex,
             currentInstructionValues,
-            " AND ",
-          );
+            ' AND '
+          )
           if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
+            currentMemAddress += 1
+            currentInstructionValues = []
           }
-          break;
+          break
         case 13:
           retVal = logicalOperatorReverseInterpretation(
             instruction,
@@ -327,13 +323,13 @@ export function reverseParseInstructionSet(
             memAddressesMap,
             currentActionIndex,
             currentInstructionValues,
-            " OR ",
-          );
+            ' OR '
+          )
           if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
+            currentMemAddress += 1
+            currentInstructionValues = []
           }
-          break;
+          break
         case 14:
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
@@ -341,13 +337,13 @@ export function reverseParseInstructionSet(
             memAddressesMap,
             currentActionIndex,
             currentInstructionValues,
-            " >= ",
-          );
+            ' >= '
+          )
           if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
+            currentMemAddress += 1
+            currentInstructionValues = []
           }
-          break;
+          break
         case 15:
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
@@ -355,13 +351,13 @@ export function reverseParseInstructionSet(
             memAddressesMap,
             currentActionIndex,
             currentInstructionValues,
-            " <= ",
-          );
+            ' <= '
+          )
           if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
+            currentMemAddress += 1
+            currentInstructionValues = []
           }
-          break;
+          break
         case 16:
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
@@ -369,55 +365,55 @@ export function reverseParseInstructionSet(
             memAddressesMap,
             currentActionIndex,
             currentInstructionValues,
-            " != ",
-          );
+            ' != '
+          )
           if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
+            currentMemAddress += 1
+            currentInstructionValues = []
           }
-          break;
+          break
         case 17:
         case 18:
           if (!truUpdated) {
-            var str = memAddressesMap[currentMemAddress - 1].value;
+            var str = memAddressesMap[currentMemAddress - 1].value
             var memVal: any = str
-              .replace("TR:", "TRU:")
-              .replace("-", "-=")
-              .replace("+", "+=")
-              .replace("*", "*=")
-              .replace("/", "/=");
-            truUpdated = true;
+              .replace('TR:', 'TRU:')
+              .replace('-', '-=')
+              .replace('+', '+=')
+              .replace('*', '*=')
+              .replace('/', '/=')
+            truUpdated = true
             memAddressesMap.push({
               memAddr: currentMemAddress,
               value: memVal,
-            });
+            })
           }
           if (currentActionIndex == 1) {
-            currentMemAddress += 1;
-            currentInstructionValues = [];
-            truUpdated = false;
+            currentMemAddress += 1
+            currentInstructionValues = []
+            truUpdated = false
 
             if (instructionNumber + 1 == instructionCount) {
-              retVal = memAddressesMap[currentMemAddress - 1].value;
+              retVal = memAddressesMap[currentMemAddress - 1].value
             }
           }
-          break;
+          break
 
         default:
-          console.log("unknown instruction");
-          break;
+          console.log('unknown instruction')
+          break
       }
-      currentActionIndex -= 1;
+      currentActionIndex -= 1
       if (currentActionIndex == 0) {
-        currentAction = -1;
+        currentAction = -1
       }
     }
-    instructionNumber += 1;
+    instructionNumber += 1
   }
-  if (retVal.at(0) == "(") {
-    retVal = retVal.substring(2, retVal.length - 2);
+  if (retVal.at(0) == '(') {
+    retVal = retVal.substring(2, retVal.length - 2)
   }
-  return retVal;
+  return retVal
 }
 
 export const reverseParsePlaceholder = (
@@ -425,46 +421,39 @@ export const reverseParsePlaceholder = (
   names: FunctionArgument[],
   foreignCalls: ForeignCallOnChain[],
   trackers: TrackerOnChain[],
-  mappings: hexToFunctionString[],
+  mappings: hexToFunctionString[]
 ): string => {
   if (placeholder.flags == 0x01) {
-    const call = foreignCalls.find(
-      (call) => call.foreignCallIndex === placeholder.typeSpecificIndex,
-    );
-    const map = mappings.find((map) => map.hex === call?.signature);
-    return "FC:" + map?.functionString.split("(")[0];
+    const call = foreignCalls.find((call) => call.foreignCallIndex === placeholder.typeSpecificIndex)
+    const map = mappings.find((map) => map.hex === call?.signature)
+    return 'FC:' + map?.functionString.split('(')[0]
   } else if (placeholder.flags == 0x02) {
-    const map = mappings.find(
-      (map) => map.index === placeholder.typeSpecificIndex,
-    );
-    return "TR:" + map?.functionString;
+    const map = mappings.find((map) => map.index === placeholder.typeSpecificIndex)
+    return 'TR:' + map?.functionString
   } else if (placeholder.flags == 0x04) {
-    return "GV:MSG_SENDER";
+    return 'GV:MSG_SENDER'
   } else if (placeholder.flags == 0x08) {
-    return "GV:BLOCK_TIMESTAMP";
+    return 'GV:BLOCK_TIMESTAMP'
   } else if (placeholder.flags == 0x0c) {
-    return "GV:MSG_DATA";
+    return 'GV:MSG_DATA'
   } else if (placeholder.flags == 0x10) {
-    return "GV:BLOCK_NUMBER";
+    return 'GV:BLOCK_NUMBER'
   } else if (placeholder.flags == 0x14) {
-    return "GV:TX_ORIGIN";
+    return 'GV:TX_ORIGIN'
   } else {
-    return names[placeholder.typeSpecificIndex].name;
+    return names[placeholder.typeSpecificIndex].name
   }
-};
+}
 
-export const reverseParseEffect = (
-  effect: any,
-  placeholders: string[],
-): string => {
+export const reverseParseEffect = (effect: any, placeholders: string[]): string => {
   if (effect.effectType == 0) {
-    return "revert('" + effect.text + "')";
+    return "revert('" + effect.text + "')"
   } else if (effect.effectType == 1) {
-    return "emit " + effect.text;
+    return 'emit ' + effect.text
   } else {
-    return reverseParseInstructionSet(effect.instructionSet, placeholders, []);
+    return reverseParseInstructionSet(effect.instructionSet, placeholders, [])
   }
-};
+}
 
 /**
  * Convert on-chain RuleStruct + metadata into a { data, json } pair.
@@ -496,59 +485,39 @@ export function convertRuleStructToString(
   foreignCalls: ForeignCallOnChain[],
   trackers: TrackerOnChain[],
   mappings: hexToFunctionString[],
-  ruleId?: number,
+  ruleId?: number
 ): RuleDataAndJSON {
   var rJSON: RuleJSON = {
     Name: ruleM.ruleName,
     Description: ruleM.ruleDescription,
-    condition: "",
+    condition: '',
     positiveEffects: [],
     negativeEffects: [],
-    callingFunction: "",
-  };
+    callingFunction: '',
+  }
 
-  var names = parseFunctionArguments(encodedValues);
+  var names = parseFunctionArguments(encodedValues)
 
   const plhArray = ruleS.placeHolders.map((placeholder) =>
-    reverseParsePlaceholder(
-      placeholder,
-      names,
-      foreignCalls,
-      trackers,
-      mappings,
-    ),
-  );
+    reverseParsePlaceholder(placeholder, names, foreignCalls, trackers, mappings)
+  )
 
-  rJSON.condition = reverseParseInstructionSet(
-    ruleS!.instructionSet,
-    plhArray,
-    [],
-  );
-  rJSON.callingFunction = functionString;
+  rJSON.condition = reverseParseInstructionSet(ruleS!.instructionSet, plhArray, [])
+  rJSON.callingFunction = functionString
 
   const effectPlhArray = ruleS.effectPlaceHolders.map((placeholder) =>
-    reverseParsePlaceholder(
-      placeholder,
-      names,
-      foreignCalls,
-      trackers,
-      mappings,
-    ),
-  );
+    reverseParsePlaceholder(placeholder, names, foreignCalls, trackers, mappings)
+  )
 
-  rJSON.positiveEffects = ruleS.posEffects.map((effect) =>
-    reverseParseEffect(effect, effectPlhArray),
-  );
-  rJSON.negativeEffects = ruleS.negEffects.map((effect) =>
-    reverseParseEffect(effect, effectPlhArray),
-  );
+  rJSON.positiveEffects = ruleS.posEffects.map((effect) => reverseParseEffect(effect, effectPlhArray))
+  rJSON.negativeEffects = ruleS.negEffects.map((effect) => reverseParseEffect(effect, effectPlhArray))
 
   const ruleData: RuleData = {
     id: Number(ruleId),
     ...rJSON,
-  };
+  }
 
-  return { data: ruleData, json: rJSON };
+  return { data: ruleData, json: rJSON }
 }
 
 /**
@@ -571,63 +540,49 @@ export function convertRuleStructToString(
  */
 export function convertForeignCallStructsToStrings(
   foreignCallsOnChain: ForeignCallOnChain[],
-  callingFunctionMappings: hexToFunctionString[],
+  callingFunctionMappings: hexToFunctionString[]
 ): ForeignCallDataAndJSON[] {
-  const foreignCalls: ForeignCallDataAndJSON[] = foreignCallsOnChain.map(
-    (call, iter) => {
-      const functionMeta = callingFunctionMappings.find(
-        (mapping) => mapping.hex === call.signature,
-      );
+  const foreignCalls: ForeignCallDataAndJSON[] = foreignCallsOnChain.map((call, iter) => {
+    const functionMeta = callingFunctionMappings.find((mapping) => mapping.hex === call.signature)
 
-      const returnTypeString = PT.find(
-        (pType) => pType.enumeration == call.returnType,
-      )?.name;
+    const returnTypeString = PT.find((pType) => pType.enumeration == call.returnType)?.name
 
-      const callingFunction = callingFunctionMappings.find(
-        (mapping) => mapping.index == call.callingFunctionIndex,
-      );
-      const inputs: ForeignCallJSON = {
-        name: functionMeta?.functionString || "",
-        address: call.foreignCallAddress as Address,
-        function: functionMeta?.functionString || "",
-        returnType: returnTypeString || "string",
-        valuesToPass: functionMeta?.encodedValues || "",
-        mappedTrackerKeyValues: "",
-        callingFunction: callingFunction?.functionString || "",
-      };
+    const callingFunction = callingFunctionMappings.find((mapping) => mapping.index == call.callingFunctionIndex)
+    const inputs: ForeignCallJSON = {
+      name: functionMeta?.functionString || '',
+      address: call.foreignCallAddress as Address,
+      function: functionMeta?.functionString || '',
+      returnType: returnTypeString || 'string',
+      valuesToPass: functionMeta?.encodedValues || '',
+      mappedTrackerKeyValues: '',
+      callingFunction: callingFunction?.functionString || '',
+    }
 
-      const foreignCallData: ForeignCallData = {
-        id: Number(call.foreignCallIndex),
-        ...inputs,
-      };
+    const foreignCallData: ForeignCallData = {
+      id: Number(call.foreignCallIndex),
+      ...inputs,
+    }
 
-      return {
-        data: foreignCallData,
-        json: inputs,
-      };
-    },
-  );
+    return {
+      data: foreignCallData,
+      json: inputs,
+    }
+  })
 
-  return foreignCalls;
+  return foreignCalls
 }
 
 function retrieveDecoded(type: number, key: string): string {
   if (type == 0) {
-    return decodeAbiParameters(
-      parseAbiParameters("address"),
-      key as `0x${string}`,
-    )[0].toLowerCase();
+    return decodeAbiParameters(parseAbiParameters('address'), key as `0x${string}`)[0].toLowerCase()
   } else if (type == 1) {
-    return decodeAbiParameters(
-      parseAbiParameters("string"),
-      key as `0x${string}`,
-    )[0];
+    return decodeAbiParameters(parseAbiParameters('string'), key as `0x${string}`)[0]
   } else if (type == 2) {
-    return String(Number(key));
+    return String(Number(key))
   } else if (type == 3) {
-    return Number(key) == 0 ? "false" : "true";
+    return Number(key) == 0 ? 'false' : 'true'
   } else {
-    return key;
+    return key
   }
 }
 
@@ -646,63 +601,54 @@ function retrieveDecoded(type: number, key: string): string {
 export function convertTrackerStructsToStrings(
   trackers: TrackerOnChain[],
   trackerNames: TrackerMetadataStruct[],
-  mappedTrackerNames: TrackerMetadataStruct[],
+  mappedTrackerNames: TrackerMetadataStruct[]
 ): {
-  Trackers: TrackerDataAndJSON[];
-  MappedTrackers: MappedTrackerDataAndJSON[];
+  Trackers: TrackerDataAndJSON[]
+  MappedTrackers: MappedTrackerDataAndJSON[]
 } {
   const Trackers: TrackerDataAndJSON[] = trackers
     .filter((tracker) => !tracker.mapped)
     .map((tracker, iter) => {
-      const trackerType =
-        PT.find((pt) => pt.enumeration === tracker.pType)?.name || "string";
+      const trackerType = PT.find((pt) => pt.enumeration === tracker.pType)?.name || 'string'
 
-      var initialValue = retrieveDecoded(
-        tracker.pType,
-        trackerNames[iter].initialValue,
-      );
+      var initialValue = retrieveDecoded(tracker.pType, trackerNames[iter].initialValue)
 
       const inputs: TrackerJSON = {
         name: trackerNames[iter].trackerName,
         type: trackerType,
         initialValue: initialValue,
-      };
-      const validatedInputs = validateTrackerJSON(JSON.stringify(inputs));
+      }
+      const validatedInputs = validateTrackerJSON(JSON.stringify(inputs))
       if (isRight(validatedInputs)) {
-        const trackerJSON = unwrapEither(validatedInputs);
+        const trackerJSON = unwrapEither(validatedInputs)
         const trackerData: TrackerData = {
           id: Number(tracker.trackerIndex),
           ...trackerJSON,
-        };
+        }
 
-        return { data: trackerData, json: trackerJSON };
+        return { data: trackerData, json: trackerJSON }
       } else {
-        throw new Error(
-          `Invalid tracker input: ${JSON.stringify(validatedInputs.left)}`,
-        );
+        throw new Error(`Invalid tracker input: ${JSON.stringify(validatedInputs.left)}`)
       }
-    });
+    })
   const MappedTrackers: MappedTrackerDataAndJSON[] = trackers
     .filter((tracker) => tracker.mapped)
     .map((tracker, iter) => {
-      const valueType =
-        PT.find((pt) => pt.enumeration === tracker.pType)?.name || "string";
-      const keyType =
-        PT.find((pt) => pt.enumeration === tracker.trackerKeyType)?.name ||
-        "string";
+      const valueType = PT.find((pt) => pt.enumeration === tracker.pType)?.name || 'string'
+      const keyType = PT.find((pt) => pt.enumeration === tracker.trackerKeyType)?.name || 'string'
 
-      var keys = [];
+      var keys = []
 
       for (var key of mappedTrackerNames[iter].initialKeys) {
-        var decodedKey = retrieveDecoded(tracker.trackerKeyType, key);
+        var decodedKey = retrieveDecoded(tracker.trackerKeyType, key)
 
-        keys.push(decodedKey);
+        keys.push(decodedKey)
       }
 
-      var values = [];
+      var values = []
       for (var key of mappedTrackerNames[iter].initialValues) {
-        var decodedValue = retrieveDecoded(tracker.pType, key);
-        values.push(decodedValue);
+        var decodedValue = retrieveDecoded(tracker.pType, key)
+        values.push(decodedValue)
       }
 
       const inputs: MappedTrackerJSON = {
@@ -711,27 +657,23 @@ export function convertTrackerStructsToStrings(
         keyType,
         initialKeys: keys,
         initialValues: values,
-      };
-      const validatedInputs = validateMappedTrackerJSON(JSON.stringify(inputs));
+      }
+      const validatedInputs = validateMappedTrackerJSON(JSON.stringify(inputs))
       if (isRight(validatedInputs)) {
-        const mappedTrackerJSON = unwrapEither(validatedInputs);
+        const mappedTrackerJSON = unwrapEither(validatedInputs)
         const mappedTrackerData: MappedTrackerData = {
           id: Number(tracker.trackerIndex),
           ...mappedTrackerJSON,
-        };
-        return { data: mappedTrackerData, json: mappedTrackerJSON };
+        }
+        return { data: mappedTrackerData, json: mappedTrackerJSON }
       } else {
-        throw new Error(
-          `Invalid mapped tracker input: ${JSON.stringify(
-            validatedInputs.left,
-          )}`,
-        );
+        throw new Error(`Invalid mapped tracker input: ${JSON.stringify(validatedInputs.left)}`)
       }
-    });
+    })
   return {
     Trackers,
     MappedTrackers,
-  };
+  }
 }
 
 /**
@@ -740,26 +682,16 @@ export function convertTrackerStructsToStrings(
  * @param callingFunctions - Array of calling function hash mappings.
  * @returns Array of validated CallingFunctionJSON objects.
  */
-export function convertCallingFunctionToStrings(
-  callingFunctions: CallingFunctionHashMapping[],
-): CallingFunctionJSON[] {
-  const callingFunctionJsons: CallingFunctionJSON[] = callingFunctions.map(
-    (callingFunction) => {
-      const validatedInputs = validateCallingFunctionJSON(
-        JSON.stringify(callingFunction),
-      );
-      if (isRight(validatedInputs)) {
-        return unwrapEither(validatedInputs);
-      } else {
-        throw new Error(
-          `Invalid calling function input: ${JSON.stringify(
-            validatedInputs.left,
-          )}`,
-        );
-      }
-    },
-  );
-  return callingFunctionJsons;
+export function convertCallingFunctionToStrings(callingFunctions: CallingFunctionHashMapping[]): CallingFunctionJSON[] {
+  const callingFunctionJsons: CallingFunctionJSON[] = callingFunctions.map((callingFunction) => {
+    const validatedInputs = validateCallingFunctionJSON(JSON.stringify(callingFunction))
+    if (isRight(validatedInputs)) {
+      return unwrapEither(validatedInputs)
+    } else {
+      throw new Error(`Invalid calling function input: ${JSON.stringify(validatedInputs.left)}`)
+    }
+  })
+  return callingFunctionJsons
 }
 
 /**
@@ -780,20 +712,19 @@ function arithmeticOperatorReverseInterpretation(
   memAddressesMap: any[],
   currentActionIndex: number,
   currentInstructionValues: any[],
-  symbol: string,
+  symbol: string
 ): string {
   for (var memValue of memAddressesMap) {
     if (memValue.memAddr == instruction) {
-      currentInstructionValues.push(memValue.value);
+      currentInstructionValues.push(memValue.value)
     }
   }
   if (currentActionIndex == 1) {
-    var currentString =
-      currentInstructionValues[0] + symbol + currentInstructionValues[1];
-    memAddressesMap.push({ memAddr: currentMemAddress, value: currentString });
-    return currentString;
+    var currentString = currentInstructionValues[0] + symbol + currentInstructionValues[1]
+    memAddressesMap.push({ memAddr: currentMemAddress, value: currentString })
+    return currentString
   }
-  return "";
+  return ''
 }
 
 /**
@@ -815,22 +746,17 @@ function logicalOperatorReverseInterpretation(
   memAddressesMap: any[],
   currentActionIndex: number,
   currentInstructionValues: any[],
-  symbol: string,
+  symbol: string
 ): string {
   for (var memValue of memAddressesMap) {
     if (memValue.memAddr == instruction) {
-      currentInstructionValues.push(memValue.value);
+      currentInstructionValues.push(memValue.value)
     }
   }
   if (currentActionIndex == 1) {
-    var currentString =
-      "( " +
-      currentInstructionValues[0] +
-      symbol +
-      currentInstructionValues[1] +
-      " )";
-    memAddressesMap.push({ memAddr: currentMemAddress, value: currentString });
-    return currentString;
+    var currentString = '( ' + currentInstructionValues[0] + symbol + currentInstructionValues[1] + ' )'
+    memAddressesMap.push({ memAddr: currentMemAddress, value: currentString })
+    return currentString
   }
-  return "";
+  return ''
 }

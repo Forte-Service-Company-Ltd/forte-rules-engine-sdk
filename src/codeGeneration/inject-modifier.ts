@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: BUSL-1.1
-import * as fs from "fs";
-import * as diff from "diff";
-import { cleanString } from "../parsing/parsing-utilities";
+import * as fs from 'fs'
+import * as diff from 'diff'
+import { cleanString } from '../parsing/parsing-utilities'
 
 /**
  * @file injectModifier.ts
@@ -64,111 +64,96 @@ export function injectModifier(
   variables: string,
   userFilePath: string,
   diffPath: string,
-  modifierFile: string,
+  modifierFile: string
 ): void {
-  funcName = cleanString(funcName);
+  funcName = cleanString(funcName)
 
   //find pragma line and inject import statement after
-  var data = fs.readFileSync(userFilePath, "utf-8");
-  var reg = /(?<=pragma).+?(?=;)/g;
-  const matches = data.matchAll(reg);
-  var modifiedData = data; // Initialize with original data
+  var data = fs.readFileSync(userFilePath, 'utf-8')
+  var reg = /(?<=pragma).+?(?=;)/g
+  const matches = data.matchAll(reg)
+  var modifiedData = data // Initialize with original data
   for (const match of matches) {
-    const fullFcExpr = match[0];
+    const fullFcExpr = match[0]
     // Check if import already exists
     if (!modifiedData.includes('import "' + modifierFile + '"')) {
-      modifiedData = modifiedData.replace(
-        fullFcExpr,
-        fullFcExpr + ';\nimport "' + modifierFile + '"',
-      );
+      modifiedData = modifiedData.replace(fullFcExpr, fullFcExpr + ';\nimport "' + modifierFile + '"')
     }
-    break;
+    break
   }
 
   // Find and replace Contract Name Line with proper inheritance
   // Improved regex that specifically targets contract declarations
-  var regNew = /contract\s+([a-zA-Z0-9_]+)(\s+is\s+[^{]+|\s*)(?={)/g;
-  const contractMatches = modifiedData.matchAll(regNew);
+  var regNew = /contract\s+([a-zA-Z0-9_]+)(\s+is\s+[^{]+|\s*)(?={)/g
+  const contractMatches = modifiedData.matchAll(regNew)
 
   for (const match of contractMatches) {
-    const fullMatch = match[0];
-    const contractName = match[1];
-    const existingInheritance = match[2] || "";
+    const fullMatch = match[0]
+    const contractName = match[1]
+    const existingInheritance = match[2] || ''
 
-    let newInheritance;
+    let newInheritance
 
     // Check if there's already an inheritance clause
-    if (existingInheritance.includes(" is ")) {
+    if (existingInheritance.includes(' is ')) {
       // Contract already has inheritance, add our interface to the list
-      if (!existingInheritance.includes("RulesEngineClientCustom")) {
-        newInheritance = existingInheritance.replace(
-          " is ",
-          " is RulesEngineClientCustom, ",
-        );
-        modifiedData = modifiedData.replace(
-          fullMatch,
-          `contract ${contractName}${newInheritance}`,
-        );
+      if (!existingInheritance.includes('RulesEngineClientCustom')) {
+        newInheritance = existingInheritance.replace(' is ', ' is RulesEngineClientCustom, ')
+        modifiedData = modifiedData.replace(fullMatch, `contract ${contractName}${newInheritance}`)
       }
     } else {
       // No existing inheritance, add our interface as the only one
-      newInheritance = ` is RulesEngineClientCustom${existingInheritance}`;
-      modifiedData = modifiedData.replace(
-        fullMatch,
-        `contract ${contractName}${newInheritance}`,
-      );
+      newInheritance = ` is RulesEngineClientCustom${existingInheritance}`
+      modifiedData = modifiedData.replace(fullMatch, `contract ${contractName}${newInheritance}`)
     }
-    break;
+    break
   }
 
   // Find Function and place modifier
-  var functionName = "function ";
+  var functionName = 'function '
   var argListUpdate = variables
-    .replace(/address /g, "")
-    .replace(/uint256 /g, "")
-    .replace(/string /g, "")
-    .replace(/bool /g, "")
-    .replace(/bytes /g, "");
+    .replace(/address /g, '')
+    .replace(/uint256 /g, '')
+    .replace(/string /g, '')
+    .replace(/bool /g, '')
+    .replace(/bytes /g, '')
 
-  const modifierToAdd = `checkRulesBefore${funcName}(${argListUpdate})`;
+  const modifierToAdd = `checkRulesBefore${funcName}(${argListUpdate})`
   const regex = new RegExp(
     `${functionName}\\s*${funcName}\\s*\\([^)]*\\)\\s*(public|private|internal|external)[^{]*`,
-    "g",
-  );
-  const funcMatches = data.matchAll(regex);
+    'g'
+  )
+  const funcMatches = data.matchAll(regex)
 
   for (const match of funcMatches) {
-    const fullFuncDecl = match[0];
+    const fullFuncDecl = match[0]
 
     // Only add modifier if it's not already present in the full function declaration
     if (!fullFuncDecl.includes(modifierToAdd)) {
-      const visibilityKeywordRegex = /(public|private|internal|external)\s*/;
-      const newDecl = fullFuncDecl.replace(
-        visibilityKeywordRegex,
-        `$1 ${modifierToAdd} `,
-      );
-      modifiedData = modifiedData.replace(fullFuncDecl, newDecl);
+      const visibilityKeywordRegex = /(public|private|internal|external)\s*/
+      const newDecl = fullFuncDecl.replace(visibilityKeywordRegex, `$1 ${modifierToAdd} `)
+      modifiedData = modifiedData.replace(fullFuncDecl, newDecl)
     }
-    break;
+    break
   }
 
   // Write the modified data back to the file
-  fs.writeFileSync(userFilePath, modifiedData, "utf-8");
+  fs.writeFileSync(userFilePath, modifiedData, 'utf-8')
 
   // Only create diff file if diffPath is provided
   if (diffPath && diffPath.length > 0) {
-    const diffResult = diff.diffLines(data, modifiedData);
-    var newData = "";
+    const diffResult = diff.diffLines(data, modifiedData)
+    var newData = ''
     diffResult.forEach((part) => {
       if (part.added) {
-        newData += "+" + part.value + "\n";
+        newData += '+' + part.value + '\n'
       } else if (part.removed) {
-        newData += "-" + part.value + "\n";
+        newData += '-' + part.value + '\n'
       } else {
-        newData += " " + part.value + "\n";
+        newData += ' ' + part.value + '\n'
       }
-    });
+    })
 
-    fs.writeFileSync(diffPath, newData, "utf-8");
+    fs.writeFileSync(diffPath, newData, 'utf-8')
   }
 }

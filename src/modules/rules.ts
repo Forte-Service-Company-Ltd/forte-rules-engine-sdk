@@ -1,18 +1,8 @@
 /// SPDX-License-Identifier: BUSL-1.1
-import { hexToString } from "viem";
-import {
-  simulateContract,
-  waitForTransactionReceipt,
-  writeContract,
-  readContract,
-  Config,
-} from "@wagmi/core";
+import { hexToString } from 'viem'
+import { simulateContract, waitForTransactionReceipt, writeContract, readContract, Config } from '@wagmi/core'
 
-import {
-  buildAnEffectStruct,
-  buildARuleStruct,
-  sleep,
-} from "./contract-interaction-utils";
+import { buildAnEffectStruct, buildARuleStruct, sleep } from './contract-interaction-utils'
 import {
   FCNameToID,
   RuleStruct,
@@ -24,13 +14,13 @@ import {
   RulesEngineForeignCallContract,
   RuleMetadataStruct,
   ContractBlockParameters,
-} from "./types";
-import { getCallingFunctionMetadata } from "./calling-functions";
-import { buildForeignCallList } from "../parsing/parser";
-import { getForeignCall, getForeignCallMetadata } from "./foreign-calls";
-import { getTrackerMetadata } from "./trackers";
-import { isLeft, unwrapEither } from "./utils";
-import { validateRuleJSON } from "./validation";
+} from './types'
+import { getCallingFunctionMetadata } from './calling-functions'
+import { buildForeignCallList } from '../parsing/parser'
+import { getForeignCall, getForeignCallMetadata } from './foreign-calls'
+import { getTrackerMetadata } from './trackers'
+import { isLeft, unwrapEither } from './utils'
+import { validateRuleJSON } from './validation'
 
 /**
  * @file Rules.ts
@@ -82,147 +72,108 @@ export const createRule = async (
   ruleS: string,
   foreignCallNameToID: FCNameToID[],
   trackerNameToID: FCNameToID[],
-  confirmationCount: number,
+  confirmationCount: number
 ): Promise<number> => {
-  const validatedRuleSyntax = validateRuleJSON(ruleS);
-  const validatedEffectSyntax = validateRuleJSON(ruleS);
+  const validatedRuleSyntax = validateRuleJSON(ruleS)
+  const validatedEffectSyntax = validateRuleJSON(ruleS)
   if (isLeft(validatedRuleSyntax)) {
-    return -1;
+    return -1
   }
   if (isLeft(validatedEffectSyntax)) {
-    return -1;
+    return -1
   }
-  const ruleSyntax = unwrapEither(validatedRuleSyntax);
-  const effectSyntax = unwrapEither(validatedEffectSyntax);
+  const ruleSyntax = unwrapEither(validatedRuleSyntax)
+  const effectSyntax = unwrapEither(validatedEffectSyntax)
   if (
     !(
-      (effectSyntax.positiveEffects != null &&
-        effectSyntax.positiveEffects.length > 0) ||
-      (effectSyntax.negativeEffects != null &&
-        effectSyntax.negativeEffects.length > 0)
+      (effectSyntax.positiveEffects != null && effectSyntax.positiveEffects.length > 0) ||
+      (effectSyntax.negativeEffects != null && effectSyntax.negativeEffects.length > 0)
     )
   ) {
-    return -1;
+    return -1
   }
 
   const retrievePolicy = await readContract(config, {
     address: rulesEnginePolicyContract.address,
     abi: rulesEnginePolicyContract.abi,
-    functionName: "getPolicy",
+    functionName: 'getPolicy',
     args: [policyId],
-  });
+  })
 
-  let policyResult = retrievePolicy as any;
+  let policyResult = retrievePolicy as any
 
-  let callingFunctionIds: number[] = policyResult[1];
+  let callingFunctionIds: number[] = policyResult[1]
   const callingFunctionsMetadataCalls = callingFunctionIds.map((cfId) =>
-    getCallingFunctionMetadata(
-      config,
-      rulesEngineComponentContract,
-      policyId,
-      cfId,
-    ),
-  );
-  const callingFunctionMetadata = await Promise.all(
-    callingFunctionsMetadataCalls,
-  );
+    getCallingFunctionMetadata(config, rulesEngineComponentContract, policyId, cfId)
+  )
+  const callingFunctionMetadata = await Promise.all(callingFunctionsMetadataCalls)
 
-  var iter = 1;
-  var encodedValues: string = "";
+  var iter = 1
+  var encodedValues: string = ''
   for (var mapp of callingFunctionMetadata) {
     if (mapp.callingFunction.trim() == ruleSyntax.callingFunction.trim()) {
-      encodedValues = mapp.encodedValues;
-      break;
+      encodedValues = mapp.encodedValues
+      break
     }
-    iter += 1;
+    iter += 1
   }
-  var fcList = await buildForeignCallList(ruleSyntax.condition);
-  var fullFCList = [];
+  var fcList = await buildForeignCallList(ruleSyntax.condition)
+  var fullFCList = []
   for (var fc of fcList) {
     for (var id of foreignCallNameToID) {
       if (id.name.trim() == fc.trim()) {
-        var fcChain = await getForeignCall(
-          config,
-          rulesEngineForeignCallContract,
-          policyId,
-          id.id,
-        );
-        var fcChainMeta = await getForeignCallMetadata(
-          config,
-          rulesEngineForeignCallContract,
-          policyId,
-          id.id,
-        );
+        var fcChain = await getForeignCall(config, rulesEngineForeignCallContract, policyId, id.id)
+        var fcChainMeta = await getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, id.id)
         for (var ind of fcChain!.encodedIndices) {
           if (ind.eType == 1) {
             var fcChainInternal = await getForeignCallMetadata(
               config,
               rulesEngineForeignCallContract,
               policyId,
-              ind.index,
-            );
-            fullFCList.push("FC:" + fcChainInternal);
+              ind.index
+            )
+            fullFCList.push('FC:' + fcChainInternal)
           } else if (ind.eType == 2) {
-            var trackerInternal = await getTrackerMetadata(
-              config,
-              rulesEngineComponentContract,
-              policyId,
-              ind.index,
-            );
-            fullFCList.push("TR:" + trackerInternal.trackerName);
+            var trackerInternal = await getTrackerMetadata(config, rulesEngineComponentContract, policyId, ind.index)
+            fullFCList.push('TR:' + trackerInternal.trackerName)
           }
         }
-        fullFCList.push("FC:" + fcChainMeta);
+        fullFCList.push('FC:' + fcChainMeta)
       }
     }
   }
-  var fcListEff = [];
-  var fullFCListEff = [];
+  var fcListEff = []
+  var fullFCListEff = []
   if (ruleSyntax.positiveEffects != null) {
     for (var eff of ruleSyntax.positiveEffects) {
-      fcListEff.push(...buildForeignCallList(eff));
+      fcListEff.push(...buildForeignCallList(eff))
     }
   }
   if (ruleSyntax.negativeEffects != null) {
     for (var eff of ruleSyntax.negativeEffects) {
-      fcListEff.push(...buildForeignCallList(eff));
+      fcListEff.push(...buildForeignCallList(eff))
     }
   }
   for (var fc of fcListEff) {
     for (var id of foreignCallNameToID) {
       if (id.name.trim() == fc.trim()) {
-        var fcChain = await getForeignCall(
-          config,
-          rulesEngineForeignCallContract,
-          policyId,
-          id.id,
-        );
-        var fcChainMeta = await getForeignCallMetadata(
-          config,
-          rulesEngineForeignCallContract,
-          policyId,
-          id.id,
-        );
+        var fcChain = await getForeignCall(config, rulesEngineForeignCallContract, policyId, id.id)
+        var fcChainMeta = await getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, id.id)
         for (var ind of fcChain!.encodedIndices) {
           if (ind.eType == 1) {
             var fcChainInternal = await getForeignCallMetadata(
               config,
               rulesEngineForeignCallContract,
               policyId,
-              ind.index,
-            );
-            fullFCListEff.push("FC:" + fcChainInternal);
+              ind.index
+            )
+            fullFCListEff.push('FC:' + fcChainInternal)
           } else if (ind.eType == 2) {
-            var trackerInternal = await getTrackerMetadata(
-              config,
-              rulesEngineComponentContract,
-              policyId,
-              ind.index,
-            );
-            fullFCListEff.push("TR:" + trackerInternal.trackerName);
+            var trackerInternal = await getTrackerMetadata(config, rulesEngineComponentContract, policyId, ind.index)
+            fullFCListEff.push('TR:' + trackerInternal.trackerName)
           }
         }
-        fullFCListEff.push("FC:" + fcChainMeta);
+        fullFCListEff.push('FC:' + fcChainMeta)
       }
     }
   }
@@ -232,8 +183,8 @@ export const createRule = async (
     foreignCallNameToID,
     encodedValues,
     fullFCList,
-    fullFCListEff,
-  );
+    fullFCListEff
+  )
   var rule = buildARuleStruct(
     ruleSyntax,
     foreignCallNameToID,
@@ -241,37 +192,37 @@ export const createRule = async (
     trackerNameToID,
     encodedValues,
     fullFCList,
-    fullFCListEff,
-  );
-  var addRule;
+    fullFCListEff
+  )
+  var addRule
   while (true) {
     try {
       addRule = await simulateContract(config, {
         address: rulesEngineRulesContract.address,
         abi: rulesEngineRulesContract.abi,
-        functionName: "createRule",
+        functionName: 'createRule',
         args: [policyId, rule, ruleSyntax.Name, ruleSyntax.Description],
-      });
-      break;
+      })
+      break
     } catch (err) {
       // TODO: Look into replacing this loop/sleep with setTimeout
-      await sleep(1000);
+      await sleep(1000)
     }
   }
   if (addRule != null) {
     const returnHash = await writeContract(config, {
       ...addRule.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
+    })
 
-    return addRule.result;
+    return addRule.result
   }
-  return -1;
-};
+  return -1
+}
 
 /**
  * Updates an existing rule in the Rules Engine Policy Contract.
@@ -297,129 +248,87 @@ export const updateRule = async (
   ruleS: string,
   foreignCallNameToID: FCNameToID[],
   trackerNameToID: FCNameToID[],
-  confirmationCount: number,
+  confirmationCount: number
 ): Promise<number> => {
-  const validatedRuleSyntax = validateRuleJSON(ruleS);
+  const validatedRuleSyntax = validateRuleJSON(ruleS)
   if (isLeft(validatedRuleSyntax)) {
-    return -1;
+    return -1
   }
 
-  const ruleSyntax = unwrapEither(validatedRuleSyntax);
+  const ruleSyntax = unwrapEither(validatedRuleSyntax)
 
   const retrievePolicy = await readContract(config, {
     address: rulesEnginePolicyContract.address,
     abi: rulesEnginePolicyContract.abi,
-    functionName: "getPolicy",
+    functionName: 'getPolicy',
     args: [policyId],
-  });
+  })
 
-  let policyResult = retrievePolicy as any;
-  let callingFunctionIds: number[] = policyResult[1];
+  let policyResult = retrievePolicy as any
+  let callingFunctionIds: number[] = policyResult[1]
   const callingFunctionsMetadataCalls = callingFunctionIds.map((cfId) =>
-    getCallingFunctionMetadata(
-      config,
-      rulesEngineComponentContract,
-      policyId,
-      cfId,
-    ),
-  );
-  const callingFunctionMetadata = await Promise.all(
-    callingFunctionsMetadataCalls,
-  );
+    getCallingFunctionMetadata(config, rulesEngineComponentContract, policyId, cfId)
+  )
+  const callingFunctionMetadata = await Promise.all(callingFunctionsMetadataCalls)
 
-  var iter = 1;
-  var encodedValues: string = "";
+  var iter = 1
+  var encodedValues: string = ''
   for (var mapp of callingFunctionMetadata) {
     if (mapp.callingFunction.trim() == ruleSyntax.callingFunction.trim()) {
-      encodedValues = mapp.encodedValues;
-      break;
+      encodedValues = mapp.encodedValues
+      break
     }
-    iter += 1;
+    iter += 1
   }
 
-  var fcList = await buildForeignCallList(ruleSyntax.condition);
-  var fullFCList = [];
+  var fcList = await buildForeignCallList(ruleSyntax.condition)
+  var fullFCList = []
   for (var fc of fcList) {
     for (var id of foreignCallNameToID) {
       if (id.name.trim() == fc.trim()) {
-        var fcChain = await getForeignCall(
-          config,
-          rulesEngineForeignCallContract,
-          policyId,
-          id.id,
-        );
-        var fcChainMeta = await getForeignCallMetadata(
-          config,
-          rulesEngineForeignCallContract,
-          policyId,
-          id.id,
-        );
+        var fcChain = await getForeignCall(config, rulesEngineForeignCallContract, policyId, id.id)
+        var fcChainMeta = await getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, id.id)
         for (var ind of fcChain!.encodedIndices) {
           if (ind.eType == 1) {
             var fcChainInternal = await getForeignCallMetadata(
               config,
               rulesEngineForeignCallContract,
               policyId,
-              ind.index,
-            );
-            fullFCList.push("FC:" + fcChainInternal);
+              ind.index
+            )
+            fullFCList.push('FC:' + fcChainInternal)
           } else if (ind.eType == 2) {
-            var trackerInternal = await getTrackerMetadata(
-              config,
-              rulesEngineComponentContract,
-              policyId,
-              ind.index,
-            );
-            fullFCList.push("TR:" + trackerInternal.trackerName);
+            var trackerInternal = await getTrackerMetadata(config, rulesEngineComponentContract, policyId, ind.index)
+            fullFCList.push('TR:' + trackerInternal.trackerName)
           }
         }
-        fullFCList.push("FC:" + fcChainMeta);
+        fullFCList.push('FC:' + fcChainMeta)
       }
     }
   }
-  const fcListEff = [
-    ...ruleSyntax.positiveEffects,
-    ...ruleSyntax.negativeEffects,
-  ]
-    .map(buildForeignCallList)
-    .flat();
-  var fullFCListEff = [];
+  const fcListEff = [...ruleSyntax.positiveEffects, ...ruleSyntax.negativeEffects].map(buildForeignCallList).flat()
+  var fullFCListEff = []
 
   for (var fc of fcListEff) {
     for (var id of foreignCallNameToID) {
       if (id.name.trim() == fc.trim()) {
-        var fcChain = await getForeignCall(
-          config,
-          rulesEngineForeignCallContract,
-          policyId,
-          id.id,
-        );
-        var fcChainMeta = await getForeignCallMetadata(
-          config,
-          rulesEngineForeignCallContract,
-          policyId,
-          id.id,
-        );
+        var fcChain = await getForeignCall(config, rulesEngineForeignCallContract, policyId, id.id)
+        var fcChainMeta = await getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, id.id)
         for (var ind of fcChain!.encodedIndices) {
           if (ind.eType == 1) {
             var fcChainInternal = await getForeignCallMetadata(
               config,
               rulesEngineForeignCallContract,
               policyId,
-              ind.index,
-            );
-            fullFCListEff.push("FC:" + fcChainInternal);
+              ind.index
+            )
+            fullFCListEff.push('FC:' + fcChainInternal)
           } else if (ind.eType == 2) {
-            var trackerInternal = await getTrackerMetadata(
-              config,
-              rulesEngineComponentContract,
-              policyId,
-              ind.index,
-            );
-            fullFCListEff.push("TR:" + trackerInternal.trackerName);
+            var trackerInternal = await getTrackerMetadata(config, rulesEngineComponentContract, policyId, ind.index)
+            fullFCListEff.push('TR:' + trackerInternal.trackerName)
           }
         }
-        fullFCListEff.push("FC:" + fcChainMeta);
+        fullFCListEff.push('FC:' + fcChainMeta)
       }
     }
   }
@@ -430,8 +339,8 @@ export const updateRule = async (
     foreignCallNameToID,
     encodedValues,
     fullFCList,
-    fullFCListEff,
-  );
+    fullFCListEff
+  )
   var rule = buildARuleStruct(
     ruleSyntax,
     foreignCallNameToID,
@@ -439,37 +348,37 @@ export const updateRule = async (
     trackerNameToID,
     encodedValues,
     fullFCList,
-    fullFCListEff,
-  );
-  var addRule;
+    fullFCListEff
+  )
+  var addRule
   while (true) {
     try {
       addRule = await simulateContract(config, {
         address: rulesEngineRulesContract.address,
         abi: rulesEngineRulesContract.abi,
-        functionName: "updateRule",
+        functionName: 'updateRule',
         args: [policyId, ruleId, rule, ruleSyntax.Name, ruleSyntax.Description],
-      });
-      break;
+      })
+      break
     } catch (err) {
       // TODO: Look into replacing this loop/sleep with setTimeout
-      await sleep(1000);
+      await sleep(1000)
     }
   }
   if (addRule != null) {
     const returnHash = await writeContract(config, {
       ...addRule.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
+    })
 
-    return addRule.result;
+    return addRule.result
   }
-  return -1;
-};
+  return -1
+}
 
 /**
  * Deletes a rule from the rules engine component contract.
@@ -488,33 +397,33 @@ export const deleteRule = async (
   rulesEngineRulesContract: RulesEngineRulesContract,
   policyId: number,
   ruleId: number,
-  confirmationCount: number,
+  confirmationCount: number
 ): Promise<number> => {
-  var addFC;
+  var addFC
   try {
     addFC = await simulateContract(config, {
       address: rulesEngineRulesContract.address,
       abi: rulesEngineRulesContract.abi,
-      functionName: "deleteRule",
+      functionName: 'deleteRule',
       args: [policyId, ruleId],
-    });
+    })
   } catch (err) {
-    return -1;
+    return -1
   }
 
   if (addFC != null) {
     const returnHash = await writeContract(config, {
       ...addFC.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
+    })
   }
 
-  return 0;
-};
+  return 0
+}
 
 /**
  * Retrieves a specific rule from the Rules Engine.
@@ -531,34 +440,34 @@ export const getRule = async (
   rulesEngineRulesContract: RulesEngineRulesContract,
   policyId: number,
   ruleId: number,
-  blockParams?: ContractBlockParameters,
+  blockParams?: ContractBlockParameters
 ): Promise<Maybe<RuleStruct>> => {
   try {
     const result = await readContract(config, {
       address: rulesEngineRulesContract.address,
       abi: rulesEngineRulesContract.abi,
-      functionName: "getRule",
+      functionName: 'getRule',
       args: [policyId, ruleId],
       ...blockParams,
-    });
+    })
 
-    let ruleResult = result as RuleStorageSet;
-    let ruleS = ruleResult.rule as RuleStruct;
+    let ruleResult = result as RuleStorageSet
+    let ruleS = ruleResult.rule as RuleStruct
 
     for (var posEffect of ruleS.posEffects) {
-      posEffect.text = hexToString(posEffect.text).replace(/\u0000/g, "");
+      posEffect.text = hexToString(posEffect.text).replace(/\u0000/g, '')
     }
 
     for (var negEffect of ruleS.negEffects) {
-      negEffect.text = hexToString(negEffect.text).replace(/\u0000/g, "");
+      negEffect.text = hexToString(negEffect.text).replace(/\u0000/g, '')
     }
 
-    return ruleS;
+    return ruleS
   } catch (error) {
-    console.error(error);
-    return null;
+    console.error(error)
+    return null
   }
-};
+}
 
 /**
  * Retrieves the metadata for a rule from the Rules Engine Rules Contract based on the provided policy ID and rule ID.
@@ -577,24 +486,24 @@ export const getRuleMetadata = async (
   rulesEngineRulesContract: RulesEngineRulesContract,
   policyId: number,
   ruleId: number,
-  blockParams?: ContractBlockParameters,
+  blockParams?: ContractBlockParameters
 ): Promise<Maybe<RuleMetadataStruct>> => {
   try {
     const getMeta = await readContract(config, {
       address: rulesEngineRulesContract.address,
       abi: rulesEngineRulesContract.abi,
-      functionName: "getRuleMetadata",
+      functionName: 'getRuleMetadata',
       args: [policyId, ruleId],
       ...blockParams,
-    });
+    })
 
-    let ruleResult = getMeta as RuleMetadataStruct;
-    return ruleResult;
+    let ruleResult = getMeta as RuleMetadataStruct
+    return ruleResult
   } catch (error) {
-    console.error(error);
-    return null;
+    console.error(error)
+    return null
   }
-};
+}
 
 /**
  * Retrieves all rules associated with a specific policy ID from the Rules Engine Policy Contract.
@@ -612,20 +521,20 @@ export const getAllRules = async (
   config: Config,
   rulesEngineRulesContract: RulesEngineRulesContract,
   policyId: number,
-  blockParams?: ContractBlockParameters,
+  blockParams?: ContractBlockParameters
 ): Promise<Maybe<any[]>> => {
   try {
     const result = await readContract(config, {
       address: rulesEngineRulesContract.address,
       abi: rulesEngineRulesContract.abi,
-      functionName: "getAllRules",
+      functionName: 'getAllRules',
       args: [policyId],
       ...blockParams,
-    });
+    })
 
-    return result as RuleStorageSet[];
+    return result as RuleStorageSet[]
   } catch (error) {
-    console.error(error);
-    return null;
+    console.error(error)
+    return null
   }
-};
+}

@@ -1,14 +1,8 @@
 /// SPDX-License-Identifier: BUSL-1.1
-import { Address, toFunctionSelector } from "viem";
-import {
-  simulateContract,
-  waitForTransactionReceipt,
-  writeContract,
-  Config,
-  readContract,
-} from "@wagmi/core";
-import { ContractBlockParameters, RulesEngineAdminContract } from "./types";
-import { sleep } from "./contract-interaction-utils";
+import { Address, toFunctionSelector } from 'viem'
+import { simulateContract, waitForTransactionReceipt, writeContract, Config, readContract } from '@wagmi/core'
+import { ContractBlockParameters, RulesEngineAdminContract } from './types'
+import { sleep } from './contract-interaction-utils'
 
 /**
  * @file admin.ts
@@ -49,33 +43,33 @@ export const proposeNewPolicyAdmin = async (
   rulesEngineAdminContract: RulesEngineAdminContract,
   policyId: number,
   newAdminAddress: Address,
-  confirmationCount: number,
+  confirmationCount: number
 ): Promise<void> => {
-  var proposeAdmin;
+  var proposeAdmin
   while (true) {
     try {
       proposeAdmin = await simulateContract(config, {
         address: rulesEngineAdminContract.address,
         abi: rulesEngineAdminContract.abi,
-        functionName: "proposeNewPolicyAdmin",
+        functionName: 'proposeNewPolicyAdmin',
         args: [newAdminAddress, policyId],
-      });
-      break;
+      })
+      break
     } catch (err) {
-      await sleep(1000);
+      await sleep(1000)
     }
   }
   if (proposeAdmin != null) {
     const returnHash = await writeContract(config, {
       ...proposeAdmin.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
+    })
   }
-};
+}
 
 /**
  * Confirm a new admin in the rules engine admin contract.
@@ -92,34 +86,34 @@ export const confirmNewPolicyAdmin = async (
   config: Config,
   rulesEngineAdminContract: RulesEngineAdminContract,
   policyId: number,
-  confirmationCount: number,
+  confirmationCount: number
 ): Promise<void> => {
-  var confirmAdmin;
+  var confirmAdmin
   while (true) {
     try {
       confirmAdmin = await simulateContract(config, {
         address: rulesEngineAdminContract.address,
         abi: rulesEngineAdminContract.abi,
-        functionName: "confirmNewPolicyAdmin",
+        functionName: 'confirmNewPolicyAdmin',
         args: [policyId],
-      });
-      break;
+      })
+      break
     } catch (err) {
-      console.log(err);
-      await sleep(1000);
+      console.log(err)
+      await sleep(1000)
     }
   }
   if (confirmAdmin != null) {
     const returnHash = await writeContract(config, {
       ...confirmAdmin.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
+    })
   }
-};
+}
 
 /**
  * Determine if address is policy admin.
@@ -139,21 +133,21 @@ export const isPolicyAdmin = async (
   rulesEngineAdminContract: RulesEngineAdminContract,
   policyId: number,
   adminAddress: Address,
-  blockParams?: ContractBlockParameters,
+  blockParams?: ContractBlockParameters
 ): Promise<boolean> => {
   try {
     let policyExists = await readContract(config, {
       address: rulesEngineAdminContract.address,
       abi: rulesEngineAdminContract.abi,
-      functionName: "isPolicyAdmin",
+      functionName: 'isPolicyAdmin',
       args: [policyId, adminAddress],
       ...blockParams,
-    });
-    return policyExists as boolean;
+    })
+    return policyExists as boolean
   } catch (error) {
-    return false;
+    return false
   }
-};
+}
 
 /**
  * Propose a new calling contract admin in the rules engine admin contract.
@@ -173,33 +167,33 @@ export const proposeNewCallingContractAdmin = async (
   rulesEngineAdminContract: RulesEngineAdminContract,
   callingContractAddress: Address,
   newAdminAddress: Address,
-  confirmationCount: number, // = 3
+  confirmationCount: number // = 3
 ): Promise<void> => {
-  var proposeAdmin;
+  var proposeAdmin
   while (true) {
     try {
       proposeAdmin = await simulateContract(config, {
         address: rulesEngineAdminContract.address,
         abi: rulesEngineAdminContract.abi,
-        functionName: "proposeNewCallingContractAdmin",
+        functionName: 'proposeNewCallingContractAdmin',
         args: [callingContractAddress, newAdminAddress],
-      });
-      break;
+      })
+      break
     } catch (err) {
-      await sleep(1000);
+      await sleep(1000)
     }
   }
   if (proposeAdmin != null) {
     const returnHash = await writeContract(config, {
       ...proposeAdmin.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
+    })
   }
-};
+}
 
 /**
  * Confirm a new calling contract admin in the rules engine admin contract.
@@ -217,34 +211,34 @@ export const confirmNewCallingContractAdmin = async (
   config: Config,
   rulesEngineAdminContract: RulesEngineAdminContract,
   callingContractAddress: Address,
-  confirmationCount: number,
+  confirmationCount: number
 ) => {
-  var confirmAdmin;
+  var confirmAdmin
   while (true) {
     try {
       confirmAdmin = await simulateContract(config, {
         address: rulesEngineAdminContract.address,
         abi: rulesEngineAdminContract.abi,
-        functionName: "confirmNewCallingContractAdmin",
+        functionName: 'confirmNewCallingContractAdmin',
         args: [callingContractAddress],
-      });
-      break;
+      })
+      break
     } catch (err) {
-      console.log(err);
-      await sleep(1000);
+      console.log(err)
+      await sleep(1000)
     }
   }
   if (confirmAdmin != null) {
     const returnHash = await writeContract(config, {
       ...confirmAdmin.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
+    })
   }
-};
+}
 
 /**
  * Determine if address is the calling contract admin.
@@ -264,21 +258,21 @@ export const isCallingContractAdmin = async (
   rulesEngineAdminContract: RulesEngineAdminContract,
   callingContract: Address,
   account: Address,
-  blockParams?: ContractBlockParameters,
+  blockParams?: ContractBlockParameters
 ): Promise<boolean> => {
   try {
     let policyExists = await readContract(config, {
       address: rulesEngineAdminContract.address,
       abi: rulesEngineAdminContract.abi,
-      functionName: "isCallingContractAdmin",
+      functionName: 'isCallingContractAdmin',
       args: [callingContract, account],
       ...blockParams,
-    });
-    return policyExists as boolean;
+    })
+    return policyExists as boolean
   } catch (error) {
-    return false;
+    return false
   }
-};
+}
 
 /**
  * Determine if address is the foreign call admin.
@@ -300,22 +294,22 @@ export const isForeignCallAdmin = async (
   foreignCallContract: Address,
   account: Address,
   functionSelector: string,
-  blockParams?: ContractBlockParameters,
+  blockParams?: ContractBlockParameters
 ): Promise<boolean> => {
-  var selector = toFunctionSelector(functionSelector);
+  var selector = toFunctionSelector(functionSelector)
   try {
     let isForeignCallAdmin = await readContract(config, {
       address: rulesEngineAdminContract.address,
       abi: rulesEngineAdminContract.abi,
-      functionName: "isForeignCallAdmin",
+      functionName: 'isForeignCallAdmin',
       args: [foreignCallContract, account, selector],
       ...blockParams,
-    });
-    return isForeignCallAdmin as boolean;
+    })
+    return isForeignCallAdmin as boolean
   } catch (error) {
-    return false;
+    return false
   }
-};
+}
 
 /**
  * Propose a new foreign call admin in the rules engine admin contract.
@@ -337,34 +331,34 @@ export const proposeNewForeignCallAdmin = async (
   foreignCallAddress: Address,
   newAdminAddress: Address,
   functionSelector: string,
-  confirmationCount: number,
+  confirmationCount: number
 ): Promise<void> => {
-  var proposeAdmin;
-  var selector = toFunctionSelector(functionSelector);
+  var proposeAdmin
+  var selector = toFunctionSelector(functionSelector)
   while (true) {
     try {
       proposeAdmin = await simulateContract(config, {
         address: rulesEngineAdminContract.address,
         abi: rulesEngineAdminContract.abi,
-        functionName: "proposeNewForeignCallAdmin",
+        functionName: 'proposeNewForeignCallAdmin',
         args: [foreignCallAddress, newAdminAddress, selector],
-      });
-      break;
+      })
+      break
     } catch (err) {
-      await sleep(1000);
+      await sleep(1000)
     }
   }
   if (proposeAdmin != null) {
     const returnHash = await writeContract(config, {
       ...proposeAdmin.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
+    })
   }
-};
+}
 
 /**
  * Confirm a new foreign call admin in the rules engine admin contract.
@@ -384,32 +378,32 @@ export const confirmNewForeignCallAdmin = async (
   rulesEngineAdminContract: RulesEngineAdminContract,
   foreignCallAddress: Address,
   functionSelector: string,
-  confirmationCount: number,
+  confirmationCount: number
 ) => {
-  var confirmAdmin;
-  var selector = toFunctionSelector(functionSelector);
+  var confirmAdmin
+  var selector = toFunctionSelector(functionSelector)
   while (true) {
     try {
       confirmAdmin = await simulateContract(config, {
         address: rulesEngineAdminContract.address,
         abi: rulesEngineAdminContract.abi,
-        functionName: "confirmNewForeignCallAdmin",
+        functionName: 'confirmNewForeignCallAdmin',
         args: [foreignCallAddress, selector],
-      });
-      break;
+      })
+      break
     } catch (err) {
-      console.log(err);
-      await sleep(1000);
+      console.log(err)
+      await sleep(1000)
     }
   }
   if (confirmAdmin != null) {
     const returnHash = await writeContract(config, {
       ...confirmAdmin.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
+    })
   }
-};
+}

@@ -1,17 +1,8 @@
 /// SPDX-License-Identifier: BUSL-1.1
-import { Address, toFunctionSelector } from "viem";
-import {
-  simulateContract,
-  waitForTransactionReceipt,
-  writeContract,
-  readContract,
-  Config,
-} from "@wagmi/core";
-import { sleep } from "./contract-interaction-utils";
-import {
-  parseCallingFunction,
-  parseForeignCallDefinition,
-} from "../parsing/parser";
+import { Address, toFunctionSelector } from 'viem'
+import { simulateContract, waitForTransactionReceipt, writeContract, readContract, Config } from '@wagmi/core'
+import { sleep } from './contract-interaction-utils'
+import { parseCallingFunction, parseForeignCallDefinition } from '../parsing/parser'
 import {
   ForeignCallOnChain,
   RulesEngineComponentContract,
@@ -22,16 +13,11 @@ import {
   RulesEngineForeignCallContract,
   TrackerMetadataStruct,
   ContractBlockParameters,
-} from "./types";
-import { getAllTrackers, getTrackerMetadata } from "./trackers";
-import { getCallingFunctionMetadata } from "./calling-functions";
-import { isLeft, unwrapEither } from "./utils";
-import {
-  CallingFunctionJSON,
-  ForeignCallJSON,
-  getRulesErrorMessages,
-  validateForeignCallJSON,
-} from "./validation";
+} from './types'
+import { getAllTrackers, getTrackerMetadata } from './trackers'
+import { getCallingFunctionMetadata } from './calling-functions'
+import { isLeft, unwrapEither } from './utils'
+import { CallingFunctionJSON, ForeignCallJSON, getRulesErrorMessages, validateForeignCallJSON } from './validation'
 
 /**
  * @file ForeignCalls.ts
@@ -78,109 +64,75 @@ export const createForeignCall = async (
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyId: number,
   fcSyntax: string,
-  confirmationCount: number,
+  confirmationCount: number
 ): Promise<number> => {
-  var trackers: TrackerOnChain[] = await getAllTrackers(
-    config,
-    rulesEngineComponentContract,
-    policyId,
-  );
-  var indexMap: FCNameToID[] = [];
-  var mappedArray: boolean[] = trackers.map((tracker) => tracker.mapped);
+  var trackers: TrackerOnChain[] = await getAllTrackers(config, rulesEngineComponentContract, policyId)
+  var indexMap: FCNameToID[] = []
+  var mappedArray: boolean[] = trackers.map((tracker) => tracker.mapped)
 
   const trackerMetadataCalls = trackers.map((tracker) =>
-    getTrackerMetadata(
-      config,
-      rulesEngineComponentContract,
-      policyId,
-      tracker.trackerIndex,
-    ),
-  );
-  const trackerMetadata = await Promise.all(trackerMetadataCalls);
-  const indexMapAdditions: FCNameToID[] = trackerMetadata.map(
-    (name: TrackerMetadataStruct, index: number) => {
-      return {
-        name: name.trackerName,
-        id: trackers[index].trackerIndex,
-        type: mappedArray[index] ? 1 : 0,
-      };
-    },
-  );
+    getTrackerMetadata(config, rulesEngineComponentContract, policyId, tracker.trackerIndex)
+  )
+  const trackerMetadata = await Promise.all(trackerMetadataCalls)
+  const indexMapAdditions: FCNameToID[] = trackerMetadata.map((name: TrackerMetadataStruct, index: number) => {
+    return {
+      name: name.trackerName,
+      id: trackers[index].trackerIndex,
+      type: mappedArray[index] ? 1 : 0,
+    }
+  })
 
-  indexMap = [...indexMap, ...indexMapAdditions];
+  indexMap = [...indexMap, ...indexMapAdditions]
 
-  var foreignCalls: ForeignCallOnChain[] = await getAllForeignCalls(
-    config,
-    rulesEngineForeignCallContract,
-    policyId,
-  );
+  var foreignCalls: ForeignCallOnChain[] = await getAllForeignCalls(config, rulesEngineForeignCallContract, policyId)
   const foreignCallMetadataCalls = foreignCalls.map((fc) =>
-    getForeignCallMetadata(
-      config,
-      rulesEngineForeignCallContract,
-      policyId,
-      fc.foreignCallIndex,
-    ),
-  );
-  var fcMap: FCNameToID[] = [];
-  const foreignCallMetadata = await Promise.all(foreignCallMetadataCalls);
-  const fcMapAdditions: FCNameToID[] = foreignCallMetadata.map(
-    (name: string, index: number) => {
-      return {
-        name: name.split("(")[0],
-        id: foreignCalls[index].foreignCallIndex,
-        type: 0,
-      };
-    },
-  );
-  fcMap = [...fcMap, ...fcMapAdditions];
+    getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, fc.foreignCallIndex)
+  )
+  var fcMap: FCNameToID[] = []
+  const foreignCallMetadata = await Promise.all(foreignCallMetadataCalls)
+  const fcMapAdditions: FCNameToID[] = foreignCallMetadata.map((name: string, index: number) => {
+    return {
+      name: name.split('(')[0],
+      id: foreignCalls[index].foreignCallIndex,
+      type: 0,
+    }
+  })
+  fcMap = [...fcMap, ...fcMapAdditions]
 
   const retrievePolicy = await readContract(config, {
     address: rulesEnginePolicyContract.address,
     abi: rulesEnginePolicyContract.abi,
-    functionName: "getPolicy",
+    functionName: 'getPolicy',
     args: [policyId],
-  });
+  })
 
-  let policyResult = retrievePolicy as any;
-  let callingFunctionIds: number[] = policyResult[1];
+  let policyResult = retrievePolicy as any
+  let callingFunctionIds: number[] = policyResult[1]
   const callingFunctionsMetadataCalls = callingFunctionIds.map((cfId) =>
-    getCallingFunctionMetadata(
-      config,
-      rulesEngineComponentContract,
-      policyId,
-      cfId,
-    ),
-  );
-  const callingFunctionMetadata = await Promise.all(
-    callingFunctionsMetadataCalls,
-  );
+    getCallingFunctionMetadata(config, rulesEngineComponentContract, policyId, cfId)
+  )
+  const callingFunctionMetadata = await Promise.all(callingFunctionsMetadataCalls)
 
-  const json = validateForeignCallJSON(fcSyntax);
+  const json = validateForeignCallJSON(fcSyntax)
   if (isLeft(json)) {
-    throw new Error(getRulesErrorMessages(unwrapEither(json)));
+    throw new Error(getRulesErrorMessages(unwrapEither(json)))
   }
-  const fcJSON: ForeignCallJSON = unwrapEither(json);
-  var iter = 1;
-  var encodedValues: string[] = [];
+  const fcJSON: ForeignCallJSON = unwrapEither(json)
+  var iter = 1
+  var encodedValues: string[] = []
   for (var mapp of callingFunctionMetadata) {
     if (mapp.callingFunction.trim() == fcJSON.callingFunction) {
       var builtJSON = {
         name: fcJSON.callingFunction,
         functionSignature: fcJSON.callingFunction,
         encodedValues: mapp.encodedValues,
-      };
-      encodedValues = parseCallingFunction(builtJSON);
-      break;
+      }
+      encodedValues = parseCallingFunction(builtJSON)
+      break
     }
-    iter += 1;
+    iter += 1
   }
-  const foreignCall = parseForeignCallDefinition(
-    fcJSON,
-    fcMap,
-    indexMap,
-    encodedValues,
-  );
+  const foreignCall = parseForeignCallDefinition(fcJSON, fcMap, indexMap, encodedValues)
   var fc = {
     set: true,
     foreignCallAddress: foreignCall.address,
@@ -191,21 +143,21 @@ export const createForeignCall = async (
     encodedIndices: foreignCall.encodedIndices,
     mappedTrackerKeyIndices: foreignCall.mappedTrackerKeyIndices,
     callingFunctionIndex: iter,
-  };
-  var addFC;
+  }
+  var addFC
   while (true) {
     try {
       addFC = await simulateContract(config, {
         address: rulesEngineForeignCallContract.address,
         abi: rulesEngineForeignCallContract.abi,
-        functionName: "createForeignCall",
+        functionName: 'createForeignCall',
         args: [policyId, fc, foreignCall.name],
-      });
-      break;
+      })
+      break
     } catch (err) {
       // TODO: Look into replacing this loop/sleep with setTimeout
-      await sleep(1000);
-      return -1;
+      await sleep(1000)
+      return -1
     }
   }
 
@@ -213,15 +165,15 @@ export const createForeignCall = async (
     const returnHash = await writeContract(config, {
       ...addFC.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
-    return addFC.result;
+    })
+    return addFC.result
   }
-  return -1;
-};
+  return -1
+}
 /**
  * Updates a foreign call in the rules engine component contract.
  *
@@ -248,103 +200,69 @@ export const updateForeignCall = async (
   policyId: number,
   foreignCallId: number,
   fcSyntax: string,
-  confirmationCount: number,
+  confirmationCount: number
 ): Promise<number> => {
-  var trackers: TrackerOnChain[] = await getAllTrackers(
-    config,
-    rulesEngineComponentContract,
-    policyId,
-  );
-  var indexMap: FCNameToID[] = [];
+  var trackers: TrackerOnChain[] = await getAllTrackers(config, rulesEngineComponentContract, policyId)
+  var indexMap: FCNameToID[] = []
   const trackerMetadataCalls = trackers.map((tracker) =>
-    getTrackerMetadata(
-      config,
-      rulesEngineComponentContract,
-      policyId,
-      tracker.trackerIndex,
-    ),
-  );
-  const trackerMetadata = await Promise.all(trackerMetadataCalls);
-  const indexMapAdditions: FCNameToID[] = trackerMetadata.map(
-    (name: TrackerMetadataStruct, index: number) => {
-      return {
-        name: name.trackerName,
-        id: trackers[index].trackerIndex,
-        type: 0,
-      };
-    },
-  );
-  indexMap = [...indexMap, ...indexMapAdditions];
+    getTrackerMetadata(config, rulesEngineComponentContract, policyId, tracker.trackerIndex)
+  )
+  const trackerMetadata = await Promise.all(trackerMetadataCalls)
+  const indexMapAdditions: FCNameToID[] = trackerMetadata.map((name: TrackerMetadataStruct, index: number) => {
+    return {
+      name: name.trackerName,
+      id: trackers[index].trackerIndex,
+      type: 0,
+    }
+  })
+  indexMap = [...indexMap, ...indexMapAdditions]
 
-  var foreignCalls: ForeignCallOnChain[] = await getAllForeignCalls(
-    config,
-    rulesEngineForeignCallContract,
-    policyId,
-  );
+  var foreignCalls: ForeignCallOnChain[] = await getAllForeignCalls(config, rulesEngineForeignCallContract, policyId)
   const foreignCallMetadataCalls = foreignCalls.map((fc) =>
-    getForeignCallMetadata(
-      config,
-      rulesEngineForeignCallContract,
-      policyId,
-      fc.foreignCallIndex,
-    ),
-  );
-  var fcMap: FCNameToID[] = [];
-  const foreignCallMetadata = await Promise.all(foreignCallMetadataCalls);
-  const fcMapAdditions: FCNameToID[] = foreignCallMetadata.map(
-    (name: string, index: number) => {
-      return { name: name, id: foreignCalls[index].foreignCallIndex, type: 0 };
-    },
-  );
-  fcMap = [...fcMap, ...fcMapAdditions];
+    getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, fc.foreignCallIndex)
+  )
+  var fcMap: FCNameToID[] = []
+  const foreignCallMetadata = await Promise.all(foreignCallMetadataCalls)
+  const fcMapAdditions: FCNameToID[] = foreignCallMetadata.map((name: string, index: number) => {
+    return { name: name, id: foreignCalls[index].foreignCallIndex, type: 0 }
+  })
+  fcMap = [...fcMap, ...fcMapAdditions]
 
   const retrievePolicy = await readContract(config, {
     address: rulesEnginePolicyContract.address,
     abi: rulesEnginePolicyContract.abi,
-    functionName: "getPolicy",
+    functionName: 'getPolicy',
     args: [policyId],
-  });
+  })
 
-  let policyResult = retrievePolicy as any;
-  let callingFunctionIds: number[] = policyResult[1];
+  let policyResult = retrievePolicy as any
+  let callingFunctionIds: number[] = policyResult[1]
   const callingFunctionsMetadataCalls = callingFunctionIds.map((cfId) =>
-    getCallingFunctionMetadata(
-      config,
-      rulesEngineComponentContract,
-      policyId,
-      cfId,
-    ),
-  );
-  const callingFunctionMetadata = await Promise.all(
-    callingFunctionsMetadataCalls,
-  );
+    getCallingFunctionMetadata(config, rulesEngineComponentContract, policyId, cfId)
+  )
+  const callingFunctionMetadata = await Promise.all(callingFunctionsMetadataCalls)
 
-  const json = validateForeignCallJSON(fcSyntax);
+  const json = validateForeignCallJSON(fcSyntax)
   if (isLeft(json)) {
-    throw new Error(getRulesErrorMessages(unwrapEither(json)));
+    throw new Error(getRulesErrorMessages(unwrapEither(json)))
   }
-  const fcJSON = unwrapEither(json);
-  var iter = 1;
-  var encodedValues: string[] = [];
+  const fcJSON = unwrapEither(json)
+  var iter = 1
+  var encodedValues: string[] = []
   for (var mapp of callingFunctionMetadata) {
     if (mapp.callingFunction.trim() == fcJSON.callingFunction.trim()) {
       var builtJSON: CallingFunctionJSON = {
         name: fcJSON.callingFunction,
         functionSignature: fcJSON.callingFunction,
         encodedValues: mapp.encodedValues,
-      };
-      encodedValues = parseCallingFunction(builtJSON);
-      break;
+      }
+      encodedValues = parseCallingFunction(builtJSON)
+      break
     }
-    iter += 1;
+    iter += 1
   }
 
-  const foreignCall = parseForeignCallDefinition(
-    fcJSON,
-    fcMap,
-    indexMap,
-    encodedValues,
-  );
+  const foreignCall = parseForeignCallDefinition(fcJSON, fcMap, indexMap, encodedValues)
 
   var fc = {
     set: true,
@@ -356,37 +274,37 @@ export const updateForeignCall = async (
     encodedIndices: foreignCall.encodedIndices,
     mappedTrackerKeyIndices: foreignCall.mappedTrackerKeyIndices,
     callingFunctionIndex: iter,
-  };
-  var addFC;
+  }
+  var addFC
 
   while (true) {
     try {
       addFC = await simulateContract(config, {
         address: rulesEngineForeignCallContract.address,
         abi: rulesEngineForeignCallContract.abi,
-        functionName: "updateForeignCall",
+        functionName: 'updateForeignCall',
         args: [policyId, foreignCallId, fc],
-      });
-      break;
+      })
+      break
     } catch (err) {
       // TODO: Look into replacing this loop/sleep with setTimeout
-      await sleep(1000);
+      await sleep(1000)
     }
   }
   if (addFC != null) {
     const returnHash = await writeContract(config, {
       ...addFC.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
-    let foreignCallResult = addFC.result as any;
-    return foreignCallResult.foreignCallIndex;
+    })
+    let foreignCallResult = addFC.result as any
+    return foreignCallResult.foreignCallIndex
   }
-  return -1;
-};
+  return -1
+}
 
 /**
  * Deletes a foreign call associated with a specific policy in the rules engine component contract.
@@ -406,33 +324,33 @@ export const deleteForeignCall = async (
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   policyId: number,
   foreignCallId: number,
-  confirmationCount: number,
+  confirmationCount: number
 ): Promise<number> => {
-  var addFC;
+  var addFC
   try {
     addFC = await simulateContract(config, {
       address: rulesEngineForeignCallContract.address,
       abi: rulesEngineForeignCallContract.abi,
-      functionName: "deleteForeignCall",
+      functionName: 'deleteForeignCall',
       args: [policyId, foreignCallId],
-    });
+    })
   } catch (err) {
-    return -1;
+    return -1
   }
 
   if (addFC != null) {
     const returnHash = await writeContract(config, {
       ...addFC.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
+    })
   }
 
-  return 0;
-};
+  return 0
+}
 
 /**
  * Retrieves the result of a foreign call from the rules engine component contract.
@@ -451,24 +369,24 @@ export const getForeignCall = async (
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   policyId: number,
   foreignCallId: number,
-  blockParams?: ContractBlockParameters,
+  blockParams?: ContractBlockParameters
 ): Promise<Maybe<ForeignCallOnChain>> => {
   try {
     const addFC = await readContract(config, {
       address: rulesEngineForeignCallContract.address,
       abi: rulesEngineForeignCallContract.abi,
-      functionName: "getForeignCall",
+      functionName: 'getForeignCall',
       args: [policyId, foreignCallId],
       ...blockParams,
-    });
+    })
 
-    let foreignCallResult = addFC as ForeignCallOnChain;
-    return foreignCallResult;
+    let foreignCallResult = addFC as ForeignCallOnChain
+    return foreignCallResult
   } catch (error) {
-    console.error(error);
-    return null;
+    console.error(error)
+    return null
   }
-};
+}
 
 /**
  * Retrieves the metadata for a foreign call from the rules engine component contract.
@@ -487,24 +405,24 @@ export const getForeignCallMetadata = async (
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   policyId: number,
   foreignCallId: number,
-  blockParams?: ContractBlockParameters,
+  blockParams?: ContractBlockParameters
 ): Promise<string> => {
   try {
     const getMeta = await readContract(config, {
       address: rulesEngineForeignCallContract.address,
       abi: rulesEngineForeignCallContract.abi,
-      functionName: "getForeignCallMetadata",
+      functionName: 'getForeignCallMetadata',
       args: [policyId, foreignCallId],
       ...blockParams,
-    });
+    })
 
-    let foreignCallResult = getMeta as string;
-    return foreignCallResult;
+    let foreignCallResult = getMeta as string
+    return foreignCallResult
   } catch (error) {
-    console.error(error);
-    return "";
+    console.error(error)
+    return ''
   }
-};
+}
 
 /**
  * Retrieves all foreign calls associated with a specific policy ID from the Rules Engine Component Contract.
@@ -522,23 +440,23 @@ export const getAllForeignCalls = async (
   config: Config,
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   policyId: number,
-  blockParams?: ContractBlockParameters,
+  blockParams?: ContractBlockParameters
 ): Promise<ForeignCallOnChain[]> => {
   try {
     const addFC = await readContract(config, {
       address: rulesEngineForeignCallContract.address,
       abi: rulesEngineForeignCallContract.abi,
-      functionName: "getAllForeignCalls",
+      functionName: 'getAllForeignCalls',
       args: [policyId],
       ...blockParams,
-    });
-    let foreignCallResult = addFC as ForeignCallOnChain[];
-    return foreignCallResult;
+    })
+    let foreignCallResult = addFC as ForeignCallOnChain[]
+    return foreignCallResult
   } catch (error) {
-    console.error(error);
-    return [];
+    console.error(error)
+    return []
   }
-};
+}
 
 /**
  * Retrieves the permission list for a permissioned foreign call.
@@ -557,24 +475,24 @@ export const getForeignCallPermissionList = async (
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   foreignCallAddress: Address,
   functionSelector: string,
-  blockParams?: ContractBlockParameters,
+  blockParams?: ContractBlockParameters
 ): Promise<Address[]> => {
   try {
-    var selector = toFunctionSelector(functionSelector);
+    var selector = toFunctionSelector(functionSelector)
     const addFC = await readContract(config, {
       address: rulesEngineForeignCallContract.address,
       abi: rulesEngineForeignCallContract.abi,
-      functionName: "getForeignCallPermissionList",
+      functionName: 'getForeignCallPermissionList',
       args: [foreignCallAddress, selector],
       ...blockParams,
-    });
-    let foreignCallResult = addFC as Address[];
-    return foreignCallResult;
+    })
+    let foreignCallResult = addFC as Address[]
+    return foreignCallResult
   } catch (error) {
-    console.error(error);
-    return [];
+    console.error(error)
+    return []
   }
-};
+}
 
 /**
  * Adds a new address to the permission list for a foreign call.
@@ -596,34 +514,34 @@ export const addAdminToPermissionList = async (
   foreignCallAddress: Address,
   functionSelector: string,
   policyAdminToAdd: Address,
-  confirmationCount: number,
+  confirmationCount: number
 ): Promise<number> => {
-  var addFC;
+  var addFC
   try {
-    var selector = toFunctionSelector(functionSelector);
+    var selector = toFunctionSelector(functionSelector)
     addFC = await simulateContract(config, {
       address: rulesEngineForeignCallContract.address,
       abi: rulesEngineForeignCallContract.abi,
-      functionName: "addAdminToPermissionList",
+      functionName: 'addAdminToPermissionList',
       args: [foreignCallAddress, policyAdminToAdd, selector],
-    });
+    })
   } catch (err) {
-    return -1;
+    return -1
   }
 
   if (addFC != null) {
     const returnHash = await writeContract(config, {
       ...addFC.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
+    })
   }
 
-  return 0;
-};
+  return 0
+}
 
 /**
  * Adds multiple addresses to the permission list for a foreign call.
@@ -645,42 +563,42 @@ export const addMultipleAdminsToPermissionList = async (
   foreignCallAddress: Address,
   functionSelector: string,
   policyAdminsToAdd: Address[],
-  confirmationCount: number,
+  confirmationCount: number
 ): Promise<number> => {
-  var addFC;
+  var addFC
 
   var addresses = await getForeignCallPermissionList(
     config,
     rulesEngineForeignCallContract,
     foreignCallAddress,
-    functionSelector,
-  );
-  addresses.push(...policyAdminsToAdd);
+    functionSelector
+  )
+  addresses.push(...policyAdminsToAdd)
   try {
-    var selector = toFunctionSelector(functionSelector);
+    var selector = toFunctionSelector(functionSelector)
     addFC = await simulateContract(config, {
       address: rulesEngineForeignCallContract.address,
       abi: rulesEngineForeignCallContract.abi,
-      functionName: "updatePermissionList",
+      functionName: 'updatePermissionList',
       args: [foreignCallAddress, selector, addresses],
-    });
+    })
   } catch (err) {
-    return -1;
+    return -1
   }
 
   if (addFC != null) {
     const returnHash = await writeContract(config, {
       ...addFC.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
+    })
   }
 
-  return 0;
-};
+  return 0
+}
 
 /**
  * Removes multiple addresses from the permission list for a foreign call.
@@ -702,42 +620,42 @@ export const removeMultipleAdminsFromPermissionList = async (
   foreignCallAddress: Address,
   functionSelector: string,
   policyAdminsToRemove: Address[],
-  confirmationCount: number,
+  confirmationCount: number
 ): Promise<number> => {
-  var addFC;
+  var addFC
 
   var addresses = await getForeignCallPermissionList(
     config,
     rulesEngineForeignCallContract,
     foreignCallAddress,
-    functionSelector,
-  );
-  addresses = addresses.filter((item) => !policyAdminsToRemove.includes(item));
+    functionSelector
+  )
+  addresses = addresses.filter((item) => !policyAdminsToRemove.includes(item))
   try {
-    var selector = toFunctionSelector(functionSelector);
+    var selector = toFunctionSelector(functionSelector)
     addFC = await simulateContract(config, {
       address: rulesEngineForeignCallContract.address,
       abi: rulesEngineForeignCallContract.abi,
-      functionName: "updatePermissionList",
+      functionName: 'updatePermissionList',
       args: [foreignCallAddress, selector, addresses],
-    });
+    })
   } catch (err) {
-    return -1;
+    return -1
   }
 
   if (addFC != null) {
     const returnHash = await writeContract(config, {
       ...addFC.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
+    })
   }
 
-  return 0;
-};
+  return 0
+}
 
 /**
  * Removes all addresses from the permission list for a foreign call.
@@ -757,31 +675,31 @@ export const removeAllFromPermissionList = async (
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   foreignCallAddress: Address,
   functionSelector: string,
-  confirmationCount: number,
+  confirmationCount: number
 ): Promise<number> => {
-  var addFC;
+  var addFC
   try {
-    var selector = toFunctionSelector(functionSelector);
+    var selector = toFunctionSelector(functionSelector)
     addFC = await simulateContract(config, {
       address: rulesEngineForeignCallContract.address,
       abi: rulesEngineForeignCallContract.abi,
-      functionName: "removeAllFromPermissionList",
+      functionName: 'removeAllFromPermissionList',
       args: [foreignCallAddress, selector],
-    });
+    })
   } catch (err) {
-    return -1;
+    return -1
   }
 
   if (addFC != null) {
     const returnHash = await writeContract(config, {
       ...addFC.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
+    })
   }
 
-  return 0;
-};
+  return 0
+}

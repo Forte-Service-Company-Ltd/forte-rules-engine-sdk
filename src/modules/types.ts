@@ -1,18 +1,11 @@
 /// SPDX-License-Identifier: BUSL-1.1
-import {
-  Address,
-  BlockNumber,
-  BlockTag,
-  ByteArray,
-  GetContractReturnType,
-  Hex,
-} from "viem";
+import { Address, BlockNumber, BlockTag, ByteArray, GetContractReturnType, Hex } from 'viem'
 
-import RulesEnginePolicyLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEnginePolicyFacet.sol/RulesEnginePolicyFacet.json";
-import RulesEngineComponentLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineComponentFacet.sol/RulesEngineComponentFacet.json";
-import RulesEngineRuleLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineRuleFacet.sol/RulesEngineRuleFacet.json";
-import RulesEngineAdminLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineAdminRolesFacet.sol/RulesEngineAdminRolesFacet.json";
-import RulesEngineForeignCallLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineForeignCallFacet.sol/RulesEngineForeignCallFacet.json";
+import RulesEnginePolicyLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEnginePolicyFacet.sol/RulesEnginePolicyFacet.json'
+import RulesEngineComponentLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineComponentFacet.sol/RulesEngineComponentFacet.json'
+import RulesEngineRuleLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineRuleFacet.sol/RulesEngineRuleFacet.json'
+import RulesEngineAdminLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineAdminRolesFacet.sol/RulesEngineAdminRolesFacet.json'
+import RulesEngineForeignCallLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineForeignCallFacet.sol/RulesEngineForeignCallFacet.json'
 import {
   CallingFunctionJSON,
   ForeignCallJSON,
@@ -20,7 +13,7 @@ import {
   PolicyJSON,
   RuleJSON,
   TrackerJSON,
-} from "./validation";
+} from './validation'
 
 /**
  * @file types.ts
@@ -43,12 +36,11 @@ import {
 // Contract ABIs
 // -----------------------------------------------------------------------------
 
-export const RulesEnginePolicyABI = RulesEnginePolicyLogicArtifact.abi;
-export const RulesEngineComponentABI = RulesEngineComponentLogicArtifact.abi;
-export const RulesEngineRulesABI = RulesEngineRuleLogicArtifact.abi;
-export const RulesEngineAdminABI = RulesEngineAdminLogicArtifact.abi;
-export const RulesEngineForeignCallABI =
-  RulesEngineForeignCallLogicArtifact.abi;
+export const RulesEnginePolicyABI = RulesEnginePolicyLogicArtifact.abi
+export const RulesEngineComponentABI = RulesEngineComponentLogicArtifact.abi
+export const RulesEngineRulesABI = RulesEngineRuleLogicArtifact.abi
+export const RulesEngineAdminABI = RulesEngineAdminLogicArtifact.abi
+export const RulesEngineForeignCallABI = RulesEngineForeignCallLogicArtifact.abi
 
 // -----------------------------------------------------------------------------
 // Contract Types
@@ -57,25 +49,15 @@ export const RulesEngineForeignCallABI =
 /**
  * Contract type definitions for interacting with the Rules Engine facets
  */
-export type RulesEnginePolicyContract = GetContractReturnType<
-  typeof RulesEnginePolicyABI
->;
+export type RulesEnginePolicyContract = GetContractReturnType<typeof RulesEnginePolicyABI>
 
-export type RulesEngineComponentContract = GetContractReturnType<
-  typeof RulesEngineComponentABI
->;
+export type RulesEngineComponentContract = GetContractReturnType<typeof RulesEngineComponentABI>
 
-export type RulesEngineRulesContract = GetContractReturnType<
-  typeof RulesEngineRulesABI
->;
+export type RulesEngineRulesContract = GetContractReturnType<typeof RulesEngineRulesABI>
 
-export type RulesEngineAdminContract = GetContractReturnType<
-  typeof RulesEngineAdminABI
->;
+export type RulesEngineAdminContract = GetContractReturnType<typeof RulesEngineAdminABI>
 
-export type RulesEngineForeignCallContract = GetContractReturnType<
-  typeof RulesEngineForeignCallABI
->;
+export type RulesEngineForeignCallContract = GetContractReturnType<typeof RulesEngineForeignCallABI>
 
 // -----------------------------------------------------------------------------
 // Utility Types
@@ -86,36 +68,36 @@ export type RulesEngineForeignCallContract = GetContractReturnType<
  */
 export type FCNameToID = {
   /** Unique identifier for the foreign call */
-  id: number;
+  id: number
   /** Name of the foreign call */
-  name: string;
+  name: string
   /** Type identifier */
-  type: number;
-};
+  type: number
+}
 
 /**
  * Maps hex values to their function string representations
  */
 export type hexToFunctionString = {
   /** Hex representation */
-  hex: string;
+  hex: string
   /** String representation of the function */
-  functionString: string;
+  functionString: string
   /** Encoded values for the function */
-  encodedValues: string;
+  encodedValues: string
   /** Index of the function */
-  index: number;
-};
+  index: number
+}
 
 /**
  * Simple tuple type with integer and string fields
  */
 export type Tuple = {
   /** Integer field */
-  i: string;
+  i: string
   /** String field */
-  s: string;
-};
+  s: string
+}
 
 // -----------------------------------------------------------------------------
 // Effect Types
@@ -138,38 +120,38 @@ export enum EffectType {
  */
 export type EffectDefinition = {
   /** The type of effect (REVERT, EVENT, EXPRESSION) */
-  type: EffectType;
+  type: EffectType
   /** Text representation of the effect */
-  text: string;
+  text: string
   /** Instruction set for the effect */
-  instructionSet: any[];
+  instructionSet: any[]
   /** Parameter type */
-  pType: number;
+  pType: number
   /** Parameter value */
-  parameterValue: any;
-};
+  parameterValue: any
+}
 
 /**
  * Structure of an effect as represented in the system
  */
 export type EffectStruct = {
   /** Whether the effect is valid */
-  valid: boolean;
+  valid: boolean
   /** Whether the effect has dynamic parameters */
-  dynamicParam: boolean;
+  dynamicParam: boolean
   /** The type of effect */
-  effectType: EffectType;
+  effectType: EffectType
   /** Parameter type */
-  pType: number;
+  pType: number
   /** Parameter value */
-  param: any;
+  param: any
   /** Text representation in hex format */
-  text: Hex;
+  text: Hex
   /** Error message if applicable */
-  errorMessage: string;
+  errorMessage: string
   /** Instruction set for the effect */
-  instructionSet: any[];
-};
+  instructionSet: any[]
+}
 
 /**
  * Collection of positive and negative effects
@@ -177,10 +159,10 @@ export type EffectStruct = {
  */
 export type EffectStructs = {
   /** Effects applied when a rule passes */
-  positiveEffects: any[];
+  positiveEffects: any[]
   /** Effects applied when a rule fails */
-  negativeEffects: any[];
-};
+  negativeEffects: any[]
+}
 
 // -----------------------------------------------------------------------------
 // Calling Function Types
@@ -191,21 +173,21 @@ export type EffectStructs = {
  */
 export type CallingFunctionHashMapping = {
   /** The calling function identifier */
-  callingFunction: string;
+  callingFunction: string
   /** Function signature */
-  signature: string;
+  signature: string
   /** Encoded values for the function */
-  encodedValues: string;
-};
+  encodedValues: string
+}
 
 export interface CallingFunctionData extends CallingFunctionJSON {
-  id: number;
+  id: number
 }
 
 export type CallingFunctionDataAndJSON = {
-  data: CallingFunctionData;
-  json: CallingFunctionJSON;
-};
+  data: CallingFunctionData
+  json: CallingFunctionJSON
+}
 
 // -----------------------------------------------------------------------------
 // Rule Types
@@ -216,56 +198,56 @@ export type CallingFunctionDataAndJSON = {
  */
 export type RuleBase = {
   /** Set of instructions that make up the rule */
-  instructionSet: any[];
+  instructionSet: any[]
   /** Placeholders used in the rule */
-  placeHolders: any[];
+  placeHolders: any[]
   /** Placeholders used in the rule's effects */
-  effectPlaceHolders: any[];
-};
+  effectPlaceHolders: any[]
+}
 
 /**
  * Complete definition of a rule including effects
  */
-export type RuleDefinition = RuleBase & EffectStructs;
+export type RuleDefinition = RuleBase & EffectStructs
 
 /**
  * Structure of a rule as stored in the system
  */
 export type RuleStruct = RuleBase & {
   /** Positive effects applied when rule passes */
-  posEffects: any[];
+  posEffects: any[]
   /** Negative effects applied when rule fails */
-  negEffects: any[];
-};
+  negEffects: any[]
+}
 
 /**
  * Metadata about a rule
  */
 export type RuleMetadataStruct = {
   /** Name of the rule */
-  ruleName: string;
+  ruleName: string
   /** Description of the rule */
-  ruleDescription: string;
-};
+  ruleDescription: string
+}
 
 /**
  * Represents the storage state of a rule
  */
 export type RuleStorageSet = {
   /** Whether the rule is set */
-  set: boolean;
+  set: boolean
   /** The rule data */
-  rule: any;
-};
+  rule: any
+}
 
 export interface RuleData extends RuleJSON {
-  id: number;
+  id: number
 }
 
 export type RuleDataAndJSON = {
-  data: RuleData;
-  json: RuleJSON;
-};
+  data: RuleData
+  json: RuleJSON
+}
 
 // -----------------------------------------------------------------------------
 // Policy Types
@@ -277,22 +259,22 @@ export type RuleDataAndJSON = {
  */
 export type PolicyResult = {
   /** The parsed policy object */
-  Policy: PolicyData;
+  Policy: PolicyData
   /** The JSON string representation of the policy */
-  JSON: string;
-};
+  JSON: string
+}
 
 export interface PolicyData {
   /** The rules defined in the policy */
-  id: number;
-  name: string;
-  description: string;
-  policyType: string;
-  rules: RuleData[];
-  foreignCalls: ForeignCallData[];
-  trackers: TrackerData[];
-  mappedTrackers: MappedTrackerData[];
-  callingFunctions: CallingFunctionData[];
+  id: number
+  name: string
+  description: string
+  policyType: string
+  rules: RuleData[]
+  foreignCalls: ForeignCallData[]
+  trackers: TrackerData[]
+  mappedTrackers: MappedTrackerData[]
+  callingFunctions: CallingFunctionData[]
 }
 
 /**
@@ -300,10 +282,10 @@ export interface PolicyData {
  */
 export type PolicyMetadataStruct = {
   /** Name of the policy */
-  policyName: string;
+  policyName: string
   /** Description of the policy */
-  policyDescription: string;
-};
+  policyDescription: string
+}
 
 // -----------------------------------------------------------------------------
 // Calling Function Types
@@ -314,12 +296,12 @@ export type PolicyMetadataStruct = {
  */
 export type CallingFunctionOnChain = {
   /** Whether the foreign call is set */
-  set: boolean;
+  set: boolean
   /** Function signature */
-  signature: string;
+  signature: string
   /** Types of parameters */
-  parameterTypes: number[];
-};
+  parameterTypes: number[]
+}
 
 // -----------------------------------------------------------------------------
 // Foreign Call Types
@@ -330,97 +312,97 @@ export type CallingFunctionOnChain = {
  */
 export type ForeignCallOnChain = {
   /** Whether the foreign call is set */
-  set: boolean;
+  set: boolean
   /** Address of the contract for the foreign call */
-  foreignCallAddress: string;
+  foreignCallAddress: string
   /** Function signature */
-  signature: string;
+  signature: string
   /** Return type of the foreign call */
-  returnType: number;
+  returnType: number
   /** Index of the foreign call */
-  foreignCallIndex: number;
+  foreignCallIndex: number
   /** Types of parameters */
-  parameterTypes: number[];
+  parameterTypes: number[]
   /** Indices for encoded parameters */
-  encodedIndices: ForeignCallEncodedIndex[];
+  encodedIndices: ForeignCallEncodedIndex[]
   /** Indices for mapped tracker keys */
-  mappedTrackerKeyIndices: ForeignCallEncodedIndex[];
+  mappedTrackerKeyIndices: ForeignCallEncodedIndex[]
   /** Index of the calling function */
-  callingFunctionIndex: number;
-};
+  callingFunctionIndex: number
+}
 
 /**
  * Definition of a foreign call
  */
 export type ForeignCallDefinition = {
   /** Name of the foreign call */
-  name: string;
+  name: string
   /** Contract address */
-  address: Address;
+  address: Address
   /** Function name */
-  function: string;
+  function: string
   /** Return type of the function */
-  returnType: number;
+  returnType: number
   /** Types of parameters */
-  parameterTypes: number[];
+  parameterTypes: number[]
   /** Indices for encoded parameters */
-  encodedIndices: ForeignCallEncodedIndex[];
+  encodedIndices: ForeignCallEncodedIndex[]
   /** Indices for mapped tracker keys */
-  mappedTrackerKeyIndices: ForeignCallEncodedIndex[];
-};
+  mappedTrackerKeyIndices: ForeignCallEncodedIndex[]
+}
 
 /**
  * Index information for foreign call encoding
  */
 export type ForeignCallEncodedIndex = {
   /** Type of encoding */
-  eType: number;
+  eType: number
   /** Index value */
-  index: number;
-};
+  index: number
+}
 
 /**
  * Mapping for individual function arguments
  */
 export type IndividualArgumentMapping = {
   /** Type of the function call argument */
-  functionCallArgumentType: number;
+  functionCallArgumentType: number
   /** Argument from the calling function */
-  callingFunctionArg: PlaceholderStruct;
-};
+  callingFunctionArg: PlaceholderStruct
+}
 
 /**
  * Mappings for foreign call arguments
  */
 export type ForeignCallArgumentMappings = {
   /** Index of the foreign call */
-  foreignCallIndex: number;
+  foreignCallIndex: number
   /** List of argument mappings */
-  mappings: IndividualArgumentMapping[];
-};
+  mappings: IndividualArgumentMapping[]
+}
 
 /**
  * Foreign call representation in rule components
  */
 export type ForeignCall = {
   /** Name of the foreign call */
-  name: string;
+  name: string
   /** Type index */
-  tIndex: number;
+  tIndex: number
   /** Raw type identifier */
-  rawType: "foreign call";
+  rawType: 'foreign call'
   /** Placeholder for the foreign call */
-  fcPlaceholder: string;
-};
+  fcPlaceholder: string
+}
 
 export interface ForeignCallData extends ForeignCallJSON {
-  id: number;
+  id: number
 }
 
 export type ForeignCallDataAndJSON = {
-  data: ForeignCallData;
-  json: ForeignCallJSON;
-};
+  data: ForeignCallData
+  json: ForeignCallJSON
+}
 
 // -----------------------------------------------------------------------------
 // Tracker Types
@@ -431,112 +413,112 @@ export type ForeignCallDataAndJSON = {
  */
 export type TrackerOnChain = {
   /** Whether the tracker is set */
-  set: boolean;
+  set: boolean
   /** Parameter type */
-  pType: number;
+  pType: number
   /** Whether the tracker is mapped */
-  mapped: boolean;
+  mapped: boolean
   /** Type of the tracker key */
-  trackerKeyType: number;
+  trackerKeyType: number
   /** Value of the tracker */
-  trackerValue: string;
+  trackerValue: string
   /** Index of the tracker */
-  trackerIndex: number;
-};
+  trackerIndex: number
+}
 
 /**
  * Metadata for a tracker
  */
 export type TrackerMetadataStruct = {
   /** Name of the tracker */
-  trackerName: string;
+  trackerName: string
   /** Initial value */
-  initialValue: string;
+  initialValue: string
   /** Initial keys for mapped trackers */
-  initialKeys: string[];
+  initialKeys: string[]
   /** Initial values for mapped trackers */
-  initialValues: string[];
+  initialValues: string[]
   /** Array Value Type */
-  arrayType: number;
-};
+  arrayType: number
+}
 
 /**
  * Maps tracker indices to names
  */
 export type trackerIndexNameMapping = {
   /** ID of the tracker */
-  id: number;
+  id: number
   /** Name of the tracker */
-  name: string;
+  name: string
   /** Type of the tracker */
-  type: number;
-};
+  type: number
+}
 
 /**
  * Definition of a tracker
  */
 export type TrackerDefinition = {
   /** Name of the tracker */
-  name: string;
+  name: string
   /** Type of the tracker */
-  type: number;
+  type: number
   /** Initial value of the tracker */
-  initialValue: any;
+  initialValue: any
   /** Array Value Type */
-  arrayValueType: number;
-};
+  arrayValueType: number
+}
 
 /**
  * Definition of a mapped tracker
  */
 export type MappedTrackerDefinition = {
   /** Name of the tracker */
-  name: string;
+  name: string
   /** Type of the key */
-  keyType: number;
+  keyType: number
   /** Type of the value */
-  valueType: number;
+  valueType: number
   /** Initial keys */
-  initialKeys: any[];
+  initialKeys: any[]
   /** Initial values */
-  initialValues: any[];
+  initialValues: any[]
   /** Array Value Type */
-  arrayValueType: number;
-};
+  arrayValueType: number
+}
 
 /**
  * Tracker representation in rule components
  */
 export type Tracker = {
   /** Name of the tracker */
-  name: string;
+  name: string
   /** Type index */
-  tIndex: number;
+  tIndex: number
   /** Raw type identifier */
-  rawType: "tracker";
+  rawType: 'tracker'
   /** Secondary raw type information */
-  rawTypeTwo?: string;
-};
+  rawTypeTwo?: string
+}
 
 export interface TrackerData extends TrackerJSON {
   /** ID of the tracker */
-  id: number;
+  id: number
 }
 
 export type TrackerDataAndJSON = {
-  data: TrackerData;
-  json: TrackerJSON;
-};
+  data: TrackerData
+  json: TrackerJSON
+}
 
 export interface MappedTrackerData extends MappedTrackerJSON {
   /** ID of the mapped tracker */
-  id: number;
+  id: number
 }
 
 export type MappedTrackerDataAndJSON = {
-  data: MappedTrackerData;
-  json: MappedTrackerJSON;
-};
+  data: MappedTrackerData
+  json: MappedTrackerJSON
+}
 
 // -----------------------------------------------------------------------------
 // Placeholder and Component Types
@@ -547,41 +529,41 @@ export type MappedTrackerDataAndJSON = {
  */
 export type PlaceholderStruct = {
   /** Parameter type */
-  pType: number;
+  pType: number
   /** Type-specific index */
-  typeSpecificIndex: number;
+  typeSpecificIndex: number
   /** Key for mapped tracker */
-  mappedTrackerKey: any;
+  mappedTrackerKey: any
   /** Flags for the placeholder */
-  flags: number;
-};
+  flags: number
+}
 
 /**
  * Function argument representation in rule components
  */
 export type FunctionArgument = {
   /** Name of the argument */
-  name: string;
+  name: string
   /** Type index */
-  tIndex: number;
+  tIndex: number
   /** Raw type identifier */
-  rawType: string;
-};
+  rawType: string
+}
 
 /**
  * Union type for components in rules
  */
-export type RuleComponent = FunctionArgument | ForeignCall | Tracker;
+export type RuleComponent = FunctionArgument | ForeignCall | Tracker
 
 /**
  * Represents a string replacement in an instruction set
  */
 export type stringReplacement = {
   /** Index in the instruction set */
-  instructionSetIndex: number;
+  instructionSetIndex: number
   /** Original data to replace */
-  originalData: string;
-};
+  originalData: string
+}
 
 // -----------------------------------------------------------------------------
 // Instruction Set Types
@@ -590,31 +572,31 @@ export type stringReplacement = {
 /**
  * Type definition for an instruction set
  */
-export type InstructionSet = (number | string | BigInt)[];
+export type InstructionSet = (number | string | BigInt)[]
 
 /**
  * Raw data for an instruction set
  */
 export type RawData = {
   /** Indices in the instruction set */
-  instructionSetIndex: number[];
+  instructionSetIndex: number[]
   /** Types of arguments */
-  argumentTypes: number[];
+  argumentTypes: number[]
   /** Values of the data */
-  dataValues: ByteArray[];
-};
+  dataValues: ByteArray[]
+}
 
 /**
  * Accumulator for Abstract Syntax Tree construction
  */
 export type ASTAccumulator = {
   /** Instruction set being accumulated */
-  instructionSet: any[];
+  instructionSet: any[]
   /** Memory for the accumulation process */
-  mem: any[];
+  mem: any[]
   /** Iterator for tracking position */
-  iterator: { value: number };
-};
+  iterator: { value: number }
+}
 
 // -----------------------------------------------------------------------------
 // Constants and Enums
@@ -624,35 +606,35 @@ export type ASTAccumulator = {
  * Supported operators in rule expressions
  */
 export const matchArray: string[] = [
-  "OR",
-  "AND",
-  "NOT",
-  "==",
-  ">=",
-  ">",
-  "<",
-  "<=",
-  "+",
-  "-",
-  "/",
-  "*",
-  "+=",
-  "-=",
-  "*=",
-  "/=",
-  "=",
-  "!=",
-];
+  'OR',
+  'AND',
+  'NOT',
+  '==',
+  '>=',
+  '>',
+  '<',
+  '<=',
+  '+',
+  '-',
+  '/',
+  '*',
+  '+=',
+  '-=',
+  '*=',
+  '/=',
+  '=',
+  '!=',
+]
 
 /**
  * Assignment operators
  */
-export const truMatchArray: string[] = ["+=", "-=", "*=", "/=", "="];
+export const truMatchArray: string[] = ['+=', '-=', '*=', '/=', '=']
 
 /**
  * Operand type identifiers
  */
-export const operandArray: string[] = ["PLH", "N", "PLHM", "TRU", "TRUM"];
+export const operandArray: string[] = ['PLH', 'N', 'PLHM', 'TRU', 'TRUM']
 
 /**
  * Parameter type enumeration
@@ -684,29 +666,29 @@ export enum trackerArrayType {
  * Maps solidity types to their parameter type enums
  */
 export const PT = [
-  { name: "address", enumeration: pTypeEnum.ADDRESS },
-  { name: "string", enumeration: pTypeEnum.STRING },
-  { name: "uint256", enumeration: pTypeEnum.UINT256 },
-  { name: "bool", enumeration: pTypeEnum.BOOL },
-  { name: "void", enumeration: pTypeEnum.VOID },
-  { name: "bytes", enumeration: pTypeEnum.BYTES },
-  { name: "address[]", enumeration: pTypeEnum.STATIC_TYPE_ARRAY },
-  { name: "uint256[]", enumeration: pTypeEnum.STATIC_TYPE_ARRAY },
-  { name: "bool[]", enumeration: pTypeEnum.STATIC_TYPE_ARRAY },
-  { name: "string[]", enumeration: pTypeEnum.DYNAMIC_TYPE_ARRAY },
-  { name: "bytes[]", enumeration: pTypeEnum.DYNAMIC_TYPE_ARRAY },
-];
+  { name: 'address', enumeration: pTypeEnum.ADDRESS },
+  { name: 'string', enumeration: pTypeEnum.STRING },
+  { name: 'uint256', enumeration: pTypeEnum.UINT256 },
+  { name: 'bool', enumeration: pTypeEnum.BOOL },
+  { name: 'void', enumeration: pTypeEnum.VOID },
+  { name: 'bytes', enumeration: pTypeEnum.BYTES },
+  { name: 'address[]', enumeration: pTypeEnum.STATIC_TYPE_ARRAY },
+  { name: 'uint256[]', enumeration: pTypeEnum.STATIC_TYPE_ARRAY },
+  { name: 'bool[]', enumeration: pTypeEnum.STATIC_TYPE_ARRAY },
+  { name: 'string[]', enumeration: pTypeEnum.DYNAMIC_TYPE_ARRAY },
+  { name: 'bytes[]', enumeration: pTypeEnum.DYNAMIC_TYPE_ARRAY },
+]
 
-export const PTNames = PT.map((pt) => pt.name);
-export type PTName = (typeof PTNames)[number];
+export const PTNames = PT.map((pt) => pt.name)
+export type PTName = (typeof PTNames)[number]
 
-export const PTTracker = PT.filter((pt) => pt.name !== "void");
-export const PTNamesTracker = PTTracker.map((pt) => pt.name);
-export type PTNameTracker = (typeof PTNamesTracker)[number];
+export const PTTracker = PT.filter((pt) => pt.name !== 'void')
+export const PTNamesTracker = PTTracker.map((pt) => pt.name)
+export type PTNameTracker = (typeof PTNamesTracker)[number]
 
-export const PTTrackerKey = PTTracker.filter((pt) => !pt.name.includes("[]"));
-export const PTNamesTrackerKey = PTTrackerKey.map((pt) => pt.name);
-export type PTNameTrackerKey = (typeof PTNamesTrackerKey)[number];
+export const PTTrackerKey = PTTracker.filter((pt) => !pt.name.includes('[]'))
+export const PTNamesTrackerKey = PTTrackerKey.map((pt) => pt.name)
+export type PTNameTrackerKey = (typeof PTNamesTrackerKey)[number]
 
 // -----------------------------------------------------------------------------
 // Error Types
@@ -715,23 +697,19 @@ export type PTNameTrackerKey = (typeof PTNamesTrackerKey)[number];
 /**
  * Types of errors that can occur in the rules engine
  */
-export type ErrorType =
-  | "INPUT"
-  | "CONTRACT_READ"
-  | "CONTRACT_WRITE"
-  | "COMPILATION";
+export type ErrorType = 'INPUT' | 'CONTRACT_READ' | 'CONTRACT_WRITE' | 'COMPILATION'
 
 /**
  * Structure representing an error in the rules engine
  */
 export type RulesError = {
   /** Type of error */
-  errorType: ErrorType;
+  errorType: ErrorType
   /** State at the time of error */
-  state: any;
+  state: any
   /** Error message */
-  message: string;
-};
+  message: string
+}
 
 // -----------------------------------------------------------------------------
 // Utility Types
@@ -742,26 +720,26 @@ export type RulesError = {
  */
 export type Left<T> = {
   /** Left value */
-  left: T;
+  left: T
   /** Right value placeholder */
-  right?: never;
-};
+  right?: never
+}
 
 export type Right<U> = {
   /** Right value */
-  right: U;
+  right: U
   /** Left value placeholder */
-  left?: never;
-};
+  left?: never
+}
 
-export type Either<T, U> = NonNullable<Left<T> | Right<U>>;
+export type Either<T, U> = NonNullable<Left<T> | Right<U>>
 
-export type UnwrapEither = <T, U>(e: Either<T, U>) => NonNullable<T | U>;
+export type UnwrapEither = <T, U>(e: Either<T, U>) => NonNullable<T | U>
 
 /**
  * Maybe type for nullable values
  */
-export type Maybe<T> = NonNullable<T> | null;
+export type Maybe<T> = NonNullable<T> | null
 
 /**
  * Block parameters that can be used in wagmi's readContract function
@@ -772,11 +750,11 @@ export type ContractBlockParameters = {
    * Block number to execute the contract interaction at
    * This is useful for historical queries or when you want to execute against a specific block
    */
-  blockNumber?: BlockNumber;
+  blockNumber?: BlockNumber
 
   /**
    * Block tag to execute the contract interaction at
    * Common values include 'latest', 'earliest', 'pending', 'safe', 'finalized'
    */
-  blockTag?: BlockTag;
-};
+  blockTag?: BlockTag
+}

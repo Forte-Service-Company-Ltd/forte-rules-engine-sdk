@@ -1,24 +1,15 @@
 /// SPDX-License-Identifier: BUSL-1.1
-import { toFunctionSelector } from "viem";
-import {
-  simulateContract,
-  waitForTransactionReceipt,
-  writeContract,
-  Config,
-  readContract,
-} from "@wagmi/core";
-import { sleep } from "./contract-interaction-utils";
-import {
-  determinePTEnumeration,
-  parseFunctionArguments,
-} from "../parsing/parser";
+import { toFunctionSelector } from 'viem'
+import { simulateContract, waitForTransactionReceipt, writeContract, Config, readContract } from '@wagmi/core'
+import { sleep } from './contract-interaction-utils'
+import { determinePTEnumeration, parseFunctionArguments } from '../parsing/parser'
 import {
   CallingFunctionHashMapping,
   PT,
   RulesEngineComponentContract,
   ContractBlockParameters,
   CallingFunctionOnChain,
-} from "./types";
+} from './types'
 
 /**
  * @file CallingFunctions.ts
@@ -64,46 +55,38 @@ export const createCallingFunction = async (
   policyId: number,
   callingFunction: string,
   encodedValues: string,
-  confirmationCount: number,
+  confirmationCount: number
 ): Promise<number> => {
-  const args: number[] = encodedValues
-    .split(",")
-    .map((val) => determinePTEnumeration(val.trim().split(" ")[0]));
-  var addRule;
+  const args: number[] = encodedValues.split(',').map((val) => determinePTEnumeration(val.trim().split(' ')[0]))
+  var addRule
   while (true) {
     try {
       addRule = await simulateContract(config, {
         address: rulesEngineComponentContract.address,
         abi: rulesEngineComponentContract.abi,
-        functionName: "createCallingFunction",
-        args: [
-          policyId,
-          toFunctionSelector(callingFunction),
-          args,
-          callingFunction,
-          encodedValues,
-        ],
-      });
-      break;
+        functionName: 'createCallingFunction',
+        args: [policyId, toFunctionSelector(callingFunction), args, callingFunction, encodedValues],
+      })
+      break
     } catch (err) {
       // TODO: Look into replacing this loop/sleep with setTimeout
-      await sleep(1000);
+      await sleep(1000)
     }
   }
   if (addRule != null) {
     const returnHash = await writeContract(config, {
       ...addRule.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
+    })
 
-    return addRule.result;
+    return addRule.result
   }
-  return -1;
-};
+  return -1
+}
 
 /**
  * Delete a calling function from the rules engine component contract.
@@ -121,34 +104,34 @@ export const deleteCallingFunction = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
   callingFunctionId: number,
-  confirmationCount: number,
+  confirmationCount: number
 ): Promise<number> => {
-  var addRule;
+  var addRule
   try {
     addRule = await simulateContract(config, {
       address: rulesEngineComponentContract.address,
       abi: rulesEngineComponentContract.abi,
-      functionName: "deleteCallingFunction",
+      functionName: 'deleteCallingFunction',
       args: [policyId, callingFunctionId],
-    });
+    })
   } catch (err) {
-    return -1;
+    return -1
   }
 
   if (addRule != null) {
     const returnHash = await writeContract(config, {
       ...addRule.request,
       account: config.getClient().account,
-    });
+    })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
       hash: returnHash,
-    });
+    })
 
-    return addRule.result;
+    return addRule.result
   }
-  return -1;
-};
+  return -1
+}
 
 /**
  * retrieves the metadata for a calling function from the rules engine component contract.
@@ -166,27 +149,27 @@ export const getCallingFunctionMetadata = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
   callingFunctionId: number,
-  blockParams?: ContractBlockParameters,
+  blockParams?: ContractBlockParameters
 ): Promise<CallingFunctionHashMapping> => {
   try {
     const getMeta = await readContract(config, {
       address: rulesEngineComponentContract.address,
       abi: rulesEngineComponentContract.abi,
-      functionName: "getCallingFunctionMetadata",
+      functionName: 'getCallingFunctionMetadata',
       args: [policyId, callingFunctionId],
       ...blockParams,
-    });
-    let callingFunctionResult = getMeta as CallingFunctionHashMapping;
-    return callingFunctionResult;
+    })
+    let callingFunctionResult = getMeta as CallingFunctionHashMapping
+    return callingFunctionResult
   } catch (error) {
-    console.error(error);
+    console.error(error)
     return {
-      callingFunction: "",
-      signature: "",
-      encodedValues: "",
-    };
+      callingFunction: '',
+      signature: '',
+      encodedValues: '',
+    }
   }
-};
+}
 
 /**
  * retrieves calling functions for a policy from the rules engine component contract.
@@ -202,19 +185,19 @@ export const getCallingFunctions = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  blockParams?: ContractBlockParameters,
+  blockParams?: ContractBlockParameters
 ): Promise<CallingFunctionOnChain[]> => {
   try {
     const callingFunctions = (await readContract(config, {
       address: rulesEngineComponentContract.address,
       abi: rulesEngineComponentContract.abi,
-      functionName: "getAllCallingFunctions",
+      functionName: 'getAllCallingFunctions',
       args: [policyId],
       ...blockParams,
-    })) as CallingFunctionOnChain[];
-    return callingFunctions;
+    })) as CallingFunctionOnChain[]
+    return callingFunctions
   } catch (error) {
-    console.error(error);
-    return [];
+    console.error(error)
+    return []
   }
-};
+}
