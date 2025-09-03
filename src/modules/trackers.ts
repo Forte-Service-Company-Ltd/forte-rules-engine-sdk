@@ -60,7 +60,7 @@ export const createMappedTracker = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
   mappedTrackerSyntax: string,
-  confirmationCount: number
+  confirmationCount: number,
 ): Promise<number> => {
   const json = validateMappedTrackerJSON(mappedTrackerSyntax);
   if (isLeft(json)) {
@@ -132,7 +132,7 @@ export const createTracker = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
   trSyntax: string,
-  confirmationCount: number
+  confirmationCount: number,
 ): Promise<number> => {
   const json = validateTrackerJSON(trSyntax);
   if (isLeft(json)) {
@@ -201,7 +201,7 @@ export const updateTracker = async (
   policyId: number,
   trackerId: number,
   trSyntax: string,
-  confirmationCount: number
+  confirmationCount: number,
 ): Promise<number> => {
   const json = validateTrackerJSON(trSyntax);
   if (isLeft(json)) {
@@ -263,7 +263,7 @@ export const deleteTracker = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
   trackerId: number,
-  confirmationCount: number
+  confirmationCount: number,
 ): Promise<number> => {
   var addFC;
   try {
@@ -308,7 +308,7 @@ export const getTracker = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
   trackerId: number,
-  blockParams?: ContractBlockParameters
+  blockParams?: ContractBlockParameters,
 ): Promise<TrackerOnChain> => {
   try {
     const retrieveTR = await readContract(config, {
@@ -349,7 +349,7 @@ export const getTrackerMetadata = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
   trackerId: number,
-  blockParams?: ContractBlockParameters
+  blockParams?: ContractBlockParameters,
 ): Promise<TrackerMetadataStruct> => {
   try {
     const getMeta = await readContract(config, {
@@ -390,7 +390,7 @@ export const getAllTrackers = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  blockParams?: ContractBlockParameters
+  blockParams?: ContractBlockParameters,
 ): Promise<TrackerOnChain[]> => {
   try {
     const retrieveTR = await readContract(config, {
@@ -426,7 +426,7 @@ export const getTrackerToRuleIds = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
   trackerId: number,
-  blockParams?: ContractBlockParameters
+  blockParams?: ContractBlockParameters,
 ): Promise<number[]> => {
   try {
     const retrieveRuleIds = await readContract(config, {

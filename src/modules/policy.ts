@@ -106,7 +106,7 @@ export const createPolicy = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   confirmationCount: number,
-  policySyntax?: string
+  policySyntax?: string,
 ): Promise<{ policyId: number }> => {
   var fcIds: FCNameToID[] = [];
   var trackerIds: FCNameToID[] = [];
@@ -156,11 +156,11 @@ export const createPolicy = async (
           policyId,
           callingFunction,
           callingFunctionJSON.encodedValues,
-          confirmationCount
+          confirmationCount,
         );
         callingFunctionIds.push(fsId);
         callingFunctionParamSets.push(
-          parseCallingFunction(callingFunctionJSON)
+          parseCallingFunction(callingFunctionJSON),
         );
         allFunctionMappings.push({
           hex: toFunctionSelector(callingFunction),
@@ -183,7 +183,7 @@ export const createPolicy = async (
       emptyRules,
       policyJSON.Policy,
       policyJSON.Description,
-      confirmationCount
+      confirmationCount,
     );
     if (policyJSON.Trackers != null) {
       for (var tracker of policyJSON.Trackers) {
@@ -194,7 +194,7 @@ export const createPolicy = async (
           rulesEngineComponentContract,
           policyId,
           JSON.stringify(tracker),
-          confirmationCount
+          confirmationCount,
         );
         var struc: FCNameToID = {
           id: trId,
@@ -213,7 +213,7 @@ export const createPolicy = async (
           rulesEngineComponentContract,
           policyId,
           JSON.stringify(mTracker),
-          confirmationCount
+          confirmationCount,
         );
         var struc: FCNameToID = {
           id: trId,
@@ -238,7 +238,7 @@ export const createPolicy = async (
           foreignCall,
           fcIds,
           trackerIds,
-          encodedValues
+          encodedValues,
         );
         const fcId = await createForeignCall(
           config,
@@ -247,7 +247,7 @@ export const createPolicy = async (
           rulesEnginePolicyContract,
           policyId,
           JSON.stringify(foreignCall),
-          confirmationCount
+          confirmationCount,
         );
         var struc: FCNameToID = {
           id: fcId,
@@ -269,7 +269,7 @@ export const createPolicy = async (
         JSON.stringify(rule),
         fcIds,
         trackerIds,
-        confirmationCount
+        confirmationCount,
       );
       if (ruleId == -1) {
         return { policyId: -1 };
@@ -298,7 +298,7 @@ export const createPolicy = async (
       rulesDoubleMapping,
       policyJSON.Policy,
       policyJSON.Description,
-      confirmationCount
+      confirmationCount,
     );
   }
   return { policyId };
@@ -324,7 +324,7 @@ export const updatePolicy = async (
   ruleIds: any[],
   policyName: string,
   policyDescription: string,
-  confirmationCount: number
+  confirmationCount: number,
 ): Promise<number> => {
   var updatePolicy;
   while (true) {
@@ -378,7 +378,7 @@ export const setPolicies = async (
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyIds: [number],
   contractAddressForPolicy: Address,
-  confirmationCount: number
+  confirmationCount: number,
 ): Promise<void> => {
   var applyPolicy;
   while (true) {
@@ -421,7 +421,7 @@ export const appendPolicy = async (
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyId: number,
   contractAddressForPolicy: Address,
-  confirmationCount: number
+  confirmationCount: number,
 ): Promise<void> => {
   const retrievePolicies = await readContract(config, {
     address: rulesEnginePolicyContract.address,
@@ -438,7 +438,7 @@ export const appendPolicy = async (
     rulesEnginePolicyContract,
     policyResult,
     contractAddressForPolicy,
-    confirmationCount
+    confirmationCount,
   );
 };
 
@@ -454,7 +454,7 @@ export const deletePolicy = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyId: number,
-  confirmationCount: number
+  confirmationCount: number,
 ): Promise<number> => {
   var addFC;
   try {
@@ -491,7 +491,7 @@ const getFunctionArgument = (encodedArgs: string, index: number): string => {
 
 const getForeignCallArgument = (
   foreignCallNames: string[],
-  index: number
+  index: number,
 ): string => {
   let name = foreignCallNames[Number(BigInt(index) - 1n)];
   name = name.split("(")[0];
@@ -501,7 +501,7 @@ const getForeignCallArgument = (
 
 const getTrackerArgument = (
   trackerNames: TrackerMetadataStruct[],
-  index: number
+  index: number,
 ): string => {
   let name = trackerNames[Number(BigInt(index) - 1n)].trackerName;
   name = name.split("(")[0];
@@ -513,7 +513,7 @@ const reverseParseEncodedArg = (
   encodedArgs: string,
   foreignCallNames: string[],
   encoded: ForeignCallEncodedIndex,
-  trackerNames: TrackerMetadataStruct[]
+  trackerNames: TrackerMetadataStruct[],
 ): string => {
   switch (encoded.eType) {
     case 0:
@@ -532,11 +532,11 @@ const reverseParseEncodedArgs = (
   callingArgs: string,
   foreignCallNames: string[],
   encoded: ForeignCallEncodedIndex[],
-  trackerNames: TrackerMetadataStruct[]
+  trackerNames: TrackerMetadataStruct[],
 ): string => {
   return encoded
     .map((enc) =>
-      reverseParseEncodedArg(callingArgs, foreignCallNames, enc, trackerNames)
+      reverseParseEncodedArg(callingArgs, foreignCallNames, enc, trackerNames),
     )
     .join(", ");
 };
@@ -560,7 +560,7 @@ export const getPolicy = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   policyId: number,
-  blockParams?: ContractBlockParameters
+  blockParams?: ContractBlockParameters,
 ): Promise<Maybe<PolicyResult>> => {
   var allFunctionMappings: hexToFunctionString[] = [];
   const callingFunctionsDataAndJSON: CallingFunctionDataAndJSON[] = [];
@@ -570,14 +570,14 @@ export const getPolicy = async (
       abi: rulesEnginePolicyContract.abi,
       functionName: "getPolicy",
       args: [policyId],
-      ...blockParams
+      ...blockParams,
     });
 
     const policyMeta = await getPolicyMetadata(
       config,
       rulesEnginePolicyContract,
       policyId,
-      blockParams
+      blockParams,
     );
     if (policyMeta == null) {
       throw new Error(`Policy with ID ${policyId} does not exist.`);
@@ -589,7 +589,7 @@ export const getPolicy = async (
       config,
       rulesEnginePolicyContract,
       policyId,
-      blockParams
+      blockParams,
     );
 
     var iter = 1;
@@ -600,7 +600,7 @@ export const getPolicy = async (
         rulesEngineComponentContract,
         policyId,
         iter,
-        blockParams
+        blockParams,
       );
       var newMapping: hexToFunctionString = {
         hex: mapp.signature,
@@ -629,7 +629,7 @@ export const getPolicy = async (
       config,
       rulesEngineComponentContract,
       policyId,
-      blockParams
+      blockParams,
     );
 
     var trackerNames: TrackerMetadataStruct[] = [];
@@ -640,7 +640,7 @@ export const getPolicy = async (
         rulesEngineComponentContract,
         policyId,
         tracker.trackerIndex,
-        blockParams
+        blockParams,
       );
       if (tracker.mapped) {
         mappedTrackerNames.push(meta);
@@ -659,14 +659,14 @@ export const getPolicy = async (
     const trackerJSONs = convertTrackerStructsToStrings(
       trackers,
       trackerNames,
-      mappedTrackerNames
+      mappedTrackerNames,
     );
 
     var foreignCalls: ForeignCallOnChain[] = await getAllForeignCalls(
       config,
       rulesEngineForeignCallContract,
       policyId,
-      blockParams
+      blockParams,
     );
     var foreignCallNames: string[] = [];
     for (var fc of foreignCalls) {
@@ -675,7 +675,7 @@ export const getPolicy = async (
         rulesEngineForeignCallContract,
         policyId,
         fc.foreignCallIndex,
-        blockParams
+        blockParams,
       );
 
       var daData = getCallingFunctionMetadata(
@@ -683,7 +683,7 @@ export const getPolicy = async (
         rulesEngineComponentContract,
         policyId,
         fc.callingFunctionIndex,
-        blockParams
+        blockParams,
       );
 
       foreignCallNames.push(name);
@@ -691,7 +691,7 @@ export const getPolicy = async (
         (await daData).encodedValues,
         foreignCallNames,
         fc.encodedIndices,
-        trackerNames
+        trackerNames,
       );
       var newMapping: hexToFunctionString = {
         hex: fc.signature,
@@ -701,10 +701,8 @@ export const getPolicy = async (
       };
       allFunctionMappings.push(newMapping);
     }
-    const callStrings: ForeignCallDataAndJSON[] = convertForeignCallStructsToStrings(
-      foreignCalls,
-      allFunctionMappings
-    );
+    const callStrings: ForeignCallDataAndJSON[] =
+      convertForeignCallStructsToStrings(foreignCalls, allFunctionMappings);
 
     var iter = 0;
     var ruleJSONObjs = [];
@@ -725,7 +723,7 @@ export const getPolicy = async (
           rulesEngineRulesContract,
           policyId,
           ruleId,
-          blockParams
+          blockParams,
         );
 
         const ruleM = await getRuleMetadata(
@@ -733,7 +731,7 @@ export const getPolicy = async (
           rulesEngineRulesContract,
           policyId,
           ruleId,
-          blockParams
+          blockParams,
         );
         if (ruleS != null) {
           ruleJSONObjs.push(
@@ -745,8 +743,8 @@ export const getPolicy = async (
               foreignCalls,
               trackers,
               allFunctionMappings,
-              ruleId
-            )
+              ruleId,
+            ),
           );
         }
       }
@@ -760,7 +758,9 @@ export const getPolicy = async (
       CallingFunctions: callingFunctionsDataAndJSON.map((cf) => cf.json),
       ForeignCalls: callStrings.map((fc) => fc.json),
       Trackers: trackerJSONs.Trackers.map((tracker) => tracker.json),
-      MappedTrackers: trackerJSONs.MappedTrackers.map((tracker) => tracker.json),
+      MappedTrackers: trackerJSONs.MappedTrackers.map(
+        (tracker) => tracker.json,
+      ),
       Rules: ruleJSONObjs.map((rule) => rule.json),
     };
 
@@ -772,13 +772,15 @@ export const getPolicy = async (
       rules: ruleJSONObjs.map((rule) => rule.data),
       foreignCalls: callStrings.map((fc) => fc.data),
       trackers: trackerJSONs.Trackers.map((tracker) => tracker.data),
-      mappedTrackers: trackerJSONs.MappedTrackers.map((tracker) => tracker.data),
+      mappedTrackers: trackerJSONs.MappedTrackers.map(
+        (tracker) => tracker.data,
+      ),
       callingFunctions: callingFunctionsDataAndJSON.map((cf) => cf.data),
-    }
+    };
 
     const jsonString = JSON.stringify(policyJSON, null, 2);
 
-    return {Policy: policyData, JSON: jsonString};
+    return { Policy: policyData, JSON: jsonString };
   } catch (error) {
     console.error(error);
     return null;
@@ -800,7 +802,7 @@ export const getPolicyMetadata = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyId: number,
-  blockParams?: ContractBlockParameters
+  blockParams?: ContractBlockParameters,
 ): Promise<Maybe<PolicyMetadataStruct>> => {
   try {
     const getMeta = await readContract(config, {
@@ -808,7 +810,7 @@ export const getPolicyMetadata = async (
       abi: rulesEnginePolicyContract.abi,
       functionName: "getPolicyMetadata",
       args: [policyId],
-      ...blockParams
+      ...blockParams,
     });
 
     let ruleResult = getMeta as PolicyMetadataStruct;
@@ -831,7 +833,7 @@ export async function policyExists(
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyId: number,
-  blockParams?: ContractBlockParameters
+  blockParams?: ContractBlockParameters,
 ): Promise<boolean> {
   try {
     let policyExists = await readContract(config, {
@@ -839,7 +841,7 @@ export async function policyExists(
       abi: rulesEnginePolicyContract.abi,
       functionName: "getPolicy",
       args: [policyId],
-      ...blockParams
+      ...blockParams,
     });
     if ((policyExists as any)[0] != null && (policyExists as any)[2] != null) {
       return true;
@@ -862,7 +864,7 @@ export async function getAppliedPolicyIds(
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   address: string,
-  blockParams?: ContractBlockParameters
+  blockParams?: ContractBlockParameters,
 ): Promise<number[]> {
   try {
     let appliedPolicies = await readContract(config, {
@@ -870,7 +872,7 @@ export async function getAppliedPolicyIds(
       abi: rulesEnginePolicyContract.abi,
       functionName: "getAppliedPolicyIds",
       args: [getAddress(address)],
-      ...blockParams
+      ...blockParams,
     });
     return appliedPolicies as number[];
   } catch (error) {
@@ -890,7 +892,7 @@ export async function isClosedPolicy(
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyId: number,
-  blockParams?: ContractBlockParameters
+  blockParams?: ContractBlockParameters,
 ): Promise<boolean> {
   try {
     let isClosed = await readContract(config, {
@@ -898,7 +900,7 @@ export async function isClosedPolicy(
       abi: rulesEnginePolicyContract.abi,
       functionName: "isClosedPolicy",
       args: [policyId],
-      ...blockParams
+      ...blockParams,
     });
     return isClosed as boolean;
   } catch (error) {
@@ -918,7 +920,7 @@ export const closePolicy = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyId: number,
-  confirmationCount: number
+  confirmationCount: number,
 ): Promise<number> => {
   var addFC;
   try {
@@ -958,7 +960,7 @@ export const openPolicy = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyId: number,
-  confirmationCount: number
+  confirmationCount: number,
 ): Promise<number> => {
   var addFC;
   try {
@@ -1000,7 +1002,7 @@ export async function isClosedPolicySubscriber(
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
   subscriber: Address,
-  blockParams?: ContractBlockParameters
+  blockParams?: ContractBlockParameters,
 ): Promise<boolean> {
   try {
     let isClosed = await readContract(config, {
@@ -1008,7 +1010,7 @@ export async function isClosedPolicySubscriber(
       abi: rulesEngineComponentContract.abi,
       functionName: "isClosedPolicySubscriber",
       args: [policyId, subscriber],
-      ...blockParams
+      ...blockParams,
     });
     return isClosed as boolean;
   } catch (error) {
@@ -1029,7 +1031,7 @@ export const addClosedPolicySubscriber = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
   subscriber: Address,
-  confirmationCount: number
+  confirmationCount: number,
 ): Promise<number> => {
   var addFC;
   try {
@@ -1071,7 +1073,7 @@ export const removeClosedPolicySubscriber = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
   subscriber: Address,
-  confirmationCount: number
+  confirmationCount: number,
 ): Promise<number> => {
   var addFC;
   try {
@@ -1111,7 +1113,7 @@ export const cementPolicy = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyId: number,
-  confirmationCount: number
+  confirmationCount: number,
 ): Promise<number> => {
   var addFC;
   try {
@@ -1151,7 +1153,7 @@ export const isCementedPolicy = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyId: number,
-  blockParams?: ContractBlockParameters
+  blockParams?: ContractBlockParameters,
 ): Promise<boolean> => {
   try {
     const retrievePolicy = await readContract(config, {
@@ -1159,7 +1161,7 @@ export const isCementedPolicy = async (
       abi: rulesEnginePolicyContract.abi,
       functionName: "isCementedPolicy",
       args: [policyId],
-      ...blockParams
+      ...blockParams,
     });
 
     return retrievePolicy as boolean;

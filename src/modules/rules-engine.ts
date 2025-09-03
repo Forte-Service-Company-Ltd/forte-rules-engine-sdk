@@ -135,7 +135,7 @@ export class RulesEngine {
     rulesEngineAddress: Address,
     localConfig: Config,
     client: any,
-    localConfirmationCount: number = 1
+    localConfirmationCount: number = 1,
   ) {
     this.rulesEnginePolicyContract = getContract({
       address: rulesEngineAddress,
@@ -191,7 +191,7 @@ export class RulesEngine {
       this.rulesEngineComponentContract,
       this.rulesEngineForeignCallContract,
       this.confirmationCount,
-      policyJSON
+      policyJSON,
     );
   }
 
@@ -205,7 +205,7 @@ export class RulesEngine {
     return policyExistsInternal(
       config,
       this.rulesEnginePolicyContract,
-      policyId
+      policyId,
     );
   }
 
@@ -224,7 +224,7 @@ export class RulesEngine {
     ids: number[],
     ruleIds: any[],
     name: string,
-    description: string
+    description: string,
   ): Promise<number> {
     return updatePolicyInternal(
       config,
@@ -235,7 +235,7 @@ export class RulesEngine {
       ruleIds,
       name,
       description,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -251,7 +251,7 @@ export class RulesEngine {
       this.rulesEnginePolicyContract,
       policyIds,
       contractAddressForPolicy,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -267,7 +267,7 @@ export class RulesEngine {
       this.rulesEnginePolicyContract,
       policyId,
       contractAddressForPolicy,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -282,7 +282,7 @@ export class RulesEngine {
       config,
       this.rulesEnginePolicyContract,
       policyId,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -295,7 +295,7 @@ export class RulesEngine {
    */
   getPolicy(
     policyId: number,
-    blockParams?: ContractBlockParameters
+    blockParams?: ContractBlockParameters,
   ): Promise<Maybe<PolicyResult>> {
     return getPolicyInternal(
       config,
@@ -304,7 +304,7 @@ export class RulesEngine {
       this.rulesEngineComponentContract,
       this.rulesEngineForeignCallContract,
       policyId,
-      blockParams
+      blockParams,
     );
   }
 
@@ -319,13 +319,13 @@ export class RulesEngine {
    */
   getPolicyMetadata = async (
     policyId: number,
-    blockParams?: ContractBlockParameters
+    blockParams?: ContractBlockParameters,
   ): Promise<Maybe<PolicyMetadataStruct>> => {
     return getPolicyMetadataInternal(
       config,
       this.rulesEnginePolicyContract,
       policyId,
-      blockParams
+      blockParams,
     );
   };
 
@@ -337,13 +337,13 @@ export class RulesEngine {
    */
   getAppliedPolicyIds(
     address: string,
-    blockParams?: ContractBlockParameters
+    blockParams?: ContractBlockParameters,
   ): Promise<number[]> {
     return getAppliedPolicyIdsInternal(
       config,
       this.rulesEnginePolicyContract,
       address,
-      blockParams
+      blockParams,
     );
   }
 
@@ -355,13 +355,13 @@ export class RulesEngine {
    */
   isClosedPolicy(
     policyId: number,
-    blockParams?: ContractBlockParameters
+    blockParams?: ContractBlockParameters,
   ): Promise<boolean> {
     return isClosedPolicyInternal(
       config,
       this.rulesEnginePolicyContract,
       policyId,
-      blockParams
+      blockParams,
     );
   }
 
@@ -376,7 +376,7 @@ export class RulesEngine {
       config,
       this.rulesEnginePolicyContract,
       policyId,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -391,7 +391,7 @@ export class RulesEngine {
       config,
       this.rulesEnginePolicyContract,
       policyId,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -405,14 +405,14 @@ export class RulesEngine {
   isClosedPolicySubscriber(
     policyId: number,
     subscriber: Address,
-    blockParams?: ContractBlockParameters
+    blockParams?: ContractBlockParameters,
   ): Promise<boolean> {
     return isClosedPolicySubscriberInternal(
       config,
       this.rulesEngineComponentContract,
       policyId,
       subscriber,
-      blockParams
+      blockParams,
     );
   }
 
@@ -424,14 +424,14 @@ export class RulesEngine {
    */
   addClosedPolicySubscriber(
     policyId: number,
-    subscriber: Address
+    subscriber: Address,
   ): Promise<number> {
     return addClosedPolicySubscriberInternal(
       config,
       this.rulesEngineComponentContract,
       policyId,
       subscriber,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -444,14 +444,14 @@ export class RulesEngine {
    */
   removeClosedPolicySubscriber(
     policyId: number,
-    subscriber: Address
+    subscriber: Address,
   ): Promise<number> {
     return removeClosedPolicySubscriberInternal(
       config,
       this.rulesEngineComponentContract,
       policyId,
       subscriber,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -472,7 +472,7 @@ export class RulesEngine {
     policyId: number,
     ruleS: string,
     foreignCallNameToID: FCNameToID[],
-    trackerNameToID: FCNameToID[]
+    trackerNameToID: FCNameToID[],
   ): Promise<number> {
     return createRuleInternal(
       config,
@@ -484,7 +484,7 @@ export class RulesEngine {
       ruleS,
       foreignCallNameToID,
       trackerNameToID,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -504,7 +504,7 @@ export class RulesEngine {
     ruleId: number,
     ruleS: string,
     foreignCallNameToID: FCNameToID[],
-    trackerNameToID: FCNameToID[]
+    trackerNameToID: FCNameToID[],
   ): Promise<number> {
     return updateRuleInternal(
       config,
@@ -517,7 +517,7 @@ export class RulesEngine {
       ruleS,
       foreignCallNameToID,
       trackerNameToID,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -538,7 +538,7 @@ export class RulesEngine {
       this.rulesEngineRulesContract,
       policyId,
       ruleId,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -553,14 +553,14 @@ export class RulesEngine {
   getRule(
     policyId: number,
     ruleId: number,
-    blockParams?: ContractBlockParameters
+    blockParams?: ContractBlockParameters,
   ): Promise<Maybe<RuleStruct>> {
     return getRuleInternal(
       config,
       this.rulesEngineRulesContract,
       policyId,
       ruleId,
-      blockParams
+      blockParams,
     );
   }
 
@@ -577,14 +577,14 @@ export class RulesEngine {
   getRuleMetadata(
     policyId: number,
     ruleId: number,
-    blockParams?: ContractBlockParameters
+    blockParams?: ContractBlockParameters,
   ): Promise<Maybe<RuleMetadataStruct>> {
     return getRuleMetadataInternal(
       config,
       this.rulesEngineRulesContract,
       policyId,
       ruleId,
-      blockParams
+      blockParams,
     );
   }
 
@@ -599,13 +599,13 @@ export class RulesEngine {
    */
   getAllRules(
     policyId: number,
-    blockParams?: ContractBlockParameters
+    blockParams?: ContractBlockParameters,
   ): Promise<Maybe<any[]>> {
     return getAllRulesInternal(
       config,
       this.rulesEngineRulesContract,
       policyId,
-      blockParams
+      blockParams,
     );
   }
 
@@ -632,7 +632,7 @@ export class RulesEngine {
       this.rulesEnginePolicyContract,
       policyId,
       fcSyntax,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -655,7 +655,7 @@ export class RulesEngine {
   updateForeignCall(
     policyId: number,
     foreignCallId: number,
-    fcSyntax: string
+    fcSyntax: string,
   ): Promise<number> {
     return updateForeignCallInternal(
       config,
@@ -665,7 +665,7 @@ export class RulesEngine {
       policyId,
       foreignCallId,
       fcSyntax,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -686,7 +686,7 @@ export class RulesEngine {
       this.rulesEngineForeignCallContract,
       policyId,
       foreignCallId,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -703,14 +703,14 @@ export class RulesEngine {
   getForeignCall(
     policyId: number,
     foreignCallId: number,
-    blockParams?: ContractBlockParameters
+    blockParams?: ContractBlockParameters,
   ): Promise<Maybe<any>> {
     return getForeignCallInternal(
       config,
       this.rulesEngineForeignCallContract,
       policyId,
       foreignCallId,
-      blockParams
+      blockParams,
     );
   }
 
@@ -725,13 +725,13 @@ export class RulesEngine {
    */
   getAllForeignCalls(
     policyId: number,
-    blockParams?: ContractBlockParameters
+    blockParams?: ContractBlockParameters,
   ): Promise<Maybe<any[]>> {
     return getAllForeignCallsInternal(
       config,
       this.rulesEngineForeignCallContract,
       policyId,
-      blockParams
+      blockParams,
     );
   }
 
@@ -747,14 +747,14 @@ export class RulesEngine {
   getForeignCallMetadata(
     policyId: number,
     foreignCallId: number,
-    blockParams?: ContractBlockParameters
+    blockParams?: ContractBlockParameters,
   ): Promise<Maybe<any>> {
     return getForeignCallMetadataInternal(
       config,
       this.rulesEngineForeignCallContract,
       policyId,
       foreignCallId,
-      blockParams
+      blockParams,
     );
   }
 
@@ -771,14 +771,14 @@ export class RulesEngine {
   getForeignCallPermissionList(
     foreignCallAddress: Address,
     functionSelector: string,
-    blockParams?: ContractBlockParameters
+    blockParams?: ContractBlockParameters,
   ): Promise<Address[]> {
     return getForeignCallPermissionListInternal(
       config,
       this.rulesEngineForeignCallContract,
       foreignCallAddress,
       functionSelector,
-      blockParams
+      blockParams,
     );
   }
 
@@ -797,7 +797,7 @@ export class RulesEngine {
   addAdminToPermissionList(
     foreignCallAddress: Address,
     functionSelector: string,
-    policyAdminToAdd: Address
+    policyAdminToAdd: Address,
   ): Promise<number> {
     return addAdminToPermissionListInternal(
       config,
@@ -805,7 +805,7 @@ export class RulesEngine {
       foreignCallAddress,
       functionSelector,
       policyAdminToAdd,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -824,7 +824,7 @@ export class RulesEngine {
   addMultipleAdminsToPermissionList(
     foreignCallAddress: Address,
     functionSelector: string,
-    policyAdminsToAdd: Address[]
+    policyAdminsToAdd: Address[],
   ): Promise<number> {
     return addMultipleAdminsToPermissionListInternal(
       config,
@@ -832,7 +832,7 @@ export class RulesEngine {
       foreignCallAddress,
       functionSelector,
       policyAdminsToAdd,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -851,7 +851,7 @@ export class RulesEngine {
   removeMultipleAdminsFromPermissionList(
     foreignCallAddress: Address,
     functionSelector: string,
-    policyAdminsToRemove: Address[]
+    policyAdminsToRemove: Address[],
   ): Promise<number> {
     return removeMultipleAdminsFromPermissionListInternal(
       config,
@@ -859,7 +859,7 @@ export class RulesEngine {
       foreignCallAddress,
       functionSelector,
       policyAdminsToRemove,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -876,14 +876,14 @@ export class RulesEngine {
    */
   removeAllFromPermissionList(
     foreignCallAddress: Address,
-    functionSelector: string
+    functionSelector: string,
   ): Promise<number> {
     return removeAllFromPermissionListInternal(
       config,
       this.rulesEngineForeignCallContract,
       foreignCallAddress,
       functionSelector,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -903,7 +903,7 @@ export class RulesEngine {
       this.rulesEngineComponentContract,
       policyId,
       trSyntax,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -921,7 +921,7 @@ export class RulesEngine {
   updateTracker(
     policyId: number,
     trackerId: number,
-    trSyntax: string
+    trSyntax: string,
   ): Promise<number> {
     return updateTrackerInternal(
       config,
@@ -929,7 +929,7 @@ export class RulesEngine {
       policyId,
       trackerId,
       trSyntax,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -950,7 +950,7 @@ export class RulesEngine {
       this.rulesEngineComponentContract,
       policyId,
       trackerId,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -967,14 +967,14 @@ export class RulesEngine {
   getTracker(
     policyId: number,
     trackerId: number,
-    blockParams?: ContractBlockParameters
+    blockParams?: ContractBlockParameters,
   ): Promise<Maybe<any>> {
     return getTrackerInternal(
       config,
       this.rulesEngineComponentContract,
       policyId,
       trackerId,
-      blockParams
+      blockParams,
     );
   }
 
@@ -989,13 +989,13 @@ export class RulesEngine {
    */
   getAllTrackers(
     policyId: number,
-    blockParams?: ContractBlockParameters
+    blockParams?: ContractBlockParameters,
   ): Promise<Maybe<any[]>> {
     return getAllTrackersInternal(
       config,
       this.rulesEngineComponentContract,
       policyId,
-      blockParams
+      blockParams,
     );
   }
 
@@ -1012,14 +1012,14 @@ export class RulesEngine {
   getTrackerMetadata(
     policyId: number,
     trackerId: number,
-    blockParams?: ContractBlockParameters
+    blockParams?: ContractBlockParameters,
   ): Promise<Maybe<TrackerMetadataStruct>> {
     return getTrackerMetadataInternal(
       config,
       this.rulesEngineComponentContract,
       policyId,
       trackerId,
-      blockParams
+      blockParams,
     );
   }
 
@@ -1036,14 +1036,14 @@ export class RulesEngine {
   getTrackerToRuleIds(
     policyId: number,
     trackerId: number,
-    blockParams?: ContractBlockParameters
+    blockParams?: ContractBlockParameters,
   ): Promise<Maybe<number[]>> {
     return getTrackerToRuleIdsInternal(
       config,
       this.rulesEngineComponentContract,
       policyId,
       trackerId,
-      blockParams
+      blockParams,
     );
   }
 
@@ -1064,7 +1064,7 @@ export class RulesEngine {
   createCallingFunction(
     policyId: number,
     callingFunction: string,
-    encodedValues: string
+    encodedValues: string,
   ): Promise<number> {
     return createCallingFunctionInternal(
       config,
@@ -1072,7 +1072,7 @@ export class RulesEngine {
       policyId,
       callingFunction,
       encodedValues,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -1089,14 +1089,14 @@ export class RulesEngine {
   getCallingFunctionMetadata(
     policyId: number,
     callingFunctionId: number,
-    blockParams?: ContractBlockParameters
+    blockParams?: ContractBlockParameters,
   ): Promise<CallingFunctionHashMapping> {
     return getCallingFunctionMetadataInternal(
       config,
       this.rulesEngineComponentContract,
       policyId,
       callingFunctionId,
-      blockParams
+      blockParams,
     );
   }
 
@@ -1117,7 +1117,7 @@ export class RulesEngine {
       this.rulesEngineAdminContract,
       policyId,
       newAdminAddress,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -1136,7 +1136,7 @@ export class RulesEngine {
       config,
       this.rulesEngineAdminContract,
       policyId,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -1154,14 +1154,14 @@ export class RulesEngine {
   isPolicyAdmin(
     policyId: number,
     adminAddress: Address,
-    blockParams?: ContractBlockParameters
+    blockParams?: ContractBlockParameters,
   ): Promise<boolean> {
     return isPolicyAdminInternal(
       config,
       this.rulesEngineAdminContract,
       policyId,
       adminAddress,
-      blockParams
+      blockParams,
     );
   }
 
@@ -1178,14 +1178,14 @@ export class RulesEngine {
    */
   proposeCallingContractAdmin(
     callingContractAddress: Address,
-    newAdminAddress: Address
+    newAdminAddress: Address,
   ) {
     proposeCallingContractAdminInternal(
       config,
       this.rulesEngineAdminContract,
       callingContractAddress,
       newAdminAddress,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -1204,7 +1204,7 @@ export class RulesEngine {
       config,
       this.rulesEngineAdminContract,
       callingContractAddress,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -1222,14 +1222,14 @@ export class RulesEngine {
   isCallingContractAdmin(
     callingContract: Address,
     account: Address,
-    blockParams?: ContractBlockParameters
+    blockParams?: ContractBlockParameters,
   ): Promise<boolean> {
     return isCallingContractAdminInternal(
       config,
       this.rulesEngineAdminContract,
       callingContract,
       account,
-      blockParams
+      blockParams,
     );
   }
 
@@ -1248,7 +1248,7 @@ export class RulesEngine {
   proposeForeignCallAdmin(
     foreignCallAddress: Address,
     newAdminAddress: Address,
-    foreignCallSelector: string
+    foreignCallSelector: string,
   ) {
     proposeNewForeignCallAdminInternal(
       config,
@@ -1256,7 +1256,7 @@ export class RulesEngine {
       foreignCallAddress,
       newAdminAddress,
       foreignCallSelector,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -1273,14 +1273,14 @@ export class RulesEngine {
    */
   confirmNewForeignCallAdmin(
     foreignCallAddress: Address,
-    foreignCallSelector: string
+    foreignCallSelector: string,
   ) {
     confirmNewForeignCallAdminInternal(
       config,
       this.rulesEngineAdminContract,
       foreignCallAddress,
       foreignCallSelector,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -1300,7 +1300,7 @@ export class RulesEngine {
     foreignCallAddress: Address,
     account: Address,
     foreignCallSelector: string,
-    blockParams?: ContractBlockParameters
+    blockParams?: ContractBlockParameters,
   ): Promise<boolean> {
     return isForeignCallAdminInternal(
       config,
@@ -1308,7 +1308,7 @@ export class RulesEngine {
       foreignCallAddress,
       account,
       foreignCallSelector,
-      blockParams
+      blockParams,
     );
   }
 
@@ -1323,7 +1323,7 @@ export class RulesEngine {
       config,
       this.rulesEnginePolicyContract,
       policyId,
-      this.confirmationCount
+      this.confirmationCount,
     );
   }
 
@@ -1335,13 +1335,13 @@ export class RulesEngine {
    */
   isCementedPolicy(
     policyId: number,
-    blockParams?: ContractBlockParameters
+    blockParams?: ContractBlockParameters,
   ): Promise<boolean> {
     return isCementedPolicyInternal(
       config,
       this.rulesEnginePolicyContract,
       policyId,
-      blockParams
+      blockParams,
     );
   }
 }

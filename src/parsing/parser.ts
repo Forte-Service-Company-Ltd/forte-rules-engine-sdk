@@ -71,7 +71,7 @@ export function processSyntax(
   foreignCallNameToID: FCNameToID[],
   indexMap: trackerIndexNameMapping[],
   additionalForeignCalls: string[],
-  syntax: string
+  syntax: string,
 ): [string, RuleComponent[]] {
   let components: RuleComponent[] = [
     ...parseFunctionArguments(encodedValues, syntax),
@@ -81,14 +81,14 @@ export function processSyntax(
     components,
     foreignCallNameToID,
     indexMap,
-    additionalForeignCalls
+    additionalForeignCalls,
   );
   components = [...components, ...effectCalls];
 
   const [finalSyntax, effectTrackers] = parseTrackers(
     updatedSyntax,
     components,
-    indexMap
+    indexMap,
   );
 
   const gvEComponents = parseGlobalVariables(finalSyntax);
@@ -101,14 +101,23 @@ function getProcessedEffects(
   foreignCallNameToID: FCNameToID[],
   indexMap: trackerIndexNameMapping[],
   additionalEffectForeignCalls: string[],
-  effects: string[]): [string[], RuleComponent[][]] {
-  return effects.reduce((acc: [string[], RuleComponent[][]], effect) => {
-    const [updatedEffect, effectCalls] = processSyntax(
-      encodedValues, foreignCallNameToID, indexMap, additionalEffectForeignCalls, effect);
-    acc[0].push(updatedEffect);
-    acc[1].push(effectCalls);
-    return acc;
-  }, [[], []]);
+  effects: string[],
+): [string[], RuleComponent[][]] {
+  return effects.reduce(
+    (acc: [string[], RuleComponent[][]], effect) => {
+      const [updatedEffect, effectCalls] = processSyntax(
+        encodedValues,
+        foreignCallNameToID,
+        indexMap,
+        additionalEffectForeignCalls,
+        effect,
+      );
+      acc[0].push(updatedEffect);
+      acc[1].push(effectCalls);
+      return acc;
+    },
+    [[], []],
+  );
 }
 
 /**
@@ -127,37 +136,55 @@ export function parseRuleSyntax(
   foreignCallNameToID: FCNameToID[],
   encodedValues: string,
   additionalForeignCalls: string[],
-  additionalEffectForeignCalls: string[]
+  additionalEffectForeignCalls: string[],
 ): RuleDefinition {
   const [condition, ruleComponents] = processSyntax(
-    encodedValues, foreignCallNameToID, indexMap, additionalForeignCalls, removeExtraParenthesis(syntax.condition));
+    encodedValues,
+    foreignCallNameToID,
+    indexMap,
+    additionalForeignCalls,
+    removeExtraParenthesis(syntax.condition),
+  );
 
   const placeHolders = buildPlaceholderList(ruleComponents);
 
-  const [processedPositiveEffects, positiveEffectComponents] = getProcessedEffects(
-    encodedValues, foreignCallNameToID, indexMap, additionalEffectForeignCalls, syntax.positiveEffects
-  );
+  const [processedPositiveEffects, positiveEffectComponents] =
+    getProcessedEffects(
+      encodedValues,
+      foreignCallNameToID,
+      indexMap,
+      additionalEffectForeignCalls,
+      syntax.positiveEffects,
+    );
 
-  const [processedNegativeEffects, negativeEffectComponents] = getProcessedEffects(
-    encodedValues, foreignCallNameToID, indexMap, additionalEffectForeignCalls, syntax.negativeEffects
-  );
+  const [processedNegativeEffects, negativeEffectComponents] =
+    getProcessedEffects(
+      encodedValues,
+      foreignCallNameToID,
+      indexMap,
+      additionalEffectForeignCalls,
+      syntax.negativeEffects,
+    );
 
-  const effectNames = cleanseForeignCallLists([...positiveEffectComponents, ...negativeEffectComponents]);
+  const effectNames = cleanseForeignCallLists([
+    ...positiveEffectComponents,
+    ...negativeEffectComponents,
+  ]);
   let effectPlaceHolders = buildPlaceholderList(effectNames);
   effectPlaceHolders = [...new Set(effectPlaceHolders)];
 
-  const positiveEffects = processedPositiveEffects.map(
-    (effect) => parseEffect(effect, effectNames, effectPlaceHolders, indexMap)
+  const positiveEffects = processedPositiveEffects.map((effect) =>
+    parseEffect(effect, effectNames, effectPlaceHolders, indexMap),
   );
   const negativeEffects = processedNegativeEffects.map((effect) =>
-    parseEffect(effect, effectNames, effectPlaceHolders, indexMap)
+    parseEffect(effect, effectNames, effectPlaceHolders, indexMap),
   );
 
   const conditionInstructionSet = convertHumanReadableToInstructionSet(
     condition,
     ruleComponents,
     indexMap,
-    placeHolders
+    placeHolders,
   );
 
   const excludeArray: string[] = ruleComponents.map((name) => name.name);
@@ -168,18 +195,18 @@ export function parseRuleSyntax(
 
   positiveEffects.forEach(
     (effect) =>
-    (effect.instructionSet = buildRawData(
-      effect.instructionSet,
-      excludeArray
-    ))
+      (effect.instructionSet = buildRawData(
+        effect.instructionSet,
+        excludeArray,
+      )),
   );
 
   negativeEffects.forEach(
     (effect) =>
-    (effect.instructionSet = buildRawData(
-      effect.instructionSet,
-      excludeArray
-    ))
+      (effect.instructionSet = buildRawData(
+        effect.instructionSet,
+        excludeArray,
+      )),
   );
 
   return {
@@ -192,18 +219,18 @@ export function parseRuleSyntax(
 }
 
 export function parseMappedTrackerSyntax(
-  syntax: MappedTrackerJSON
+  syntax: MappedTrackerJSON,
 ): MappedTrackerDefinition {
   let keyType = syntax.keyType;
   let valueType = syntax.valueType;
   var trackerArrayValueType: number = 0; // Default to VOID type
   var trackerInitialKeys: any[] = encodeTrackerData(
     syntax.initialKeys,
-    keyType
+    keyType,
   );
   var trackerInitialValues: any[] = encodeTrackerData(
     syntax.initialValues,
-    valueType
+    valueType,
   );
   const keyTypeEnum = (PT.find((_pt) => _pt.name == keyType) ?? PT[4])
     .enumeration;
@@ -240,27 +267,25 @@ const getBigIntForBool = (value: string): bigint => {
   } else {
     return 0n;
   }
-}
+};
 
 const getEncodedString = (value: string): string => {
   const interim = BigInt(
-    keccak256(
-      encodeAbiParameters(parseAbiParameters("string"), [value])
-    )
+    keccak256(encodeAbiParameters(parseAbiParameters("string"), [value])),
   );
   return encodePacked(["uint256"], [BigInt(interim)]);
-}
+};
 
 const getEncodedBytes = (value: string): string => {
   var interim = BigInt(
     keccak256(
       encodeAbiParameters(parseAbiParameters("bytes"), [
         toHex(stringToBytes(String(value))),
-      ])
-    )
+      ]),
+    ),
   );
   return encodePacked(["uint256"], [BigInt(interim)]);
-}
+};
 
 const getEncodedAddress = (value: string): string => {
   const validatedAddress = getAddress(value);
@@ -269,13 +294,15 @@ const getEncodedAddress = (value: string): string => {
   ]);
 
   return address;
-}
+};
 
 function encodeTrackerData(valueSet: any[], keyType: string): any[] {
   // const values: any[] = [];
   const values: any[] = valueSet.map((val) => {
     if (keyType == "uint256[]") {
-      const values = val.map((v: string) => encodePacked(["uint256"], [BigInt(v)]));
+      const values = val.map((v: string) =>
+        encodePacked(["uint256"], [BigInt(v)]),
+      );
       return encodeAbiParameters(parseAbiParameters(["bytes[]"]), [values]);
     } else if (keyType == "address[]") {
       const values = val.map((v: string) => getEncodedAddress(v));
@@ -322,50 +349,49 @@ export function parseTrackerSyntax(syntax: TrackerJSON): TrackerDefinition {
       syntax.initialValue as string[],
     ]);
     trackerValueType = trackerArrayType.STR_ARRAY;
-
   } else if (trackerType == "bool[]") {
-    const encoded = (syntax.initialValue as string[]).map(val => getBigIntForBool(val));
+    const encoded = (syntax.initialValue as string[]).map((val) =>
+      getBigIntForBool(val),
+    );
     trackerInitialValue = encodePacked(["uint256[]"], [encoded]);
     trackerValueType = trackerArrayType.BOOL_ARRAY;
-
   } else if (trackerType == "bytes[]") {
-    const values = (syntax.initialValue as string[]).map(val => toHex(stringToBytes(String(val))));
+    const values = (syntax.initialValue as string[]).map((val) =>
+      toHex(stringToBytes(String(val))),
+    );
     trackerInitialValue = encodeAbiParameters(parseAbiParameters("bytes[]"), [
-      values
+      values,
     ]);
     trackerValueType = trackerArrayType.BYTES_ARRAY;
-
   } else if (trackerType == "address[]") {
-    trackerInitialValue = (syntax.initialValue as string[]).map(getEncodedAddress);
-    trackerValueType = trackerArrayType.ADDR_ARRAY;
-
-  } else if (trackerType == "uint256[]") {
-    const values = (syntax.initialValue as string[]).map(val => BigInt(val));
-    trackerInitialValue = encodePacked(
-      ["uint256[]"],
-      [values]
+    trackerInitialValue = (syntax.initialValue as string[]).map(
+      getEncodedAddress,
     );
+    trackerValueType = trackerArrayType.ADDR_ARRAY;
+  } else if (trackerType == "uint256[]") {
+    const values = (syntax.initialValue as string[]).map((val) => BigInt(val));
+    trackerInitialValue = encodePacked(["uint256[]"], [values]);
     trackerValueType = trackerArrayType.UINT_ARRAY;
-
   } else if (trackerType == "uint256") {
-    trackerInitialValue = encodePacked(["uint256"],
-      [BigInt(syntax.initialValue as string)]
+    trackerInitialValue = encodePacked(
+      ["uint256"],
+      [BigInt(syntax.initialValue as string)],
     );
     trackerValueType = trackerArrayType.VOID;
   } else if (trackerType == "address") {
     trackerInitialValue = getEncodedAddress(syntax.initialValue as string);
     trackerValueType = trackerArrayType.VOID;
-
   } else if (trackerType == "bytes") {
     trackerInitialValue = encodeAbiParameters(parseAbiParameters("bytes"), [
       toHex(stringToBytes(String(syntax.initialValue))),
     ]);
     trackerValueType = trackerArrayType.VOID;
-
   } else if (trackerType == "bool") {
-    trackerInitialValue = encodePacked(["uint256"], [getBigIntForBool(syntax.initialValue as string)]);
+    trackerInitialValue = encodePacked(
+      ["uint256"],
+      [getBigIntForBool(syntax.initialValue as string)],
+    );
     trackerValueType = trackerArrayType.VOID;
-
   } else {
     trackerInitialValue = encodeAbiParameters(parseAbiParameters("string"), [
       syntax.initialValue as string,
@@ -374,7 +400,7 @@ export function parseTrackerSyntax(syntax: TrackerJSON): TrackerDefinition {
     trackerValueType = trackerArrayType.VOID;
   }
   var trackerTypeEnum = 0;
-  trackerTypeEnum = PT.find(pt => pt.name === trackerType)?.enumeration ?? 4;
+  trackerTypeEnum = PT.find((pt) => pt.name === trackerType)?.enumeration ?? 4;
 
   return {
     name: syntax.name,
@@ -388,15 +414,19 @@ export function getFCEncodedIndex(
   foreignCallNameToID: FCNameToID[],
   indexMap: FCNameToID[],
   functionArguments: string[],
-  encodedIndex: string
+  encodedIndex: string,
 ): Maybe<ForeignCallEncodedIndex> {
   if (encodedIndex.includes("FC:")) {
-    const fcMap = foreignCallNameToID.find(fc => "FC:" + fc.name.trim() === encodedIndex.trim());
+    const fcMap = foreignCallNameToID.find(
+      (fc) => "FC:" + fc.name.trim() === encodedIndex.trim(),
+    );
     if (fcMap) {
       return { eType: 1, index: fcMap.id };
     }
   } else if (encodedIndex.includes("TR:")) {
-    const trMap = indexMap.find(tr => "TR:" + tr.name.trim() === encodedIndex.trim());
+    const trMap = indexMap.find(
+      (tr) => "TR:" + tr.name.trim() === encodedIndex.trim(),
+    );
     if (trMap) {
       if (trMap.type == 1) {
         return { eType: 4, index: trMap.id };
@@ -405,7 +435,9 @@ export function getFCEncodedIndex(
       }
     }
   } else {
-    const argIndex = functionArguments.findIndex(arg => arg.trim() === encodedIndex.trim());
+    const argIndex = functionArguments.findIndex(
+      (arg) => arg.trim() === encodedIndex.trim(),
+    );
     if (argIndex !== -1) {
       return { eType: 0, index: argIndex };
     }
@@ -423,24 +455,40 @@ export function parseForeignCallDefinition(
   syntax: ForeignCallJSON,
   foreignCallNameToID: FCNameToID[],
   indexMap: FCNameToID[],
-  functionArguments: string[]
+  functionArguments: string[],
 ): ForeignCallDefinition {
   const encodedIndices = syntax.valuesToPass
     .split(",")
-    .map(encodedIndex => getFCEncodedIndex(foreignCallNameToID, indexMap, functionArguments, encodedIndex)).filter(encoded => encoded !== null);
+    .map((encodedIndex) =>
+      getFCEncodedIndex(
+        foreignCallNameToID,
+        indexMap,
+        functionArguments,
+        encodedIndex,
+      ),
+    )
+    .filter((encoded) => encoded !== null);
 
   var mappedTrackerKeyIndices: ForeignCallEncodedIndex[] = [];
   if (syntax.mappedTrackerKeyValues == "") {
   } else {
     mappedTrackerKeyIndices = syntax.mappedTrackerKeyValues
       .split(",")
-      .map(encodedIndex => getFCEncodedIndex(foreignCallNameToID, indexMap, functionArguments, encodedIndex)).filter(encoded => encoded !== null);
+      .map((encodedIndex) =>
+        getFCEncodedIndex(
+          foreignCallNameToID,
+          indexMap,
+          functionArguments,
+          encodedIndex,
+        ),
+      )
+      .filter((encoded) => encoded !== null);
   }
 
   const returnType: number = PType.indexOf(syntax.returnType);
 
   var parameterTypes: number[] = splitFunctionInput(syntax.function).map(
-    (val) => determinePTEnumeration(val)
+    (val) => determinePTEnumeration(val),
   );
 
   return {
@@ -453,12 +501,13 @@ export function parseForeignCallDefinition(
 }
 
 export function determinePTEnumeration(name: string): number {
-  return PT.find(pt => name === pt.name)?.enumeration ?? 4;
+  return PT.find((pt) => name === pt.name)?.enumeration ?? 4;
 }
 
 export function parseCallingFunction(syntax: CallingFunctionJSON): string[] {
-  return syntax.encodedValues.split(", ")
-    .map(val => val.trim().split(" ")[1]);
+  return syntax.encodedValues
+    .split(", ")
+    .map((val) => val.trim().split(" ")[1]);
 }
 
 /**
@@ -470,9 +519,9 @@ export function parseCallingFunction(syntax: CallingFunctionJSON): string[] {
 export function buildForeignCallList(condition: string): string[] {
   // Use a regular expression to find all FC expressions
   const fcRegex = /FC:[a-zA-Z]+[^\s]+/g;
-  return Array.from(condition.matchAll(fcRegex))
-    .map(match => match[0].split(":")[1]);
-
+  return Array.from(condition.matchAll(fcRegex)).map(
+    (match) => match[0].split(":")[1],
+  );
 }
 
 /**
@@ -487,8 +536,8 @@ export function buildTrackerList(condition: string): string[] {
   var matches = condition.match(trRegex) || [];
   var truMatches = condition.match(truRegex) || [];
 
-  const trNames = matches.map(match => match.replace("TR:", ""));
-  const truNames = truMatches.map(match => match.replace("TRU:", ""));
+  const trNames = matches.map((match) => match.replace("TR:", ""));
+  const truNames = truMatches.map((match) => match.replace("TRU:", ""));
 
   return [...trNames, ...truNames];
 }

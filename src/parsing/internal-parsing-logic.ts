@@ -63,7 +63,7 @@ export function convertHumanReadableToInstructionSet(
   syntax: string,
   names: any[],
   indexMap: trackerIndexNameMapping[],
-  existingPlaceHolders: PlaceholderStruct[]
+  existingPlaceHolders: PlaceholderStruct[],
 ): InstructionSet {
   //Replace AND, OR and NOT with a placeholder value (PLA) so we can parse them simultaneously
   originalDelimiters = [];
@@ -123,7 +123,7 @@ export function convertHumanReadableToInstructionSet(
     array_,
     names,
     existingPlaceHolders,
-    indexMap
+    indexMap,
   );
 
   for (var instructionIter in astAccumulator.instructionSet) {
@@ -132,7 +132,7 @@ export function convertHumanReadableToInstructionSet(
         var index = parseInt(
           astAccumulator.instructionSet[instructionIter]
             .replace("PLA", "")
-            .trim()
+            .trim(),
         );
         astAccumulator.instructionSet[instructionIter] =
           originalDelimiters[index];
@@ -158,7 +158,7 @@ function convertASTToInstructionSet(
   expression: any[],
   parameterNames: any[],
   placeHolders: PlaceholderStruct[],
-  indexMap: trackerIndexNameMapping[]
+  indexMap: trackerIndexNameMapping[],
 ): ASTAccumulator {
   if (typeof expression[0] == "string") {
     var foundMatch = false;
@@ -241,7 +241,7 @@ function convertASTToInstructionSet(
               sliced,
               parameterNames,
               placeHolders,
-              indexMap
+              indexMap,
             );
           }
 
@@ -270,7 +270,7 @@ function convertASTToInstructionSet(
               sliced,
               parameterNames,
               placeHolders,
-              indexMap
+              indexMap,
             );
           } else {
             plhIndex += 1;
@@ -314,7 +314,7 @@ function convertASTToInstructionSet(
               sliced,
               parameterNames,
               placeHolders,
-              indexMap
+              indexMap,
             );
           } else {
             plhIndex += 1;
@@ -338,7 +338,7 @@ function convertASTToInstructionSet(
             sliced,
             parameterNames,
             placeHolders,
-            indexMap
+            indexMap,
           );
           if (truMatchArray.includes(split.trim())) {
             switch (split.trim()) {
@@ -387,9 +387,10 @@ function convertASTToInstructionSet(
               acc.instructionSet.push(truKey);
             }
             const trackerName = expression[1].split(":")[1];
-            const trackerType = getPTEnum(indexMap.find(
-              (mapping) => mapping.name == trackerName
-            )?.type || 4);// Default to VOID if not found
+            const trackerType = getPTEnum(
+              indexMap.find((mapping) => mapping.name == trackerName)?.type ||
+                4,
+            ); // Default to VOID if not found
 
             // if trackerType is string(1) or bytes(5) then push 1 indicating placeholder tracker
             // else push 0 indicating memory tracker
@@ -418,7 +419,7 @@ function convertASTToInstructionSet(
           sliced,
           parameterNames,
           placeHolders,
-          indexMap
+          indexMap,
         );
       }
     }
@@ -439,7 +440,7 @@ function convertASTToInstructionSet(
       sliced,
       parameterNames,
       placeHolders,
-      indexMap
+      indexMap,
     );
     // If it's an array with a nested array as the first index recursively run with the nested array, update the memory map
     // and recursively run starting at the next index
@@ -449,7 +450,7 @@ function convertASTToInstructionSet(
       expression[0],
       parameterNames,
       placeHolders,
-      indexMap
+      indexMap,
     );
     expression = expression.slice(1);
     convertASTToInstructionSet(
@@ -457,7 +458,7 @@ function convertASTToInstructionSet(
       expression,
       parameterNames,
       placeHolders,
-      indexMap
+      indexMap,
     );
   }
   return acc;
@@ -521,11 +522,11 @@ function convertToTree(condition: string, splitOn: string): any[] {
       // Retrieve the contents of the parenthesis for the last two i:n values
       var actualValue = retrieveParenthesisContent(
         delimiterSplit[endIndex - 1],
-        substrs
+        substrs,
       );
       var actualValueTwo = retrieveParenthesisContent(
         delimiterSplit[endIndex],
-        substrs
+        substrs,
       );
 
       if (actualValue.startsWith("(")) {
@@ -574,7 +575,7 @@ function convertToTree(condition: string, splitOn: string): any[] {
       var innerArray = new Array();
       var actualValue = retrieveParenthesisContent(
         delimiterSplit[endIndex],
-        substrs
+        substrs,
       );
       if (actualValue.includes("(")) {
         actualValue = actualValue.substring(1, actualValue.length - 1);
@@ -653,11 +654,11 @@ function retrieveParenthesisContent(str: string, tuples: Tuple[]): string {
       if (actualValue.includes("i:")) {
         var substr = actualValue.substring(
           actualValue.indexOf("i:"),
-          actualValue.indexOf("i:") + 3
+          actualValue.indexOf("i:") + 3,
         );
         actualValue = actualValue.replace(
           substr,
-          retrieveParenthesisContent(substr, tuples)
+          retrieveParenthesisContent(substr, tuples),
         );
       }
       break;

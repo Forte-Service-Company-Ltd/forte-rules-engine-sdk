@@ -1,12 +1,26 @@
 /// SPDX-License-Identifier: BUSL-1.1
-import { Address, BlockNumber, BlockTag, ByteArray, GetContractReturnType, Hex } from "viem";
+import {
+  Address,
+  BlockNumber,
+  BlockTag,
+  ByteArray,
+  GetContractReturnType,
+  Hex,
+} from "viem";
 
 import RulesEnginePolicyLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEnginePolicyFacet.sol/RulesEnginePolicyFacet.json";
 import RulesEngineComponentLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineComponentFacet.sol/RulesEngineComponentFacet.json";
 import RulesEngineRuleLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineRuleFacet.sol/RulesEngineRuleFacet.json";
 import RulesEngineAdminLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineAdminRolesFacet.sol/RulesEngineAdminRolesFacet.json";
 import RulesEngineForeignCallLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineForeignCallFacet.sol/RulesEngineForeignCallFacet.json";
-import { CallingFunctionJSON, ForeignCallJSON, MappedTrackerJSON, PolicyJSON, RuleJSON, TrackerJSON } from "./validation";
+import {
+  CallingFunctionJSON,
+  ForeignCallJSON,
+  MappedTrackerJSON,
+  PolicyJSON,
+  RuleJSON,
+  TrackerJSON,
+} from "./validation";
 
 /**
  * @file types.ts
@@ -33,7 +47,8 @@ export const RulesEnginePolicyABI = RulesEnginePolicyLogicArtifact.abi;
 export const RulesEngineComponentABI = RulesEngineComponentLogicArtifact.abi;
 export const RulesEngineRulesABI = RulesEngineRuleLogicArtifact.abi;
 export const RulesEngineAdminABI = RulesEngineAdminLogicArtifact.abi;
-export const RulesEngineForeignCallABI = RulesEngineForeignCallLogicArtifact.abi;
+export const RulesEngineForeignCallABI =
+  RulesEngineForeignCallLogicArtifact.abi;
 
 // -----------------------------------------------------------------------------
 // Contract Types
@@ -77,7 +92,6 @@ export type FCNameToID = {
   /** Type identifier */
   type: number;
 };
-
 
 /**
  * Maps hex values to their function string representations
@@ -251,8 +265,7 @@ export interface RuleData extends RuleJSON {
 export type RuleDataAndJSON = {
   data: RuleData;
   json: RuleJSON;
-}
-
+};
 
 // -----------------------------------------------------------------------------
 // Policy Types
@@ -684,16 +697,16 @@ export const PT = [
   { name: "bytes[]", enumeration: pTypeEnum.DYNAMIC_TYPE_ARRAY },
 ];
 
-export const PTNames = PT.map(pt => pt.name);
-export type PTName = typeof PTNames[number];
+export const PTNames = PT.map((pt) => pt.name);
+export type PTName = (typeof PTNames)[number];
 
-export const PTTracker = PT.filter(pt => pt.name !== "void");
-export const PTNamesTracker = PTTracker.map(pt => pt.name);
-export type PTNameTracker = typeof PTNamesTracker[number];
+export const PTTracker = PT.filter((pt) => pt.name !== "void");
+export const PTNamesTracker = PTTracker.map((pt) => pt.name);
+export type PTNameTracker = (typeof PTNamesTracker)[number];
 
-export const PTTrackerKey = PTTracker.filter(pt => !pt.name.includes("[]"));
-export const PTNamesTrackerKey = PTTrackerKey.map(pt => pt.name);
-export type PTNameTrackerKey = typeof PTNamesTrackerKey[number];
+export const PTTrackerKey = PTTracker.filter((pt) => !pt.name.includes("[]"));
+export const PTNamesTrackerKey = PTTrackerKey.map((pt) => pt.name);
+export type PTNameTrackerKey = (typeof PTNamesTrackerKey)[number];
 
 // -----------------------------------------------------------------------------
 // Error Types

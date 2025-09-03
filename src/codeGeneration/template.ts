@@ -17,4 +17,4 @@ abstract contract RulesEngineClientCustom is RulesEngineClient {
     function setCallingContractAdmin(address callingContractAdmin) public {}
 
     // Modifier Here
-}`
+}`;

@@ -24,7 +24,7 @@ export const foundryAccountAddress: `0x${string}` =
 const secondaryFoundryPrivateKey: `0x${string}` =
   "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
 export const secondaryAccount: PrivateKeyAccount = privateKeyToAccount(
-  secondaryFoundryPrivateKey
+  secondaryFoundryPrivateKey,
 );
 const secondaryFoundAccountAddress: `0x${string}` =
   "0x70997970C51812dc3A010C7d01b50e0d17dc79C8";
@@ -55,7 +55,7 @@ var _config: Config;
  * For actual SDK use a config should be passed in with the setupConfig function.
  */
 export const createTestConfig = async (
-  primary: boolean = true
+  primary: boolean = true,
 ): Promise<Config> => {
   _config = createConfig({
     chains: [foundry],

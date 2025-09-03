@@ -62,7 +62,7 @@ import { RuleJSON } from "./validation";
 //TODO: Make the client usages type specific
 export const getRulesEnginePolicyContract = (
   address: Address,
-  client: any
+  client: any,
 ): RulesEnginePolicyContract =>
   getContract({
     address,
@@ -72,7 +72,7 @@ export const getRulesEnginePolicyContract = (
 
 export const getRulesEngineRulesContract = (
   address: Address,
-  client: any
+  client: any,
 ): RulesEngineRulesContract =>
   getContract({
     address,
@@ -82,7 +82,7 @@ export const getRulesEngineRulesContract = (
 
 export const getRulesEngineComponentContract = (
   address: Address,
-  client: any
+  client: any,
 ): RulesEngineComponentContract =>
   getContract({
     address,
@@ -92,7 +92,7 @@ export const getRulesEngineComponentContract = (
 
 export const getRulesEngineAdminContract = (
   address: Address,
-  client: any
+  client: any,
 ): RulesEngineAdminContract =>
   getContract({
     address,
@@ -102,7 +102,7 @@ export const getRulesEngineAdminContract = (
 
 export const getRulesEngineForeignCallContract = (
   address: Address,
-  client: any
+  client: any,
 ): RulesEngineForeignCallContract =>
   getContract({
     address,
@@ -146,16 +146,15 @@ export function buildARuleStruct(
   trackerNameToID: FCNameToID[],
   encodedValues: string,
   additionalForeignCalls: string[],
-  additionalEffectForeignCalls: string[]
+  additionalEffectForeignCalls: string[],
 ): RuleStruct {
-
   var output = parseRuleSyntax(
     ruleSyntax,
     trackerNameToID,
     foreignCallNameToID,
     encodedValues,
     additionalForeignCalls,
-    additionalEffectForeignCalls
+    additionalEffectForeignCalls,
   );
 
   var rawData = {
@@ -203,7 +202,7 @@ export function buildAnEffectStruct(
   foreignCallNameToID: FCNameToID[],
   encodedValues: string,
   additionalForeignCalls: string[],
-  additionalEffectForeignCalls: string[]
+  additionalEffectForeignCalls: string[],
 ): EffectStructs {
   var output = parseRuleSyntax(
     ruleSyntax,
@@ -211,7 +210,7 @@ export function buildAnEffectStruct(
     foreignCallNameToID,
     encodedValues,
     additionalForeignCalls,
-    additionalEffectForeignCalls
+    additionalEffectForeignCalls,
   );
   var pEffects: EffectStruct[] = [];
   var nEffects: EffectStruct[] = [];

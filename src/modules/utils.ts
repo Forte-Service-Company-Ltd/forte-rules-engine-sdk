@@ -1,7 +1,6 @@
 import { Either, Left, PT, Right, UnwrapEither } from "./types";
-import { getAddress as _getAddress, isAddress as _isAddress } from 'viem';
-import { v4 as uuidv4 } from 'uuid';
-
+import { getAddress as _getAddress, isAddress as _isAddress } from "viem";
+import { v4 as uuidv4 } from "uuid";
 
 // Get a default encoded values string from a Calling Function
 export function getEncodedValues(callingFunction: string) {
@@ -19,8 +18,8 @@ export const unwrapEither: UnwrapEither = <T, U>({
   if (right !== undefined && left !== undefined) {
     throw new Error(
       `Received both left and right values at runtime when opening an Either\nLeft: ${JSON.stringify(
-        left
-      )}\nRight: ${JSON.stringify(right)}`
+        left,
+      )}\nRight: ${JSON.stringify(right)}`,
     );
     /*
      We're throwing in this function because this can only occur at runtime if something 
@@ -35,7 +34,7 @@ export const unwrapEither: UnwrapEither = <T, U>({
     return right as NonNullable<U>;
   }
   throw new Error(
-    `Received no left or right values at runtime when opening Either`
+    `Received no left or right values at runtime when opening Either`,
   );
 };
 
@@ -54,5 +53,5 @@ export const makeRight = <U>(value: U): Right<U> => ({ right: value });
 export const getRandom = () => uuidv4();
 
 export function getPTEnum(enumeration: number): string {
-  return PT.find(pt => enumeration === pt.enumeration)?.name ?? "void";
+  return PT.find((pt) => enumeration === pt.enumeration)?.name ?? "void";
 }

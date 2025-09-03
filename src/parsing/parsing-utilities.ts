@@ -47,27 +47,33 @@ import { getRandom } from "../modules/utils";
  */
 export function parseFunctionArguments(
   encodedValues: string,
-  condition?: string
+  condition?: string,
 ): FunctionArgument[] {
   // handle empty args
   if (encodedValues === "") return [];
 
-  return encodedValues.trim().split(",").map((param, tIndex) => {
-    const parts = param.trim().split(" ");
-    const name = parts[1].trim();
-    const rawType = parts[0].trim();
-    if (PTNamesTracker.includes(rawType) && (condition == null || condition.includes(name))) {
-      return {
-        name,
-        tIndex,
-        rawType,
-      };
-    } else {
-      return null;
-    }
-  }).filter(p => p != null);
+  return encodedValues
+    .trim()
+    .split(",")
+    .map((param, tIndex) => {
+      const parts = param.trim().split(" ");
+      const name = parts[1].trim();
+      const rawType = parts[0].trim();
+      if (
+        PTNamesTracker.includes(rawType) &&
+        (condition == null || condition.includes(name))
+      ) {
+        return {
+          name,
+          tIndex,
+          rawType,
+        };
+      } else {
+        return null;
+      }
+    })
+    .filter((p) => p != null);
 }
-
 
 /**
  * Parses tracker references in a rule condition string and adds them to the argument list.
@@ -81,13 +87,12 @@ export function parseFunctionArguments(
 export function parseTrackers(
   condition: string,
   names: any[],
-  indexMap: trackerIndexNameMapping[]
+  indexMap: trackerIndexNameMapping[],
 ): [string, Tracker[]] {
   const trRegex = /TR:[a-zA-Z]+/g;
   const truRegex = /TRU:[a-zA-Z]+/g;
 
   const matches = [...new Set(condition.match(trRegex) || [])];
-
 
   const trMappedRegex = /TR:[a-zA-Z]+\([^()]+\)/g;
   const truMappedRegex = /TRU:[a-zA-Z]+\([^()]+\)/g;
@@ -106,10 +111,10 @@ export function parseTrackers(
     return acc.replace(match, initialSplit + " | " + match.split("(")[0]);
   }, condition);
 
-  const trackers: Tracker[] = matches.map(name => {
+  const trackers: Tracker[] = matches.map((name) => {
     let rawTypeTwo = "address";
     let tIndex = 0;
-    const tracker = indexMap.find(index => "TR:" + index.name == name);
+    const tracker = indexMap.find((index) => "TR:" + index.name == name);
     if (tracker) {
       tIndex = tracker.id;
       if (tracker.type == 0) {
@@ -134,24 +139,25 @@ export function parseTrackers(
 
   const updateMatchesSet = [...new Set([...(condition.match(truRegex) || [])])];
 
-  const updatedTrackers: Tracker[] = updateMatchesSet.map((name: string): Maybe<Tracker> => {
-    let tIndex = 0;
-    name = name.replace("TRU:", "TR:");
-    const tracker = indexMap.find(index => "TR:" + index.name == name);
-    if (tracker) {
-      tIndex = tracker.id;
-    }
-    if (![...names, ...trackers].some(item => item.name == name)) {
-      return {
-        name,
-        tIndex,
-        rawType: "tracker"
+  const updatedTrackers: Tracker[] = updateMatchesSet
+    .map((name: string): Maybe<Tracker> => {
+      let tIndex = 0;
+      name = name.replace("TRU:", "TR:");
+      const tracker = indexMap.find((index) => "TR:" + index.name == name);
+      if (tracker) {
+        tIndex = tracker.id;
       }
-    }
+      if (![...names, ...trackers].some((item) => item.name == name)) {
+        return {
+          name,
+          tIndex,
+          rawType: "tracker",
+        };
+      }
 
-    return null;
-
-  }).filter(t => t != null)
+      return null;
+    })
+    .filter((t) => t != null);
 
   return [trCondition, [...trackers, ...updatedTrackers]];
 }
@@ -201,78 +207,89 @@ export function parseForeignCalls(
   names: any[],
   foreignCallNameToID: FCNameToID[],
   indexMap: FCNameToID[],
-  additionalForeignCalls: string[]
+  additionalForeignCalls: string[],
 ): [string, RuleComponent[]] {
   // Use a regular expression to find all FC expressions
   const fcRegex = /FC:[a-zA-Z]+[^\s]+/g;
   const matches = Array.from(condition.matchAll(fcRegex));
 
-  const parsed = additionalForeignCalls.reduce((acc: { condition: string, components: RuleComponent[] }, additional: string) => {
-    const additionalMatch = matches.find(match => match[0].trim() == additional.trim());
-    if (additionalMatch) {
+  const parsed = additionalForeignCalls.reduce(
+    (
+      acc: { condition: string; components: RuleComponent[] },
+      additional: string,
+    ) => {
+      const additionalMatch = matches.find(
+        (match) => match[0].trim() == additional.trim(),
+      );
+      if (additionalMatch) {
+        if (names.indexOf(additionalMatch) !== -1) {
+          let ph = names[names.indexOf(additionalMatch)].fcPlaceholder;
+          acc.condition = acc.condition.replace(additionalMatch[0], ph);
+        } else {
+          // Create a unique placeholder for this FC expression
+          let placeholder = `FC:${getRandom()}`;
+          const existing = names.find((n) => n.name == additionalMatch[0]);
+          if (existing) {
+            placeholder = existing.fcPlaceholder;
+          }
+          acc.condition = acc.condition.replace(
+            additionalMatch[0],
+            placeholder,
+          );
+          if (!existing) {
+            var index = 0;
 
-      if (names.indexOf(additionalMatch) !== -1) {
-        let ph = names[names.indexOf(additionalMatch)].fcPlaceholder;
-        acc.condition = acc.condition.replace(additionalMatch[0], ph);
-      } else {
-        // Create a unique placeholder for this FC expression
-        let placeholder = `FC:${getRandom()}`;
-        const existing = names.find(n => n.name == additionalMatch[0]);
-        if (existing) {
-          placeholder = existing.fcPlaceholder;
+            const fcMap = foreignCallNameToID.find(
+              (fc) => "FC:" + fc.name.trim() == additionalMatch[0].trim(),
+            );
+
+            if (fcMap) {
+              index = fcMap.id;
+            }
+            acc.components.push({
+              name: additionalMatch[0],
+              tIndex: index,
+              rawType: "foreign call",
+              fcPlaceholder: placeholder,
+            });
+          }
         }
-        acc.condition = acc.condition.replace(
-          additionalMatch[0],
-          placeholder
+      } else {
+        const existing = names.find(
+          (n) => n.name == additional.trim().split("(")[0],
         );
         if (!existing) {
           var index = 0;
-
-          const fcMap = foreignCallNameToID.find(fc => "FC:" + fc.name.trim() == additionalMatch[0].trim());
-
+          const fcMap = foreignCallNameToID.find(
+            (fc) => "FC:" + fc.name.trim() == additional.trim().split("(")[0],
+          );
           if (fcMap) {
             index = fcMap.id;
           }
-          acc.components.push({
-            name: additionalMatch[0],
-            tIndex: index,
-            rawType: "foreign call",
-            fcPlaceholder: placeholder,
-          });
+          if (additional.includes("TR:")) {
+            const [updatedSyntax, trackers] = parseTrackers(
+              " " + additional + " ",
+              names,
+              indexMap,
+            );
+            acc.components.push(...trackers);
+          } else {
+            acc.components.push({
+              name: additional.trim().split("(")[0],
+              tIndex: index,
+              rawType: "foreign call",
+              fcPlaceholder: "noPH",
+            });
+          }
         }
       }
-    } else {
-      const existing = names.find(n => n.name == additional.trim().split("(")[0]);
-      if (!existing) {
-        var index = 0;
-        const fcMap = foreignCallNameToID.find(fc => "FC:" + fc.name.trim() == additional.trim().split("(")[0]);
-        if (fcMap) {
-          index = fcMap.id;
-        }
-        if (additional.includes("TR:")) {
-          const [updatedSyntax, trackers] = parseTrackers(
-            " " + additional + " ",
-            names,
-            indexMap
-          );
-          acc.components.push(...trackers);
-        } else {
-          acc.components.push({
-            name: additional.trim().split("(")[0],
-            tIndex: index,
-            rawType: "foreign call",
-            fcPlaceholder: "noPH",
-          });
-        }
-      }
-    }
-    return acc;
-  }, { condition, components: [] });
+      return acc;
+    },
+    { condition, components: [] },
+  );
 
   return [parsed.condition, parsed.components];
-
 }
-
 
 export function cleanseForeignCallLists(doubleArray: any[]): any[] {
   var iterToSkip = 0;
@@ -432,7 +449,7 @@ export function parseEffect(
   effect: string,
   names: any[],
   placeholders: PlaceholderStruct[],
-  indexMap: trackerIndexNameMapping[]
+  indexMap: trackerIndexNameMapping[],
 ): EffectDefinition {
   var effectType = EffectType.REVERT;
   var effectText = "";
@@ -469,7 +486,7 @@ export function parseEffect(
       effect,
       names,
       indexMap,
-      placeholders
+      placeholders,
     );
     effectInstructionSet = instructionSet;
   }
@@ -496,7 +513,7 @@ export function parseEffect(
  */
 export function buildRawData(
   instructionSet: any[],
-  excludeArray: string[]
+  excludeArray: string[],
 ): number[] {
   return instructionSet.map((instruction) => {
     // Only capture values that aren't naturally numbers
@@ -514,11 +531,11 @@ export function buildRawData(
           keccak256(
             encodeAbiParameters(
               parseAbiParameters(
-                instruction.startsWith("0x") ? "bytes" : "string"
+                instruction.startsWith("0x") ? "bytes" : "string",
               ),
-              [instruction]
-            )
-          )
+              [instruction],
+            ),
+          ),
         );
       } else {
         return instruction;

@@ -1,16 +1,16 @@
 /// SPDX-License-Identifier: BUSL-1.1
 
-export { RulesEngine } from './modules/rules-engine.js'
+export { RulesEngine } from "./modules/rules-engine.js";
 
-export { getConfig, connectConfig, setupConfig } from './config.js'
+export { getConfig, connectConfig, setupConfig } from "./config.js";
 
-export { generateModifier } from './codeGeneration/generate-solidity.js'
+export { generateModifier } from "./codeGeneration/generate-solidity.js";
 
-export { injectModifier } from './codeGeneration/inject-modifier.js'
+export { injectModifier } from "./codeGeneration/inject-modifier.js";
 
-export { policyModifierGeneration } from './codeGeneration/code-modification-script.js'
+export { policyModifierGeneration } from "./codeGeneration/code-modification-script.js";
 
-export { getTrackerToRuleIds } from './modules/trackers.js'
+export { getTrackerToRuleIds } from "./modules/trackers.js";
 
 export {
   RulesEnginePolicyContract,
@@ -51,7 +51,7 @@ export {
   Either,
   PolicyResult,
   ContractBlockParameters,
-} from './modules/types.js'
+} from "./modules/types.js";
 
 export {
   safeParseJson,
@@ -70,7 +70,7 @@ export {
   policyJSONValidator,
   splitFunctionInput,
   validateFCFunctionInput,
-} from './modules/validation.js'
+} from "./modules/validation.js";
 
 export type {
   RuleJSON,
@@ -79,6 +79,6 @@ export type {
   MappedTrackerJSON,
   CallingFunctionJSON,
   PolicyJSON,
-} from './modules/validation.js'
+} from "./modules/validation.js";
 
-export { isLeft, isRight, unwrapEither } from './modules/utils.js'
+export { isLeft, isRight, unwrapEither } from "./modules/utils.js";

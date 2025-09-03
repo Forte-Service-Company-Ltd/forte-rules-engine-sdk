@@ -55,9 +55,10 @@ export const getRulesErrorMessages = (errors: RulesError[]): string => {
   return errors.map((err) => `${err.message}`).join("\n");
 };
 
-
-const validateLogicalOperatorGroup = (operator: string, condition: string[]): boolean => condition.join(" ").split(operator).length == 2;
-
+const validateLogicalOperatorGroup = (
+  operator: string,
+  condition: string[],
+): boolean => condition.join(" ").split(operator).length == 2;
 
 /**
  * Accepts an array of RulesError objects and returns a formatted message string
@@ -73,9 +74,13 @@ export const validateConditionGroup = (condition: string[]): boolean => {
   const orTerms = validateLogicalOperatorGroup(orOperator, condition);
 
   return (andTerms || orTerms) && !(andTerms && orTerms);
-}
+};
 
-export const handleCloseParenthesis = (acc: ConditionGroups, term: string, coreGroup: boolean) => {
+export const handleCloseParenthesis = (
+  acc: ConditionGroups,
+  term: string,
+  coreGroup: boolean,
+) => {
   if (acc.groups.length === 0) {
     acc.groups.push(["PAREN_GROUP"]); // If no groups left, push a placeholder group
   } else if (coreGroup) {
@@ -86,7 +91,7 @@ export const handleCloseParenthesis = (acc: ConditionGroups, term: string, coreG
     acc.groups[acc.groups.length - 1].push("PAREN_GROUP");
     acc.finalGroups.push(acc.groups.pop() as string[]);
   }
-}
+};
 
 type ConditionGroups = {
   groups: string[][];
@@ -96,11 +101,14 @@ type ConditionGroups = {
 
 const replaceMappedTrackers = (condition: string): string => {
   return condition.replace(/TR:[a-zA-Z]+\([^()]+\)/g, "MAPPED_TRACKER");
-}
+};
 
 const addParensPadding = (condition: string): string => {
-  return condition.replace(/([()])/g, " $1 ").replace(/\s+/g, " ").trim();
-}
+  return condition
+    .replace(/([()])/g, " $1 ")
+    .replace(/\s+/g, " ")
+    .trim();
+};
 
 /**
  * Parses a a rule condition and returns groups formatted based on parenthesis.
@@ -108,46 +116,55 @@ const addParensPadding = (condition: string): string => {
  * @param condition - string representing the rule condition.
  * @returns ConditionGroups the formatted groups and whether the condition is valid syntax.
  */
-export const formatParenConditionGroups = (condition: string): ConditionGroups => {
+export const formatParenConditionGroups = (
+  condition: string,
+): ConditionGroups => {
   const formattedCondition = addParensPadding(replaceMappedTrackers(condition));
-  return formattedCondition.split(" ").reduce((acc: ConditionGroups, term, index, terms) => {
-    if (acc.invalid) return acc; // If already invalid, skip further processing
+  return formattedCondition.split(" ").reduce(
+    (acc: ConditionGroups, term, index, terms) => {
+      if (acc.invalid) return acc; // If already invalid, skip further processing
 
-    const currentGroup = acc.groups[acc.groups.length - 1];
+      const currentGroup = acc.groups[acc.groups.length - 1];
 
-    if (term === ")") {
-      handleCloseParenthesis(acc, term, term !== terms[index - 1]);
-    } else if (term === "(") {
-      acc.groups.push([]); // Start a new group
+      if (term === ")") {
+        handleCloseParenthesis(acc, term, term !== terms[index - 1]);
+      } else if (term === "(") {
+        acc.groups.push([]); // Start a new group
 
-      // if it is the first term, create a new group
-      // if the first term is an open parenthesis it is handled above
-    } else if (index === 0) {
-      acc.groups.push([term]);
+        // if it is the first term, create a new group
+        // if the first term is an open parenthesis it is handled above
+      } else if (index === 0) {
+        acc.groups.push([term]);
 
-      // if is the the last term push it to the current group
-      // then finalize the current group
-      // if it is a close paren it is handled above
-    } else if (index === terms.length - 1) {
-      currentGroup.push(term);
-      acc.finalGroups.push(acc.groups.pop() as string[]); // Push the last group to final groups
+        // if is the the last term push it to the current group
+        // then finalize the current group
+        // if it is a close paren it is handled above
+      } else if (index === terms.length - 1) {
+        currentGroup.push(term);
+        acc.finalGroups.push(acc.groups.pop() as string[]); // Push the last group to final groups
 
-      // the remaining case is a regular string term, add it to the current group
-    } else {
-      // if there is no current group the condition is invalid
-      if (currentGroup == undefined) {
-        acc.invalid = true; // If no current group, mark as invalid
+        // the remaining case is a regular string term, add it to the current group
       } else {
-        currentGroup.push(term); // Add term to the current group
+        // if there is no current group the condition is invalid
+        if (currentGroup == undefined) {
+          acc.invalid = true; // If no current group, mark as invalid
+        } else {
+          currentGroup.push(term); // Add term to the current group
+        }
       }
-    }
 
-    return acc;
-  }, { groups: [], finalGroups: [], invalid: false })
-}
+      return acc;
+    },
+    { groups: [], finalGroups: [], invalid: false },
+  );
+};
 
-const validateInputReferencedCalls = (foreignCallNames: string[], trackerNames: string[], mappedTrackerNames: string[], input: string): boolean => {
-
+const validateInputReferencedCalls = (
+  foreignCallNames: string[],
+  trackerNames: string[],
+  mappedTrackerNames: string[],
+  input: string,
+): boolean => {
   const fcRegex = /FC:[a-zA-Z]+[^\s]+/g;
   const trRegex = /(TR|TRU):[a-zA-Z]+ /g;
   const trMappedRegex = /(TR|TRU):[a-zA-Z]+\([^()]+\)/g;
@@ -156,46 +173,57 @@ const validateInputReferencedCalls = (foreignCallNames: string[], trackerNames: 
   const trMatches = input.match(trRegex) || [];
   const trMappedMatches = input.match(trMappedRegex) || [];
 
-  const [mappedTrackers, mappedTrackerParams] = trMappedMatches.reduce((acc: [string[], string[]], match) => {
-    const [name, params] = match.split("(");
-    acc[0].push(name.replace(/^(TR|TRU):/, "").trim());
-    acc[1].push(params.replace(")", "").trim());
-    return acc;
-  }, [[], []]);
+  const [mappedTrackers, mappedTrackerParams] = trMappedMatches.reduce(
+    (acc: [string[], string[]], match) => {
+      const [name, params] = match.split("(");
+      acc[0].push(name.replace(/^(TR|TRU):/, "").trim());
+      acc[1].push(params.replace(")", "").trim());
+      return acc;
+    },
+    [[], []],
+  );
 
-
-  const validateForeignCalls = fcMatches.every((match) => foreignCallNames.includes(match.replace("FC:", "").trim()));
-  const validateTrackers = trMatches.every((match) => trackerNames.includes(match.replace(/^(TR|TRU):/, "").trim()));
-  const validateMappedTrackers = mappedTrackers.every((match) => mappedTrackerNames.includes(match));
+  const validateForeignCalls = fcMatches.every((match) =>
+    foreignCallNames.includes(match.replace("FC:", "").trim()),
+  );
+  const validateTrackers = trMatches.every((match) =>
+    trackerNames.includes(match.replace(/^(TR|TRU):/, "").trim()),
+  );
+  const validateMappedTrackers = mappedTrackers.every((match) =>
+    mappedTrackerNames.includes(match),
+  );
 
   return validateForeignCalls && validateTrackers && validateMappedTrackers;
-}
+};
 
 const validateValuesToPass = (
   callingFunctionEncodedValues: string[],
   foreignCallNames: string[],
   trackerNames: string[],
   mappedTrackerNames: string[],
-  valuesToPass: string): boolean => {
-
-  return valuesToPass.split(",").map((value) => {
-    value = value.trim()
-    if (value.startsWith("FC:")) {
-      return foreignCallNames.includes(value.replace("FC:", "").trim());
-    } else if (value.startsWith("TR:") || value.startsWith("TRU:")) {
-      value = value.replace(/^(TR|TRU):/, "").trim()
-      if (value.includes("(")) {
-        value = value.split("(")[0].trim();
-        return mappedTrackerNames.includes(value);
-      } else {
-      return trackerNames.includes(value);
+  valuesToPass: string,
+): boolean => {
+  return valuesToPass
+    .split(",")
+    .map((value) => {
+      value = value.trim();
+      if (value.startsWith("FC:")) {
+        return foreignCallNames.includes(value.replace("FC:", "").trim());
+      } else if (value.startsWith("TR:") || value.startsWith("TRU:")) {
+        value = value.replace(/^(TR|TRU):/, "").trim();
+        if (value.includes("(")) {
+          value = value.split("(")[0].trim();
+          return mappedTrackerNames.includes(value);
+        } else {
+          return trackerNames.includes(value);
+        }
+      } else if (callingFunctionEncodedValues.includes(value)) {
+        return true; // If it is a calling function value, it is valid
       }
-    } else if (callingFunctionEncodedValues.includes(value)) {
-      return true; // If it is a calling function value, it is valid
-    }
-    return false;
-  }).every((isValid) => isValid);
-}
+      return false;
+    })
+    .every((isValid) => isValid);
+};
 
 /**
  * Validates referenced calls, Foreign Calls, Trackers, and Mapped Trackers and Calling Functions args
@@ -204,37 +232,67 @@ const validateValuesToPass = (
  * @returns boolean, true if all referenced calls are valid, otherwise false.
  */
 const validateReferencedCalls = (input: any): boolean => {
+  const callingFunctionNames = input.CallingFunctions.map(
+    (call: any) => call.name,
+  );
+  const fcCallingFunctions: string[] = input.ForeignCalls.map(
+    (fc: any) => fc.callingFunction,
+  );
 
-  const callingFunctionNames = input.CallingFunctions.map((call: any) => call.name);
-  const fcCallingFunctions: string[] = input.ForeignCalls.map((fc: any) => fc.callingFunction);
-
-  if (!fcCallingFunctions.every((fcName) => callingFunctionNames.includes(fcName))) {
+  if (
+    !fcCallingFunctions.every((fcName) => callingFunctionNames.includes(fcName))
+  ) {
     return false;
   }
 
-  const callingFunctionEncodedValues = input.CallingFunctions.reduce((acc: Record<string, string[]>, call: CallingFunctionJSON) => {
-    const typeValues = call.encodedValues.split(",");
-    const values: string[] = typeValues.map((v: string) => v.trim().split(" ")[1].trim());
-    acc[call.name] = values;
-    return acc;
-  }, {} as Record<string, string[]>);
+  const callingFunctionEncodedValues = input.CallingFunctions.reduce(
+    (acc: Record<string, string[]>, call: CallingFunctionJSON) => {
+      const typeValues = call.encodedValues.split(",");
+      const values: string[] = typeValues.map((v: string) =>
+        v.trim().split(" ")[1].trim(),
+      );
+      acc[call.name] = values;
+      return acc;
+    },
+    {} as Record<string, string[]>,
+  );
 
   const foreignCallNames = input.ForeignCalls.map((call: any) => call.name);
   const trackerNames = input.Trackers.map((tracker: any) => tracker.name);
-  const mappedTrackerNames = input.MappedTrackers.map((tracker: any) => tracker.name);
+  const mappedTrackerNames = input.MappedTrackers.map(
+    (tracker: any) => tracker.name,
+  );
 
-  const testInputs = input.Rules.map((rule: any) => [rule.condition, rule.positiveEffects, rule.negativeEffects]).flat(2);
+  const testInputs = input.Rules.map((rule: any) => [
+    rule.condition,
+    rule.positiveEffects,
+    rule.negativeEffects,
+  ]).flat(2);
 
-  const validatedInputs = testInputs.map((input: string) => {
-    return validateInputReferencedCalls(foreignCallNames, trackerNames, mappedTrackerNames, input);
-  }).every((isValid: boolean) => isValid);
+  const validatedInputs = testInputs
+    .map((input: string) => {
+      return validateInputReferencedCalls(
+        foreignCallNames,
+        trackerNames,
+        mappedTrackerNames,
+        input,
+      );
+    })
+    .every((isValid: boolean) => isValid);
 
-  const validatedForeignCallValuesToPass = input.ForeignCalls.map((call: any) => {
-    return validateValuesToPass(callingFunctionEncodedValues[call.callingFunction], foreignCallNames, trackerNames, mappedTrackerNames, call.valuesToPass);
-  }).every((isValid: boolean) => isValid);
+  const validatedForeignCallValuesToPass = input.ForeignCalls.map(
+    (call: any) => {
+      return validateValuesToPass(
+        callingFunctionEncodedValues[call.callingFunction],
+        foreignCallNames,
+        trackerNames,
+        mappedTrackerNames,
+        call.valuesToPass,
+      );
+    },
+  ).every((isValid: boolean) => isValid);
   return validatedInputs && validatedForeignCallValuesToPass; // If any input is invalid, return false
-
-}
+};
 
 /**
  * Validates a rule condition.
@@ -255,7 +313,10 @@ export const validateCondition = (condition: string): boolean => {
   }
 
   // if there is a single groups that does not include a logical operator, it is valid
-  if (grouped.finalGroups.length === 1 && !["AND", "OR"].includes(grouped.finalGroups[0].join(" "))) {
+  if (
+    grouped.finalGroups.length === 1 &&
+    !["AND", "OR"].includes(grouped.finalGroups[0].join(" "))
+  ) {
     return true; // If no groups, condition is valid
   }
 
@@ -264,19 +325,21 @@ export const validateCondition = (condition: string): boolean => {
     .every((isValid) => isValid);
 
   return validatedOperators;
-}
-
+};
 
 export const ruleValidator = z.object({
   Name: z.string(),
   Description: z.string(),
-  condition: z.string()
-    .refine((val) => validateCondition(val), { error: "Invalid logical operators in condition" }),
+  condition: z
+    .string()
+    .refine((val) => validateCondition(val), {
+      error: "Invalid logical operators in condition",
+    }),
   positiveEffects: z.array(z.string()),
   negativeEffects: z.array(z.string()),
   callingFunction: z.string(),
 });
-export interface RuleJSON extends z.infer<typeof ruleValidator> { }
+export interface RuleJSON extends z.infer<typeof ruleValidator> {}
 
 /**
  * Parses a JSON string and returns Either a RuleJSON object or an error.
@@ -285,7 +348,7 @@ export interface RuleJSON extends z.infer<typeof ruleValidator> { }
  * @returns Either the parsed RuleJSON object or an error.
  */
 export const validateRuleJSON = (
-  rule: string
+  rule: string,
 ): Either<RulesError[], RuleJSON> => {
   const parsedJson = safeParseJson(rule);
 
@@ -323,7 +386,10 @@ export const validateFCFunctionInput = (input: string): boolean => {
   if (inner === "") return true;
 
   // Otherwise, validate each declared type against supported PType list
-  const parts = inner.split(",").map((p) => p.trim()).filter(Boolean);
+  const parts = inner
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean);
   return parts.every((parameter) => (PType as string[]).includes(parameter));
 };
 
@@ -342,14 +408,14 @@ export const foreignCallValidator = z.object({
     .transform((input) => checksumAddress(input.trim() as Address)),
   returnType: z.preprocess(
     trimPossibleString,
-    z.literal(PType, "Unsupported return type")
+    z.literal(PType, "Unsupported return type"),
   ),
   valuesToPass: z.string().trim(),
   mappedTrackerKeyValues: z.string().trim(),
   callingFunction: z.string().trim(),
 });
 
-export interface ForeignCallJSON extends z.infer<typeof foreignCallValidator> { }
+export interface ForeignCallJSON extends z.infer<typeof foreignCallValidator> {}
 
 /**
  * Parses a JSON string and returns Either a ForeignCallJSON object or an error.
@@ -358,7 +424,7 @@ export interface ForeignCallJSON extends z.infer<typeof foreignCallValidator> { 
  * @returns Either the parsed ForeignCallJSON object or an error.
  */
 export const validateForeignCallJSON = (
-  foreignCall: string
+  foreignCall: string,
 ): Either<RulesError[], ForeignCallJSON> => {
   const parsedJson = safeParseJson(foreignCall);
 
@@ -383,19 +449,21 @@ export const foreignCallReverseValidator = foreignCallValidator.extend({
 });
 
 export interface ForeignCallJSONReversed
-  extends z.infer<typeof foreignCallValidator> { }
-
+  extends z.infer<typeof foreignCallValidator> {}
 
 export const paramTypes = PT.map((p) => p.name);
-export type ParameterTypes = typeof paramTypes[number];
-export const supportedTrackerTypes = paramTypes.filter(name => name !== "void");
+export type ParameterTypes = (typeof paramTypes)[number];
+export const supportedTrackerTypes = paramTypes.filter(
+  (name) => name !== "void",
+);
 
-export type SupportedTrackers = typeof supportedTrackerTypes[number];
+export type SupportedTrackers = (typeof supportedTrackerTypes)[number];
 
-export const supportedTrackerKeyTypes = supportedTrackerTypes.filter(t => !t.includes("[]"));
+export const supportedTrackerKeyTypes = supportedTrackerTypes.filter(
+  (t) => !t.includes("[]"),
+);
 
-export type SupportedTrackerKeys = typeof supportedTrackerKeyTypes[number];
-
+export type SupportedTrackerKeys = (typeof supportedTrackerKeyTypes)[number];
 
 /**
  * Validates tracker initial value to ensure it matches the type specified.
@@ -419,7 +487,6 @@ const validateTrackerValue = (type: SupportedTrackers, value: any): boolean => {
       return true;
     default:
       return false; // Unsupported type
-
   }
 };
 
@@ -429,55 +496,58 @@ const validateTrackerInitialValue = (data: any): boolean => {
     if (!Array.isArray(data.initialValue)) {
       return false; // Initial value must be an array for array types
     }
-    return data.initialValue.every(
-      (value: any) => validateTrackerValue(data.type.replace("[]", ""), value)
+    return data.initialValue.every((value: any) =>
+      validateTrackerValue(data.type.replace("[]", ""), value),
     );
   } else {
     // For non-array types, we validate the single initialValue
     return validateTrackerValue(data.type, data.initialValue);
   }
-}
+};
 
-const validateMappedTrackerInitialInputs = (type: any, inputs: any): boolean => {
+const validateMappedTrackerInitialInputs = (
+  type: any,
+  inputs: any,
+): boolean => {
   if (!Array.isArray(inputs)) {
     return false; // Initial values must be an array for array types
   }
   if (type.includes("[]")) {
-    return inputs.every((
-      value: any) => Array.isArray(value) && value.every(
-        (v: any) => validateTrackerValue(type.replace("[]", ""), v)
-      )
+    return inputs.every(
+      (value: any) =>
+        Array.isArray(value) &&
+        value.every((v: any) =>
+          validateTrackerValue(type.replace("[]", ""), v),
+        ),
     );
   } else {
-    return inputs.every(
-      (value: any) => validateTrackerValue(type, value)
-    );
+    return inputs.every((value: any) => validateTrackerValue(type, value));
   }
-}
+};
 
 const validateMappedTrackerInitialValues = (data: any): boolean => {
   return validateMappedTrackerInitialInputs(data.valueType, data.initialValues);
-}
+};
 
 const validateMappedTrackerInitialKeys = (data: any): boolean => {
   return validateMappedTrackerInitialInputs(data.keyType, data.initialKeys);
-}
+};
 
 const validateMappedTrackerInitialLengths = (data: any): boolean => {
   return data.initialKeys.length === data.initialValues.length;
-}
+};
 
 const validateMappedTrackerUniqueKeys = (data: any): boolean => {
   const uniqueKeys = new Set(data.initialKeys);
   return uniqueKeys.size === data.initialKeys.length;
-}
+};
 
 export const trackerValidator = z
   .object({
     name: z.string().trim(),
     type: z.preprocess(
       trimPossibleString,
-      z.literal(supportedTrackerTypes, "Unsupported type")
+      z.literal(supportedTrackerTypes, "Unsupported type"),
     ),
     initialValue: z.union([z.string().trim(), z.array(z.string().trim())]),
   })
@@ -485,24 +555,27 @@ export const trackerValidator = z
     message: "Initial Value doesn't match type",
   });
 
-export interface TrackerJSON extends z.infer<typeof trackerValidator> { }
+export interface TrackerJSON extends z.infer<typeof trackerValidator> {}
 
 export interface MappedTrackerJSON
-  extends z.infer<typeof mappedTrackerValidator> { }
+  extends z.infer<typeof mappedTrackerValidator> {}
 
-export const mappedTrackerValidator = z.object({
-  name: z.string().trim(),
-  keyType: z.preprocess(
-    trimPossibleString,
-    z.literal(supportedTrackerKeyTypes, "Unsupported key type")
-  ),
-  valueType: z.preprocess(
-    trimPossibleString,
-    z.literal(supportedTrackerTypes, "Unsupported type")
-  ),
-  initialKeys: z.array(z.string()),
-  initialValues: z.array(z.union([z.string().trim(), z.array(z.string().trim())])),
-})
+export const mappedTrackerValidator = z
+  .object({
+    name: z.string().trim(),
+    keyType: z.preprocess(
+      trimPossibleString,
+      z.literal(supportedTrackerKeyTypes, "Unsupported key type"),
+    ),
+    valueType: z.preprocess(
+      trimPossibleString,
+      z.literal(supportedTrackerTypes, "Unsupported type"),
+    ),
+    initialKeys: z.array(z.string()),
+    initialValues: z.array(
+      z.union([z.string().trim(), z.array(z.string().trim())]),
+    ),
+  })
   .refine(validateMappedTrackerInitialValues, {
     message: "Mapped Tracker Initial Values do not match type",
   })
@@ -523,7 +596,7 @@ export const mappedTrackerValidator = z.object({
  * @returns Either the parsed TrackerJSON object or an error.
  */
 export const validateTrackerJSON = (
-  tracker: string
+  tracker: string,
 ): Either<RulesError[], TrackerJSON> => {
   const parsedJson = safeParseJson(tracker);
 
@@ -550,7 +623,7 @@ export const validateTrackerJSON = (
  * @returns Either the parsed MappedTrackerJSON object or an error.
  */
 export const validateMappedTrackerJSON = (
-  tracker: string
+  tracker: string,
 ): Either<RulesError[], MappedTrackerJSON> => {
   const parsedJson = safeParseJson(tracker);
 
@@ -577,7 +650,7 @@ export const callingFunctionValidator = z.object({
 });
 
 export interface CallingFunctionJSON
-  extends z.infer<typeof callingFunctionValidator> { }
+  extends z.infer<typeof callingFunctionValidator> {}
 
 /**
  * Parses a JSON string and returns Either a CallingFunctionJSON object or an error.
@@ -586,7 +659,7 @@ export interface CallingFunctionJSON
  * @returns Either the parsed CallingFunctionJSON object or an error.
  */
 export const validateCallingFunctionJSON = (
-  callingFunction: string
+  callingFunction: string,
 ): Either<RulesError[], CallingFunctionJSON> => {
   const parsedJson = safeParseJson(callingFunction);
   if (isLeft(parsedJson)) return parsedJson;
@@ -603,17 +676,19 @@ export const validateCallingFunctionJSON = (
   }
 };
 
-export const policyJSONValidator = z.object({
-  Policy: z.string(),
-  Description: z.string(),
-  PolicyType: z.string(),
-  CallingFunctions: z.array(callingFunctionValidator),
-  ForeignCalls: z.array(foreignCallValidator),
-  Trackers: z.array(trackerValidator),
-  MappedTrackers: z.array(mappedTrackerValidator),
-  Rules: z.array(ruleValidator),
-}).refine(validateReferencedCalls, { message: "Invalid reference call" });
-export interface PolicyJSON extends z.infer<typeof policyJSONValidator> { }
+export const policyJSONValidator = z
+  .object({
+    Policy: z.string(),
+    Description: z.string(),
+    PolicyType: z.string(),
+    CallingFunctions: z.array(callingFunctionValidator),
+    ForeignCalls: z.array(foreignCallValidator),
+    Trackers: z.array(trackerValidator),
+    MappedTrackers: z.array(mappedTrackerValidator),
+    Rules: z.array(ruleValidator),
+  })
+  .refine(validateReferencedCalls, { message: "Invalid reference call" });
+export interface PolicyJSON extends z.infer<typeof policyJSONValidator> {}
 
 /**
  * Parses a JSON string and returns Either a PolicyJSON object or an error.
@@ -622,7 +697,7 @@ export interface PolicyJSON extends z.infer<typeof policyJSONValidator> { }
  * @returns Either the parsed PolicyJSON object or an error.
  */
 export const validatePolicyJSON = (
-  policy: string
+  policy: string,
 ): Either<RulesError[], PolicyJSON> => {
   const parsedJson = safeParseJson(policy);
 

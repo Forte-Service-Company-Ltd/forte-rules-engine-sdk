@@ -49,7 +49,7 @@ export const proposeNewPolicyAdmin = async (
   rulesEngineAdminContract: RulesEngineAdminContract,
   policyId: number,
   newAdminAddress: Address,
-  confirmationCount: number
+  confirmationCount: number,
 ): Promise<void> => {
   var proposeAdmin;
   while (true) {
@@ -92,7 +92,7 @@ export const confirmNewPolicyAdmin = async (
   config: Config,
   rulesEngineAdminContract: RulesEngineAdminContract,
   policyId: number,
-  confirmationCount: number
+  confirmationCount: number,
 ): Promise<void> => {
   var confirmAdmin;
   while (true) {
@@ -139,7 +139,7 @@ export const isPolicyAdmin = async (
   rulesEngineAdminContract: RulesEngineAdminContract,
   policyId: number,
   adminAddress: Address,
-  blockParams?: ContractBlockParameters
+  blockParams?: ContractBlockParameters,
 ): Promise<boolean> => {
   try {
     let policyExists = await readContract(config, {
@@ -147,7 +147,7 @@ export const isPolicyAdmin = async (
       abi: rulesEngineAdminContract.abi,
       functionName: "isPolicyAdmin",
       args: [policyId, adminAddress],
-      ...blockParams
+      ...blockParams,
     });
     return policyExists as boolean;
   } catch (error) {
@@ -173,7 +173,7 @@ export const proposeNewCallingContractAdmin = async (
   rulesEngineAdminContract: RulesEngineAdminContract,
   callingContractAddress: Address,
   newAdminAddress: Address,
-  confirmationCount: number // = 3
+  confirmationCount: number, // = 3
 ): Promise<void> => {
   var proposeAdmin;
   while (true) {
@@ -217,7 +217,7 @@ export const confirmNewCallingContractAdmin = async (
   config: Config,
   rulesEngineAdminContract: RulesEngineAdminContract,
   callingContractAddress: Address,
-  confirmationCount: number
+  confirmationCount: number,
 ) => {
   var confirmAdmin;
   while (true) {
@@ -264,7 +264,7 @@ export const isCallingContractAdmin = async (
   rulesEngineAdminContract: RulesEngineAdminContract,
   callingContract: Address,
   account: Address,
-  blockParams?: ContractBlockParameters
+  blockParams?: ContractBlockParameters,
 ): Promise<boolean> => {
   try {
     let policyExists = await readContract(config, {
@@ -272,7 +272,7 @@ export const isCallingContractAdmin = async (
       abi: rulesEngineAdminContract.abi,
       functionName: "isCallingContractAdmin",
       args: [callingContract, account],
-      ...blockParams
+      ...blockParams,
     });
     return policyExists as boolean;
   } catch (error) {
@@ -300,7 +300,7 @@ export const isForeignCallAdmin = async (
   foreignCallContract: Address,
   account: Address,
   functionSelector: string,
-  blockParams?: ContractBlockParameters
+  blockParams?: ContractBlockParameters,
 ): Promise<boolean> => {
   var selector = toFunctionSelector(functionSelector);
   try {
@@ -309,7 +309,7 @@ export const isForeignCallAdmin = async (
       abi: rulesEngineAdminContract.abi,
       functionName: "isForeignCallAdmin",
       args: [foreignCallContract, account, selector],
-      ...blockParams
+      ...blockParams,
     });
     return isForeignCallAdmin as boolean;
   } catch (error) {
@@ -337,7 +337,7 @@ export const proposeNewForeignCallAdmin = async (
   foreignCallAddress: Address,
   newAdminAddress: Address,
   functionSelector: string,
-  confirmationCount: number
+  confirmationCount: number,
 ): Promise<void> => {
   var proposeAdmin;
   var selector = toFunctionSelector(functionSelector);
@@ -384,7 +384,7 @@ export const confirmNewForeignCallAdmin = async (
   rulesEngineAdminContract: RulesEngineAdminContract,
   foreignCallAddress: Address,
   functionSelector: string,
-  confirmationCount: number
+  confirmationCount: number,
 ) => {
   var confirmAdmin;
   var selector = toFunctionSelector(functionSelector);

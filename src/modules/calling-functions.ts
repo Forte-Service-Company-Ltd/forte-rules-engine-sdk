@@ -64,11 +64,11 @@ export const createCallingFunction = async (
   policyId: number,
   callingFunction: string,
   encodedValues: string,
-  confirmationCount: number
+  confirmationCount: number,
 ): Promise<number> => {
-  const args: number[] = encodedValues.split(",").map((val) =>
-    determinePTEnumeration(val.trim().split(" ")[0])
-  );
+  const args: number[] = encodedValues
+    .split(",")
+    .map((val) => determinePTEnumeration(val.trim().split(" ")[0]));
   var addRule;
   while (true) {
     try {
@@ -121,7 +121,7 @@ export const deleteCallingFunction = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
   callingFunctionId: number,
-  confirmationCount: number
+  confirmationCount: number,
 ): Promise<number> => {
   var addRule;
   try {
@@ -166,7 +166,7 @@ export const getCallingFunctionMetadata = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
   callingFunctionId: number,
-  blockParams?: ContractBlockParameters
+  blockParams?: ContractBlockParameters,
 ): Promise<CallingFunctionHashMapping> => {
   try {
     const getMeta = await readContract(config, {
@@ -174,7 +174,7 @@ export const getCallingFunctionMetadata = async (
       abi: rulesEngineComponentContract.abi,
       functionName: "getCallingFunctionMetadata",
       args: [policyId, callingFunctionId],
-      ...blockParams
+      ...blockParams,
     });
     let callingFunctionResult = getMeta as CallingFunctionHashMapping;
     return callingFunctionResult;
@@ -202,16 +202,16 @@ export const getCallingFunctions = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  blockParams?: ContractBlockParameters
+  blockParams?: ContractBlockParameters,
 ): Promise<CallingFunctionOnChain[]> => {
   try {
-    const callingFunctions = await readContract(config, {
+    const callingFunctions = (await readContract(config, {
       address: rulesEngineComponentContract.address,
       abi: rulesEngineComponentContract.abi,
       functionName: "getAllCallingFunctions",
       args: [policyId],
-      ...blockParams
-    }) as CallingFunctionOnChain[];
+      ...blockParams,
+    })) as CallingFunctionOnChain[];
     return callingFunctions;
   } catch (error) {
     console.error(error);
