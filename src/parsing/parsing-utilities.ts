@@ -1,10 +1,5 @@
 /// SPDX-License-Identifier: BUSL-1.1
-import {
-  encodeAbiParameters,
-  isAddress,
-  keccak256,
-  parseAbiParameters,
-} from "viem";
+import { encodeAbiParameters, isAddress, keccak256, parseAbiParameters } from 'viem'
 import {
   trackerIndexNameMapping,
   FCNameToID,
@@ -17,9 +12,9 @@ import {
   RuleComponent,
   PTNamesTracker,
   Maybe,
-} from "../modules/types";
-import { convertHumanReadableToInstructionSet } from "./internal-parsing-logic";
-import { getRandom } from "../modules/utils";
+} from '../modules/types'
+import { convertHumanReadableToInstructionSet } from './internal-parsing-logic'
+import { getRandom } from '../modules/utils'
 
 /**
  * @file parsing-utilities.ts
@@ -45,29 +40,29 @@ import { getRandom } from "../modules/utils";
  * @param condition - Optional parameter for the condition statement of a rule
  * @returns An array of FunctionArgument.
  */
-export function parseFunctionArguments(
-  encodedValues: string,
-  condition?: string
-): FunctionArgument[] {
+export function parseFunctionArguments(encodedValues: string, condition?: string): FunctionArgument[] {
   // handle empty args
-  if (encodedValues === "") return [];
+  if (encodedValues === '') return []
 
-  return encodedValues.trim().split(",").map((param, tIndex) => {
-    const parts = param.trim().split(" ");
-    const name = parts[1].trim();
-    const rawType = parts[0].trim();
-    if (PTNamesTracker.includes(rawType) && (condition == null || condition.includes(name))) {
-      return {
-        name,
-        tIndex,
-        rawType,
-      };
-    } else {
-      return null;
-    }
-  }).filter(p => p != null);
+  return encodedValues
+    .trim()
+    .split(',')
+    .map((param, tIndex) => {
+      const parts = param.trim().split(' ')
+      const name = parts[1].trim()
+      const rawType = parts[0].trim()
+      if (PTNamesTracker.includes(rawType) && (condition == null || condition.includes(name))) {
+        return {
+          name,
+          tIndex,
+          rawType,
+        }
+      } else {
+        return null
+      }
+    })
+    .filter((p) => p != null)
 }
-
 
 /**
  * Parses tracker references in a rule condition string and adds them to the argument list.
@@ -83,99 +78,91 @@ export function parseTrackers(
   names: any[],
   indexMap: trackerIndexNameMapping[]
 ): [string, Tracker[]] {
-  const trRegex = /TR:[a-zA-Z]+/g;
-  const truRegex = /TRU:[a-zA-Z]+/g;
+  const trRegex = /TR:[a-zA-Z]+/g
+  const truRegex = /TRU:[a-zA-Z]+/g
 
-  const matches = [...new Set(condition.match(trRegex) || [])];
+  const matches = [...new Set(condition.match(trRegex) || [])]
 
-
-  const trMappedRegex = /TR:[a-zA-Z]+\([^()]+\)/g;
-  const truMappedRegex = /TRU:[a-zA-Z]+\([^()]+\)/g;
-  const mappedMatches = condition.match(trMappedRegex) || [];
-  const mappedUpdateMatches = condition.match(truMappedRegex) || [];
-  const mappedMatchesSet = [
-    ...new Set([...mappedMatches, ...mappedUpdateMatches]),
-  ];
+  const trMappedRegex = /TR:[a-zA-Z]+\([^()]+\)/g
+  const truMappedRegex = /TRU:[a-zA-Z]+\([^()]+\)/g
+  const mappedMatches = condition.match(trMappedRegex) || []
+  const mappedUpdateMatches = condition.match(truMappedRegex) || []
+  const mappedMatchesSet = [...new Set([...mappedMatches, ...mappedUpdateMatches])]
 
   // replace mapped tracker parens syntx `trackerName(key) with pipe syntax `trackerName | key`
   const trCondition = mappedMatchesSet.reduce((acc, match) => {
-    let initialSplit = match.split("(")[1];
+    let initialSplit = match.split('(')[1]
 
-    initialSplit = initialSplit.substring(0, initialSplit.length - 1);
+    initialSplit = initialSplit.substring(0, initialSplit.length - 1)
 
-    return acc.replace(match, initialSplit + " | " + match.split("(")[0]);
-  }, condition);
+    return acc.replace(match, initialSplit + ' | ' + match.split('(')[0])
+  }, condition)
 
-  const trackers: Tracker[] = matches.map(name => {
-    let rawTypeTwo = "address";
-    let tIndex = 0;
-    const tracker = indexMap.find(index => "TR:" + index.name == name);
+  const trackers: Tracker[] = matches.map((name) => {
+    let rawTypeTwo = 'address'
+    let tIndex = 0
+    const tracker = indexMap.find((index) => 'TR:' + index.name == name)
     if (tracker) {
-      tIndex = tracker.id;
+      tIndex = tracker.id
       if (tracker.type == 0) {
-        rawTypeTwo = "address";
+        rawTypeTwo = 'address'
       } else if (tracker.type == 1) {
-        rawTypeTwo = "string";
+        rawTypeTwo = 'string'
       } else if (tracker.type == 3) {
-        rawTypeTwo = "bool";
+        rawTypeTwo = 'bool'
       } else if (tracker.type == 5) {
-        rawTypeTwo = "bytes";
+        rawTypeTwo = 'bytes'
       } else {
-        rawTypeTwo = "uint256";
+        rawTypeTwo = 'uint256'
       }
     }
     return {
       name,
       tIndex,
-      rawType: "tracker",
+      rawType: 'tracker',
       rawTypeTwo,
-    };
-  });
-
-  const updateMatchesSet = [...new Set([...(condition.match(truRegex) || [])])];
-
-  const updatedTrackers: Tracker[] = updateMatchesSet.map((name: string): Maybe<Tracker> => {
-    let tIndex = 0;
-    name = name.replace("TRU:", "TR:");
-    const tracker = indexMap.find(index => "TR:" + index.name == name);
-    if (tracker) {
-      tIndex = tracker.id;
     }
-    if (![...names, ...trackers].some(item => item.name == name)) {
-      return {
-        name,
-        tIndex,
-        rawType: "tracker"
+  })
+
+  const updateMatchesSet = [...new Set([...(condition.match(truRegex) || [])])]
+
+  const updatedTrackers: Tracker[] = updateMatchesSet
+    .map((name: string): Maybe<Tracker> => {
+      let tIndex = 0
+      name = name.replace('TRU:', 'TR:')
+      const tracker = indexMap.find((index) => 'TR:' + index.name == name)
+      if (tracker) {
+        tIndex = tracker.id
       }
-    }
+      if (![...names, ...trackers].some((item) => item.name == name)) {
+        return {
+          name,
+          tIndex,
+          rawType: 'tracker',
+        }
+      }
 
-    return null;
+      return null
+    })
+    .filter((t) => t != null)
 
-  }).filter(t => t != null)
-
-  return [trCondition, [...trackers, ...updatedTrackers]];
+  return [trCondition, [...trackers, ...updatedTrackers]]
 }
 
 export function parseGlobalVariables(condition: string): RuleComponent[] {
-  const fcRegex = /GV:[a-zA-Z]+[^\s]+/g;
+  const fcRegex = /GV:[a-zA-Z]+[^\s]+/g
 
   // Convert matches iterator to array to process all at once
-  const matches = condition.matchAll(fcRegex);
-  const matchesArray: RegExpExecArray[] = [...matches];
-  const gvExpressions = [
-    "GV:BLOCK_TIMESTAMP",
-    "GV:MSG_DATA",
-    "GV:MSG_SENDER",
-    "GV:BLOCK_NUMBER",
-    "GV:TX_ORIGIN",
-  ];
+  const matches = condition.matchAll(fcRegex)
+  const matchesArray: RegExpExecArray[] = [...matches]
+  const gvExpressions = ['GV:BLOCK_TIMESTAMP', 'GV:MSG_DATA', 'GV:MSG_SENDER', 'GV:BLOCK_NUMBER', 'GV:TX_ORIGIN']
   const components: RuleComponent[] = matchesArray
     .filter((name) => gvExpressions.includes(name[0]))
     .map((name) => {
-      return { name: name[0], tIndex: 0, rawType: "Global" };
-    });
+      return { name: name[0], tIndex: 0, rawType: 'Global' }
+    })
 
-  return components;
+  return components
 }
 
 /**
@@ -204,65 +191,84 @@ export function parseForeignCalls(
   additionalForeignCalls: string[]
 ): [string, RuleComponent[]] {
   // Use a regular expression to find all FC expressions
-  const fcRegex = /FC:[a-zA-Z]+[^\s]+/g;
-  const matches = Array.from(condition.matchAll(fcRegex));
+  const fcRegex = /FC:[a-zA-Z]+[^\s]+/g
+  // const matches = condition.matchAll(fcRegex);
+  let processedCondition = condition
 
   const parsed = additionalForeignCalls.reduce((acc: { condition: string, components: RuleComponent[] }, additional: string) => {
     const additionalMatch = matches.find(match => match[0].trim() == additional.trim());
     if (additionalMatch) {
 
-      if (names.indexOf(additionalMatch) !== -1) {
-        let ph = names[names.indexOf(additionalMatch)].fcPlaceholder;
-        acc.condition = acc.condition.replace(additionalMatch[0], ph);
-      } else {
-        // Create a unique placeholder for this FC expression
-        let placeholder = `FC:${getRandom()}`;
-        const existing = names.find(n => n.name == additionalMatch[0]);
-        if (existing) {
-          placeholder = existing.fcPlaceholder;
+  for (var additional of additionalForeignCalls) {
+    var found = false
+    // Convert matches iterator to array to process all at once
+    const matches = condition.matchAll(fcRegex)
+    for (const match of matches) {
+      const fullFcExpr = match[0]
+      if (fullFcExpr.trim() == additional.trim()) {
+        found = true
+        if (names.indexOf(match) !== -1) {
+          let ph = names[names.indexOf(match)].fcPlaceholder
+          processedCondition = processedCondition.replace(fullFcExpr, ph)
+          continue
         }
-        acc.condition = acc.condition.replace(
-          additionalMatch[0],
-          placeholder
-        );
-        if (!existing) {
-          var index = 0;
+        // Create a unique placeholder for this FC expression
+        var placeholder = `FC:${getRandom()}`
+        for (var existing of names) {
+          if (existing.name == fullFcExpr) {
+            placeholder = existing.fcPlaceholder
+          }
+        }
+        processedCondition = processedCondition.replace(fullFcExpr, placeholder)
+        var alreadyFound = false
+        for (var existing of names) {
+          if (existing.name == fullFcExpr) {
+            alreadyFound = true
+            break
+          }
+        }
+        if (!alreadyFound) {
+          var index = 0
 
-          const fcMap = foreignCallNameToID.find(fc => "FC:" + fc.name.trim() == additionalMatch[0].trim());
-
-          if (fcMap) {
-            index = fcMap.id;
+          for (var fcMap of foreignCallNameToID) {
+            if ('FC:' + fcMap.name.trim() == fullFcExpr.trim()) {
+              index = fcMap.id
+            }
           }
           acc.components.push({
             name: additionalMatch[0],
             tIndex: index,
-            rawType: "foreign call",
+            rawType: 'foreign call',
             fcPlaceholder: placeholder,
-          });
+          })
         }
       }
-    } else {
-      const existing = names.find(n => n.name == additional.trim().split("(")[0]);
-      if (!existing) {
-        var index = 0;
-        const fcMap = foreignCallNameToID.find(fc => "FC:" + fc.name.trim() == additional.trim().split("(")[0]);
-        if (fcMap) {
-          index = fcMap.id;
+    }
+    if (!found) {
+      var alreadyFound = false
+      for (var existing of names) {
+        if (existing.name == additional.trim().split('(')[0]) {
+          alreadyFound = true
+          break
         }
-        if (additional.includes("TR:")) {
-          const [updatedSyntax, trackers] = parseTrackers(
-            " " + additional + " ",
-            names,
-            indexMap
-          );
-          acc.components.push(...trackers);
+      }
+      if (!alreadyFound) {
+        var index = 0
+        for (var fcMap of foreignCallNameToID) {
+          if ('FC:' + fcMap.name.trim() == additional.trim().split('(')[0]) {
+            index = fcMap.id
+          }
+        }
+        if (additional.includes('TR:')) {
+          const [updatedSyntax, trackers] = parseTrackers(' ' + additional + ' ', names, indexMap)
+          components = [...components, ...trackers]
         } else {
-          acc.components.push({
-            name: additional.trim().split("(")[0],
+          components.push({
+            name: additional.trim().split('(')[0],
             tIndex: index,
-            rawType: "foreign call",
-            fcPlaceholder: "noPH",
-          });
+            rawType: 'foreign call',
+            fcPlaceholder: 'noPH',
+          })
         }
       }
     }
@@ -271,70 +277,67 @@ export function parseForeignCalls(
 
   return [parsed.condition, parsed.components];
 
+  return [processedCondition, components]
 }
 
 
 export function cleanseForeignCallLists(doubleArray: any[]): any[] {
-  var iterToSkip = 0;
+  var iterToSkip = 0
   for (var innerArray of doubleArray) {
     for (var value of innerArray) {
-      if (value.fcPlaceholder != "noPH" && value.rawType == "foreign call") {
-        var secondLoopIter = 0;
+      if (value.fcPlaceholder != 'noPH' && value.rawType == 'foreign call') {
+        var secondLoopIter = 0
         for (var secondLoopArray of doubleArray) {
           if (secondLoopIter == iterToSkip) {
-            secondLoopIter += 1;
-            continue;
+            secondLoopIter += 1
+            continue
           } else {
-            var thirdLoopIter = 0;
-            var itersToRemove = [];
+            var thirdLoopIter = 0
+            var itersToRemove = []
             for (var innerValue of secondLoopArray) {
-              if (
-                innerValue.fcPlaceholder == "noPH" &&
-                innerValue.name == value.name
-              ) {
-                itersToRemove.push(thirdLoopIter);
+              if (innerValue.fcPlaceholder == 'noPH' && innerValue.name == value.name) {
+                itersToRemove.push(thirdLoopIter)
               }
-              thirdLoopIter += 1;
+              thirdLoopIter += 1
             }
-            for (var fourthLoopIter of itersToRemove)
-              doubleArray[secondLoopIter].splice(fourthLoopIter, 1);
+            for (var fourthLoopIter of itersToRemove) doubleArray[secondLoopIter].splice(fourthLoopIter, 1)
           }
-          secondLoopIter += 1;
+          secondLoopIter += 1
         }
       }
     }
-    iterToSkip += 1;
+    iterToSkip += 1
   }
-  var finalizedArray = [];
+  var finalizedArray = []
   for (var innerArray of doubleArray) {
     for (var value of innerArray) {
-      finalizedArray.push(value);
+      finalizedArray.push(value)
     }
   }
 
-  var toRemove = [];
-  var iterToSkip = 0;
+  var toRemove = []
+  var iterToSkip = 0
   for (var passOne of finalizedArray) {
-    var secondIter = 0;
+    var secondIter = 0
     for (var passTwo of finalizedArray) {
       if (secondIter > iterToSkip) {
         if (passOne.name == passTwo.name) {
-          toRemove.push(secondIter);
+          toRemove.push(secondIter)
         }
       }
-      secondIter += 1;
+      secondIter += 1
     }
-    iterToSkip += 1;
+    iterToSkip += 1
   }
 
-  toRemove = [...new Set(toRemove)];
-  toRemove.sort((a, b) => a - b);
-  var reduceCount = 0;
+  toRemove = [...new Set(toRemove)]
+  toRemove.sort((a, b) => a - b)
+  var reduceCount = 0
   for (var secondRemoval of toRemove) {
-    finalizedArray.splice(secondRemoval - reduceCount, 1);
-    reduceCount += 1;
+    finalizedArray.splice(secondRemoval - reduceCount, 1)
+    reduceCount += 1
   }
-  return finalizedArray;
+  return finalizedArray
 }
 
 /**
@@ -344,71 +347,65 @@ export function cleanseForeignCallLists(doubleArray: any[]): any[] {
  * @returns Placeholder array in the chain specific format
  */
 export function buildPlaceholderList(names: any[]): PlaceholderStruct[] {
-  var placeHolders: PlaceholderStruct[] = [];
+  var placeHolders: PlaceholderStruct[] = []
   for (var name of names) {
-    var flags = 0x0;
-    var placeHolderEnum = 0;
-    var tracker = false;
-    if (name.rawType == "address") {
-      placeHolderEnum = 0;
-    } else if (name.rawType == "string") {
-      placeHolderEnum = 1;
-    } else if (name.rawType == "uint256") {
-      placeHolderEnum = 2;
-    } else if (name.rawType == "bool") {
-      placeHolderEnum = 3;
-    } else if (name.rawType == "bytes") {
-      placeHolderEnum = 5;
-    } else if (
-      name.rawType == "uint256[]" ||
-      name.rawType == "address[]" ||
-      name.rawType == "bool[]"
-    ) {
-      placeHolderEnum = 6;
-    } else if (name.rawType == "string[]" || name.rawType == "bytes[]") {
-      placeHolderEnum = 7;
-    } else if (name.rawType == "tracker") {
-      if ((name as any).rawTypeTwo == "address") {
-        placeHolderEnum = 0;
-      } else if ((name as any).rawTypeTwo == "string") {
-        placeHolderEnum = 1;
-      } else if ((name as any).rawTypeTwo == "bool") {
-        placeHolderEnum = 3;
-      } else if ((name as any).rawTypeTwo == "bytes") {
-        placeHolderEnum = 5;
+    var flags = 0x0
+    var placeHolderEnum = 0
+    var tracker = false
+    if (name.rawType == 'address') {
+      placeHolderEnum = 0
+    } else if (name.rawType == 'string') {
+      placeHolderEnum = 1
+    } else if (name.rawType == 'uint256') {
+      placeHolderEnum = 2
+    } else if (name.rawType == 'bool') {
+      placeHolderEnum = 3
+    } else if (name.rawType == 'bytes') {
+      placeHolderEnum = 5
+    } else if (name.rawType == 'uint256[]' || name.rawType == 'address[]' || name.rawType == 'bool[]') {
+      placeHolderEnum = 6
+    } else if (name.rawType == 'string[]' || name.rawType == 'bytes[]') {
+      placeHolderEnum = 7
+    } else if (name.rawType == 'tracker') {
+      if ((name as any).rawTypeTwo == 'address') {
+        placeHolderEnum = 0
+      } else if ((name as any).rawTypeTwo == 'string') {
+        placeHolderEnum = 1
+      } else if ((name as any).rawTypeTwo == 'bool') {
+        placeHolderEnum = 3
+      } else if ((name as any).rawTypeTwo == 'bytes') {
+        placeHolderEnum = 5
       } else {
-        placeHolderEnum = 2;
+        placeHolderEnum = 2
       }
-      tracker = true;
-    } else if (name.rawType == "Global") {
-      if (name.name == "GV:MSG_SENDER") {
-        flags = 0x04;
-      } else if (name.name == "GV:BLOCK_TIMESTAMP") {
-        flags = 0x08;
-      } else if (name.name == "GV:MSG_DATA") {
-        flags = 0x0c;
-      } else if (name.name == "GV:BLOCK_NUMBER") {
-        flags = 0x10;
-      } else if (name.name == "GV:TX_ORIGIN") {
-        flags = 0x14;
+      tracker = true
+    } else if (name.rawType == 'Global') {
+      if (name.name == 'GV:MSG_SENDER') {
+        flags = 0x04
+      } else if (name.name == 'GV:BLOCK_TIMESTAMP') {
+        flags = 0x08
+      } else if (name.name == 'GV:MSG_DATA') {
+        flags = 0x0c
+      } else if (name.name == 'GV:BLOCK_NUMBER') {
+        flags = 0x10
+      } else if (name.name == 'GV:TX_ORIGIN') {
+        flags = 0x14
       }
     }
 
     if (flags == 0x00) {
-      flags = name.rawType == "foreign call" ? 0x01 : tracker ? 0x02 : 0x00;
+      flags = name.rawType == 'foreign call' ? 0x01 : tracker ? 0x02 : 0x00
     }
 
     var placeHolder: PlaceholderStruct = {
       pType: placeHolderEnum,
       typeSpecificIndex: name.tIndex,
-      mappedTrackerKey: encodeAbiParameters(parseAbiParameters("uint256"), [
-        BigInt(1),
-      ]),
+      mappedTrackerKey: encodeAbiParameters(parseAbiParameters('uint256'), [BigInt(1)]),
       flags,
-    };
-    placeHolders.push(placeHolder);
+    }
+    placeHolders.push(placeHolder)
   }
-  return placeHolders;
+  return placeHolders
 }
 
 /**
@@ -434,44 +431,39 @@ export function parseEffect(
   placeholders: PlaceholderStruct[],
   indexMap: trackerIndexNameMapping[]
 ): EffectDefinition {
-  var effectType = EffectType.REVERT;
-  var effectText = "";
-  var effectInstructionSet: any[] = [];
-  const revertTextPattern = /(revert)\("([^"]*)"\)/;
-  var pType = 2;
-  var parameterValue: any = 0;
-  if (effect.includes("emit")) {
-    effectType = EffectType.EVENT;
-    var placeHolder = effect.replace("emit ", "").trim();
-    var spli = placeHolder.split(", ");
+  var effectType = EffectType.REVERT
+  var effectText = ''
+  var effectInstructionSet: any[] = []
+  const revertTextPattern = /(revert)\("([^"]*)"\)/
+  var pType = 2
+  var parameterValue: any = 0
+  if (effect.includes('emit')) {
+    effectType = EffectType.EVENT
+    var placeHolder = effect.replace('emit ', '').trim()
+    var spli = placeHolder.split(', ')
     if (spli.length > 1) {
-      effectText = spli[0];
+      effectText = spli[0]
       if (isAddress(spli[1].trim())) {
-        pType = 0;
-        parameterValue = spli[1].trim();
+        pType = 0
+        parameterValue = spli[1].trim()
       } else if (!isNaN(Number(spli[1].trim()))) {
-        pType = 2;
-        parameterValue = BigInt(spli[1].trim());
+        pType = 2
+        parameterValue = BigInt(spli[1].trim())
       } else {
-        pType = 1;
-        parameterValue = spli[1].trim();
+        pType = 1
+        parameterValue = spli[1].trim()
       }
     } else {
-      effectText = spli[0];
+      effectText = spli[0]
     }
-  } else if (effect.includes("revert")) {
-    effectType = EffectType.REVERT;
-    const match = effect.match(revertTextPattern);
-    effectText = match ? match[2] : "";
+  } else if (effect.includes('revert')) {
+    effectType = EffectType.REVERT
+    const match = effect.match(revertTextPattern)
+    effectText = match ? match[2] : ''
   } else {
-    effectType = EffectType.EXPRESSION;
-    var instructionSet = convertHumanReadableToInstructionSet(
-      effect,
-      names,
-      indexMap,
-      placeholders
-    );
-    effectInstructionSet = instructionSet;
+    effectType = EffectType.EXPRESSION
+    var instructionSet = convertHumanReadableToInstructionSet(effect, names, indexMap, placeholders)
+    effectInstructionSet = instructionSet
   }
 
   return {
@@ -480,7 +472,7 @@ export function parseEffect(
     instructionSet: effectInstructionSet,
     pType,
     parameterValue,
-  };
+  }
 }
 
 /**
@@ -494,39 +486,31 @@ export function parseEffect(
  *          - `argumentTypes`: An array of argument types (e.g., 1 for strings).
  *          - `dataValues`: An array of byte arrays representing the processed data values.
  */
-export function buildRawData(
-  instructionSet: any[],
-  excludeArray: string[]
-): number[] {
+export function buildRawData(instructionSet: any[], excludeArray: string[]): number[] {
   return instructionSet.map((instruction) => {
     // Only capture values that aren't naturally numbers
     if (!isNaN(Number(instruction))) {
-      return BigInt(instruction);
+      return BigInt(instruction)
     } else if (!excludeArray.includes(instruction.trim())) {
-      instruction = instruction.trim();
-      if (instruction == "true") {
-        return 1n;
-      } else if (instruction == "false") {
-        return 0n;
+      instruction = instruction.trim()
+      if (instruction == 'true') {
+        return 1n
+      } else if (instruction == 'false') {
+        return 0n
       } else if (!operandArray.includes(instruction)) {
         // Convert the string or bytes to a keccak256 hash then to a uint256
         return BigInt(
           keccak256(
-            encodeAbiParameters(
-              parseAbiParameters(
-                instruction.startsWith("0x") ? "bytes" : "string"
-              ),
-              [instruction]
-            )
+            encodeAbiParameters(parseAbiParameters(instruction.startsWith('0x') ? 'bytes' : 'string'), [instruction])
           )
-        );
+        )
       } else {
-        return instruction;
+        return instruction
       }
     } else {
-      return instruction;
+      return instruction
     }
-  });
+  })
 }
 
 /**
@@ -538,9 +522,9 @@ export function buildRawData(
  */
 export function cleanString(str: string): string {
   return str
-    .replace(/[\r\n]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+    .replace(/[\r\n]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
 }
 
 /**
@@ -558,82 +542,76 @@ export function cleanString(str: string): string {
  * @returns The cleaned string with unnecessary parentheses removed and original patterns restored.
  */
 export function removeExtraParenthesis(strToClean: string): string {
-  var holders: string[] = [];
-  var fcHolder: string[] = [];
-  var trHolder: string[] = [];
-  var iter = 0;
-  var trIter = 0;
-  while (strToClean.includes("FC:")) {
-    var initialIndex = strToClean.lastIndexOf("FC:");
-    var closingIndex = strToClean.indexOf(" ", initialIndex);
-    var sub = strToClean.substring(initialIndex, closingIndex + 1);
-    fcHolder.push(sub);
-    var replacement = "fcRep:" + iter;
-    iter += 1;
-    strToClean = strToClean.replace(sub, replacement);
+  var holders: string[] = []
+  var fcHolder: string[] = []
+  var trHolder: string[] = []
+  var iter = 0
+  var trIter = 0
+  while (strToClean.includes('FC:')) {
+    var initialIndex = strToClean.lastIndexOf('FC:')
+    var closingIndex = strToClean.indexOf(' ', initialIndex)
+    var sub = strToClean.substring(initialIndex, closingIndex + 1)
+    fcHolder.push(sub)
+    var replacement = 'fcRep:' + iter
+    iter += 1
+    strToClean = strToClean.replace(sub, replacement)
   }
 
-  const trMappedRegex = /TR:[a-zA-Z]+\([^()]+\)/g;
+  const trMappedRegex = /TR:[a-zA-Z]+\([^()]+\)/g
 
-  var mappedMatches = strToClean.match(trMappedRegex);
+  var mappedMatches = strToClean.match(trMappedRegex)
   if (mappedMatches != null) {
-    var uniq = [...new Set(mappedMatches)];
+    var uniq = [...new Set(mappedMatches)]
     for (var match of uniq!) {
-      trHolder.push(match);
-      var replacement = "trRep:" + trIter;
-      trIter += 1;
-      strToClean = strToClean.replace(match, replacement);
+      trHolder.push(match)
+      var replacement = 'trRep:' + trIter
+      trIter += 1
+      strToClean = strToClean.replace(match, replacement)
     }
   }
 
-  iter = 0;
-  while (strToClean.includes("(")) {
-    var initialIndex = strToClean.lastIndexOf("(");
-    var closingIndex = strToClean.indexOf(")", initialIndex);
-    var sub = strToClean.substring(initialIndex, closingIndex + 1);
-    var removed = false;
+  iter = 0
+  while (strToClean.includes('(')) {
+    var initialIndex = strToClean.lastIndexOf('(')
+    var closingIndex = strToClean.indexOf(')', initialIndex)
+    var sub = strToClean.substring(initialIndex, closingIndex + 1)
+    var removed = false
 
-    if (sub.includes("AND") || sub.includes("OR") || sub.includes("NOT")) {
-      holders.push(sub);
-      var replacement = "rep:" + iter;
-      iter += 1;
-      strToClean = strToClean.replace(sub, replacement);
+    if (sub.includes('AND') || sub.includes('OR') || sub.includes('NOT')) {
+      holders.push(sub)
+      var replacement = 'rep:' + iter
+      iter += 1
+      strToClean = strToClean.replace(sub, replacement)
     } else {
-      removed = true;
-      strToClean =
-        strToClean.substring(0, initialIndex) +
-        "" +
-        strToClean.substring(initialIndex + 1);
-      strToClean =
-        strToClean.substring(0, closingIndex - 1) +
-        "" +
-        strToClean.substring(closingIndex);
+      removed = true
+      strToClean = strToClean.substring(0, initialIndex) + '' + strToClean.substring(initialIndex + 1)
+      strToClean = strToClean.substring(0, closingIndex - 1) + '' + strToClean.substring(closingIndex)
     }
   }
 
-  var replaceCount = 0;
+  var replaceCount = 0
   while (replaceCount < holders.length) {
-    iter = 0;
+    iter = 0
     for (var hold of holders) {
-      var str = "rep:" + iter;
+      var str = 'rep:' + iter
       if (strToClean.includes(str)) {
-        strToClean = strToClean.replace(str, holders[iter]);
-        replaceCount += 1;
+        strToClean = strToClean.replace(str, holders[iter])
+        replaceCount += 1
       }
-      iter += 1;
+      iter += 1
     }
   }
-  iter = 0;
+  iter = 0
   for (var hold of fcHolder) {
-    var str = "fcRep:" + iter;
-    strToClean = strToClean.replace(str, fcHolder[iter]);
-    iter += 1;
+    var str = 'fcRep:' + iter
+    strToClean = strToClean.replace(str, fcHolder[iter])
+    iter += 1
   }
-  iter = 0;
+  iter = 0
   for (var hold of trHolder) {
-    var str = "trRep:" + iter;
-    strToClean = strToClean.replace(str, trHolder[iter]);
-    iter += 1;
+    var str = 'trRep:' + iter
+    strToClean = strToClean.replace(str, trHolder[iter])
+    iter += 1
   }
-  return strToClean;
+  return strToClean
 }
