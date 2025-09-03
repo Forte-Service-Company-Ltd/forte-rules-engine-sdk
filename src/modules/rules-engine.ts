@@ -1035,13 +1035,15 @@ export class RulesEngine {
    */
   getTrackerToRuleIds(
     policyId: number,
-    trackerId: number
+    trackerId: number,
+    blockParams?: ContractBlockParameters
   ): Promise<Maybe<number[]>> {
     return getTrackerToRuleIdsInternal(
       config,
       this.rulesEngineComponentContract,
       policyId,
-      trackerId
+      trackerId,
+      blockParams
     );
   }
 

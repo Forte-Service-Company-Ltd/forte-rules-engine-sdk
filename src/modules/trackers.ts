@@ -47,7 +47,7 @@ import { encodePacked } from "viem";
  */
 
 /**
- * 
+ *
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEngineComponentContract - The contract instance for interacting with the rules engine component.
  * @param policyId - The ID of the policy associated with the tracker.
@@ -93,7 +93,7 @@ export const createMappedTracker = async (
       });
       break;
     } catch (err) {
-      console.log(err)
+      console.log(err);
       // TODO: Look into replacing this loop/sleep with setTimeout
       await sleep(1000);
     }
@@ -154,7 +154,12 @@ export const createTracker = async (
         address: rulesEngineComponentContract.address,
         abi: rulesEngineComponentContract.abi,
         functionName: "createTracker",
-        args: [policyId, transactionTracker, tracker.name, tracker.arrayValueType], 
+        args: [
+          policyId,
+          transactionTracker,
+          tracker.name,
+          tracker.arrayValueType,
+        ],
       });
       break;
     } catch (err) {
@@ -311,7 +316,7 @@ export const getTracker = async (
       abi: rulesEngineComponentContract.abi,
       functionName: "getTracker",
       args: [policyId, trackerId],
-      ...blockParams
+      ...blockParams,
     });
     return retrieveTR as TrackerOnChain;
   } catch (error) {
@@ -352,7 +357,7 @@ export const getTrackerMetadata = async (
       abi: rulesEngineComponentContract.abi,
       functionName: "getTrackerMetadata",
       args: [policyId, trackerId],
-      ...blockParams
+      ...blockParams,
     });
 
     let foreignCallResult = getMeta as TrackerMetadataStruct;
@@ -393,7 +398,7 @@ export const getAllTrackers = async (
       abi: rulesEngineComponentContract.abi,
       functionName: "getAllTrackers",
       args: [policyId],
-      ...blockParams
+      ...blockParams,
     });
 
     let trackerResult = retrieveTR as TrackerOnChain[];
@@ -420,7 +425,8 @@ export const getTrackerToRuleIds = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  trackerId: number
+  trackerId: number,
+  blockParams?: ContractBlockParameters
 ): Promise<number[]> => {
   try {
     const retrieveRuleIds = await readContract(config, {
@@ -428,6 +434,7 @@ export const getTrackerToRuleIds = async (
       abi: rulesEngineComponentContract.abi,
       functionName: "getTrackerToRuleIds",
       args: [policyId, trackerId],
+      ...blockParams,
     });
     return retrieveRuleIds as number[];
   } catch (error) {
