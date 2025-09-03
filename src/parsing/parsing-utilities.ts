@@ -205,73 +205,49 @@ export function parseForeignCalls(
 ): [string, RuleComponent[]] {
   // Use a regular expression to find all FC expressions
   const fcRegex = /FC:[a-zA-Z]+[^\s]+/g;
-  // const matches = condition.matchAll(fcRegex);
-  let processedCondition = condition;
+  const matches = Array.from(condition.matchAll(fcRegex));
 
-  let components: RuleComponent[] = [];
+  const parsed = additionalForeignCalls.reduce((acc: { condition: string, components: RuleComponent[] }, additional: string) => {
+    const additionalMatch = matches.find(match => match[0].trim() == additional.trim());
+    if (additionalMatch) {
 
-  for (var additional of additionalForeignCalls) {
-    var found = false;
-    // Convert matches iterator to array to process all at once
-    const matches = condition.matchAll(fcRegex);
-    for (const match of matches) {
-      const fullFcExpr = match[0];
-      if (fullFcExpr.trim() == additional.trim()) {
-        found = true;
-        if (names.indexOf(match) !== -1) {
-          let ph = names[names.indexOf(match)].fcPlaceholder;
-          processedCondition = processedCondition.replace(fullFcExpr, ph);
-          continue;
-        }
+      if (names.indexOf(additionalMatch) !== -1) {
+        let ph = names[names.indexOf(additionalMatch)].fcPlaceholder;
+        acc.condition = acc.condition.replace(additionalMatch[0], ph);
+      } else {
         // Create a unique placeholder for this FC expression
-        var placeholder = `FC:${getRandom()}`;
-        for (var existing of names) {
-          if (existing.name == fullFcExpr) {
-            placeholder = existing.fcPlaceholder;
-          }
+        let placeholder = `FC:${getRandom()}`;
+        const existing = names.find(n => n.name == additionalMatch[0]);
+        if (existing) {
+          placeholder = existing.fcPlaceholder;
         }
-        processedCondition = processedCondition.replace(
-          fullFcExpr,
+        acc.condition = acc.condition.replace(
+          additionalMatch[0],
           placeholder
         );
-        var alreadyFound = false;
-        for (var existing of names) {
-          if (existing.name == fullFcExpr) {
-            alreadyFound = true;
-            break;
-          }
-        }
-        if (!alreadyFound) {
+        if (!existing) {
           var index = 0;
 
-          for (var fcMap of foreignCallNameToID) {
-            if ("FC:" + fcMap.name.trim() == fullFcExpr.trim()) {
-              index = fcMap.id;
-            }
+          const fcMap = foreignCallNameToID.find(fc => "FC:" + fc.name.trim() == additionalMatch[0].trim());
+
+          if (fcMap) {
+            index = fcMap.id;
           }
-          components.push({
-            name: fullFcExpr,
+          acc.components.push({
+            name: additionalMatch[0],
             tIndex: index,
             rawType: "foreign call",
             fcPlaceholder: placeholder,
           });
         }
       }
-    }
-    if (!found) {
-      var alreadyFound = false;
-      for (var existing of names) {
-        if (existing.name == additional.trim().split("(")[0]) {
-          alreadyFound = true;
-          break;
-        }
-      }
-      if (!alreadyFound) {
+    } else {
+      const existing = names.find(n => n.name == additional.trim().split("(")[0]);
+      if (!existing) {
         var index = 0;
-        for (var fcMap of foreignCallNameToID) {
-          if ("FC:" + fcMap.name.trim() == additional.trim().split("(")[0]) {
-            index = fcMap.id;
-          }
+        const fcMap = foreignCallNameToID.find(fc => "FC:" + fc.name.trim() == additional.trim().split("(")[0]);
+        if (fcMap) {
+          index = fcMap.id;
         }
         if (additional.includes("TR:")) {
           const [updatedSyntax, trackers] = parseTrackers(
@@ -279,9 +255,9 @@ export function parseForeignCalls(
             names,
             indexMap
           );
-          components = [...components, ...trackers];
+          acc.components.push(...trackers);
         } else {
-          components.push({
+          acc.components.push({
             name: additional.trim().split("(")[0],
             tIndex: index,
             rawType: "foreign call",
@@ -290,10 +266,13 @@ export function parseForeignCalls(
         }
       }
     }
-  }
+    return acc;
+  }, { condition, components: [] });
 
-  return [processedCondition, components];
+  return [parsed.condition, parsed.components];
+
 }
+
 
 export function cleanseForeignCallLists(doubleArray: any[]): any[] {
   var iterToSkip = 0;
