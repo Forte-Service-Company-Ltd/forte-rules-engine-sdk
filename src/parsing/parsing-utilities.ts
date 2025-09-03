@@ -205,6 +205,147 @@ export function parseForeignCalls(
 ): [string, RuleComponent[]] {
   // Use a regular expression to find all FC expressions
   const fcRegex = /FC:[a-zA-Z]+[^\s]+/g;
+  const matches = Array.from(condition.matchAll(fcRegex));
+
+  const parsed = additionalForeignCalls.reduce((acc: { condition: string, components: RuleComponent[] }, additional: string) => {
+    const additionalMatch = matches.find(match => match[0].trim() == additional.trim());
+    if (additionalMatch) {
+
+      if (names.indexOf(additionalMatch) !== -1) {
+        let ph = names[names.indexOf(additionalMatch)].fcPlaceholder;
+        acc.condition = acc.condition.replace(additionalMatch[0], ph);
+      } else {
+        // Create a unique placeholder for this FC expression
+        let placeholder = `FC:${getRandom()}`;
+        const existing = names.find(n => n.name == additionalMatch[0]);
+        if (existing) {
+          placeholder = existing.fcPlaceholder;
+        }
+        acc.condition = acc.condition.replace(
+          additionalMatch[0],
+          placeholder
+        );
+        if (!existing) {
+          var index = 0;
+
+          const fcMap = foreignCallNameToID.find(fc => "FC:" + fc.name.trim() == additionalMatch[0].trim());
+
+          if (fcMap) {
+            index = fcMap.id;
+          }
+          acc.components.push({
+            name: additionalMatch[0],
+            tIndex: index,
+            rawType: "foreign call",
+            fcPlaceholder: placeholder,
+          });
+        }
+      }
+    } else {
+      const existing = names.find(n => n.name == additional.trim().split("(")[0]);
+      if (!existing) {
+        var index = 0;
+        const fcMap = foreignCallNameToID.find(fc => "FC:" + fc.name.trim() == additional.trim().split("(")[0]);
+        if (fcMap) {
+          index = fcMap.id;
+        }
+        if (additional.includes("TR:")) {
+          const [, trackers] = parseTrackers(
+            " " + additional + " ",
+            names,
+            indexMap
+          );
+          acc.components.push(...trackers);
+        } else {
+          acc.components.push({
+            name: additional.trim().split("(")[0],
+            tIndex: index,
+            rawType: "foreign call",
+            fcPlaceholder: "noPH",
+          });
+        }
+      }
+    }
+    return acc;
+  }, { condition, components: [] });
+
+  return [parsed.condition, parsed.components];
+
+}
+
+
+export function cleanseForeignCallLists(doubleArray: any[]): any[] {
+  var iterToSkip = 0;
+  for (var innerArray of doubleArray) {
+    for (var value of innerArray) {
+      if (value.fcPlaceholder != "noPH" && value.rawType == "foreign call") {
+        var secondLoopIter = 0;
+        for (var secondLoopArray of doubleArray) {
+          if (secondLoopIter == iterToSkip) {
+            secondLoopIter += 1;
+            continue;
+          } else {
+            var thirdLoopIter = 0;
+            var itersToRemove = [];
+            for (var innerValue of secondLoopArray) {
+              if (
+                innerValue.fcPlaceholder == "noPH" &&
+                innerValue.name == value.name
+              ) {
+                itersToRemove.push(thirdLoopIter);
+              }
+              thirdLoopIter += 1;
+            }
+            for (var fourthLoopIter of itersToRemove)
+              doubleArray[secondLoopIter].splice(fourthLoopIter, 1);
+          }
+          secondLoopIter += 1;
+        }
+      }
+    }
+    iterToSkip += 1;
+  }
+  var finalizedArray = [];
+  for (var innerArray of doubleArray) {
+    for (var value of innerArray) {
+      finalizedArray.push(value);
+    }
+  }
+
+  var toRemove = [];
+  var iterToSkip = 0;
+  for (var passOne of finalizedArray) {
+    var secondIter = 0;
+    for (var passTwo of finalizedArray) {
+      if (secondIter > iterToSkip) {
+        if (passOne.name == passTwo.name) {
+          toRemove.push(secondIter);
+        }
+      }
+      secondIter += 1;
+    }
+    iterToSkip += 1;
+  }
+
+  toRemove = [...new Set(toRemove)];
+  toRemove.sort((a, b) => a - b);
+  var reduceCount = 0;
+  for (var secondRemoval of toRemove) {
+    finalizedArray.splice(secondRemoval - reduceCount, 1);
+    reduceCount += 1;
+  }
+  return finalizedArray;
+}
+
+export function parseForeignCallsxxxx(
+  condition: string,
+  names: any[],
+  foreignCallNameToID: FCNameToID[],
+  indexMap: FCNameToID[],
+  additionalForeignCalls: string[]
+): [string, RuleComponent[]] {
+  // Use a regular expression to find all FC expressions
+  const fcRegex = /FC:[a-zA-Z]+[^\s]+/g;
   // const matches = condition.matchAll(fcRegex);
   let processedCondition = condition;
 
@@ -295,68 +436,6 @@ export function parseForeignCalls(
   return [processedCondition, components];
 }
 
-export function cleanseForeignCallLists(doubleArray: any[]): any[] {
-  var iterToSkip = 0;
-  for (var innerArray of doubleArray) {
-    for (var value of innerArray) {
-      if (value.fcPlaceholder != "noPH" && value.rawType == "foreign call") {
-        var secondLoopIter = 0;
-        for (var secondLoopArray of doubleArray) {
-          if (secondLoopIter == iterToSkip) {
-            secondLoopIter += 1;
-            continue;
-          } else {
-            var thirdLoopIter = 0;
-            var itersToRemove = [];
-            for (var innerValue of secondLoopArray) {
-              if (
-                innerValue.fcPlaceholder == "noPH" &&
-                innerValue.name == value.name
-              ) {
-                itersToRemove.push(thirdLoopIter);
-              }
-              thirdLoopIter += 1;
-            }
-            for (var fourthLoopIter of itersToRemove)
-              doubleArray[secondLoopIter].splice(fourthLoopIter, 1);
-          }
-          secondLoopIter += 1;
-        }
-      }
-    }
-    iterToSkip += 1;
-  }
-  var finalizedArray = [];
-  for (var innerArray of doubleArray) {
-    for (var value of innerArray) {
-      finalizedArray.push(value);
-    }
-  }
-
-  var toRemove = [];
-  var iterToSkip = 0;
-  for (var passOne of finalizedArray) {
-    var secondIter = 0;
-    for (var passTwo of finalizedArray) {
-      if (secondIter > iterToSkip) {
-        if (passOne.name == passTwo.name) {
-          toRemove.push(secondIter);
-        }
-      }
-      secondIter += 1;
-    }
-    iterToSkip += 1;
-  }
-
-  toRemove = [...new Set(toRemove)];
-  toRemove.sort((a, b) => a - b);
-  var reduceCount = 0;
-  for (var secondRemoval of toRemove) {
-    finalizedArray.splice(secondRemoval - reduceCount, 1);
-    reduceCount += 1;
-  }
-  return finalizedArray;
-}
 
 /**
  * Build the placeholder struct array from the names array
