@@ -246,11 +246,9 @@ export const createPolicy = async (
     }
 
     // Sort rules by order field if provided, otherwise maintain original order
-    const sortedRules = [...policyJSON.Rules].sort((a, b) => {
-      const orderA = a.order ?? Number.MAX_SAFE_INTEGER;
-      const orderB = b.order ?? Number.MAX_SAFE_INTEGER;
-      return orderA - orderB;
-    });
+    const sortedRules = [...policyJSON.Rules].sort((a, b) => 
+      (a.order ?? Number.MAX_SAFE_INTEGER) - (b.order ?? Number.MAX_SAFE_INTEGER)
+    );
 
     for (var rule of sortedRules) {
       const ruleId = await createRule(
