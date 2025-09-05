@@ -3,6 +3,7 @@ import { Either, PT, RulesError } from './types'
 import { isLeft, makeLeft, makeRight, unwrapEither } from './utils'
 import { Address, checksumAddress, isAddress } from 'viem'
 
+const EMPTY_STRING = ''
 /**
  * Accepts any input, if input is a string, it trims whitespace from both ends.
  * if input is not a string the input is returned as is.
@@ -300,8 +301,8 @@ export const validateCondition = (condition: string): boolean => {
 }
 
 export const ruleValidator = z.object({
-  Name: z.string().default(''),
-  Description: z.string().default(''),
+  Name: z.string().default(EMPTY_STRING),
+  Description: z.string().default(EMPTY_STRING),
   condition: z.string().refine((val) => validateCondition(val), {
     error: 'Invalid logical operators in condition',
   }),
@@ -631,8 +632,8 @@ const validateUniqueNames = (input: any): boolean => {
 
 export const policyJSONValidator = z
   .object({
-    Policy: z.string().default(''),
-    Description: z.string().default(''),
+    Policy: z.string().default(EMPTY_STRING),
+    Description: z.string().default(EMPTY_STRING),
     PolicyType: z.string(),
     CallingFunctions: z.array(callingFunctionValidator),
     ForeignCalls: z.array(foreignCallValidator),
