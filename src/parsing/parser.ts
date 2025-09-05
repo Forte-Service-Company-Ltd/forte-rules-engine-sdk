@@ -158,16 +158,20 @@ export function parseRuleSyntax(
     syntax.negativeEffects
   )
 
-  const effectNames = cleanseForeignCallLists([...positiveEffectComponents, ...negativeEffectComponents])
-  let effectPlaceHolders = buildPlaceholderList(effectNames)
-  effectPlaceHolders = [...new Set(effectPlaceHolders)]
+  const positiveEffectNames = cleanseForeignCallLists([...positiveEffectComponents]);
+  let positiveEffectPlaceHolders = buildPlaceholderList(positiveEffectNames);
+  positiveEffectPlaceHolders = [...new Set(positiveEffectPlaceHolders)];
 
-  const positiveEffects = processedPositiveEffects.map((effect) =>
-    parseEffect(effect, effectNames, effectPlaceHolders, indexMap)
-  )
+  const negativeEffectNames = cleanseForeignCallLists([...negativeEffectComponents]);
+  let negativeEffectPlaceHolders = buildPlaceholderList(negativeEffectNames);
+  negativeEffectPlaceHolders = [...new Set(negativeEffectPlaceHolders)];
+
+  const positiveEffects = processedPositiveEffects.map(
+    (effect) => parseEffect(effect, positiveEffectNames, positiveEffectPlaceHolders, indexMap)
+  );
   const negativeEffects = processedNegativeEffects.map((effect) =>
-    parseEffect(effect, effectNames, effectPlaceHolders, indexMap)
-  )
+    parseEffect(effect, negativeEffectNames, negativeEffectPlaceHolders, indexMap)
+  );
 
   const conditionInstructionSet = convertHumanReadableToInstructionSet(
     condition,
@@ -191,8 +195,10 @@ export function parseRuleSyntax(
     positiveEffects,
     negativeEffects,
     placeHolders,
-    effectPlaceHolders,
-  }
+    positiveEffectPlaceHolders,
+    negativeEffectPlaceHolders
+  };
+
 }
 
 export function parseMappedTrackerSyntax(syntax: MappedTrackerJSON): MappedTrackerDefinition {

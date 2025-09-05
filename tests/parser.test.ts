@@ -1924,9 +1924,9 @@ test("Evaluate a simple syntax string that contains multiple positive and negati
     0n,
     1n,
   ]);
-  expect(retVal.effectPlaceHolders.length).toEqual(2);
-  expect(retVal.effectPlaceHolders[0].flags).toEqual(0x1);
-  expect(retVal.effectPlaceHolders[1].pType).toEqual(0);
+  expect(retVal.negativeEffectPlaceHolders.length).toEqual(2);
+  expect(retVal.negativeEffectPlaceHolders[0].flags).toEqual(0x1);
+  expect(retVal.negativeEffectPlaceHolders[1].pType).toEqual(0);
 });
 
 test("Evaluate a simple syntax string for an event effect with an instruction set", () => {
@@ -1989,8 +1989,8 @@ test("Evaluates a simple effect involving a tracker update (TRU))", () => {
     []
   );
   expect(retVal.positiveEffects[0].instructionSet).toEqual(expectedArray);
-  expect(retVal.effectPlaceHolders.length).toEqual(1);
-  expect(retVal.effectPlaceHolders[0].flags).toEqual(0x02);
+  expect(retVal.positiveEffectPlaceHolders.length).toEqual(1);
+  expect(retVal.positiveEffectPlaceHolders[0].flags).toEqual(0x02);
 });
 
 test("Multiple copies of the same placeholder test", () => {
@@ -2617,7 +2617,7 @@ test("Evaluates a simple effect involving a mapped tracker update (TRUM))", () =
     []
   );
   expect(retVal.positiveEffects[0].instructionSet).toEqual(expectedArray);
-  expect(retVal.effectPlaceHolders.length).toEqual(2);
+  expect(retVal.positiveEffectPlaceHolders.length).toEqual(2);
 });
 
 test("Evaluates a simple effect involving a mapped tracker with string value update (TRUM))", () => {
@@ -2686,7 +2686,7 @@ test("Evaluates a simple effect involving a mapped tracker with string value upd
   );
   expect(retVal.positiveEffects[0].instructionSet).toEqual(expectedEffect0);
   expect(retVal.positiveEffects[1].instructionSet).toEqual(expectedEffect1);
-  expect(retVal.effectPlaceHolders.length).toEqual(5);
+  expect(retVal.positiveEffectPlaceHolders.length).toEqual(5);
 });
 
 test("Evaluates a complex effect involving a mapped tracker update (TRUM))", () => {
@@ -2785,7 +2785,7 @@ test("Evaluates another complex effect involving a mapped tracker update (TRUM))
     []
   );
   expect(retVal.positiveEffects[0].instructionSet).toEqual(expectedArray);
-  expect(retVal.effectPlaceHolders.length).toEqual(3);
+  expect(retVal.positiveEffectPlaceHolders.length).toEqual(3);
 });
 
 test("Evaluates a third complex effect involving a mapped tracker update (TRUM))", () => {
