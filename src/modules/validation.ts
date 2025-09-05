@@ -300,8 +300,8 @@ export const validateCondition = (condition: string): boolean => {
 }
 
 export const ruleValidator = z.object({
-  Name: z.string(),
-  Description: z.string(),
+  Name: z.string().default(''),
+  Description: z.string().default(''),
   condition: z.string().refine((val) => validateCondition(val), {
     error: 'Invalid logical operators in condition',
   }),
@@ -631,8 +631,8 @@ const validateUniqueNames = (input: any): boolean => {
 
 export const policyJSONValidator = z
   .object({
-    Policy: z.string(),
-    Description: z.string(),
+    Policy: z.string().default(''),
+    Description: z.string().default(''),
     PolicyType: z.string(),
     CallingFunctions: z.array(callingFunctionValidator),
     ForeignCalls: z.array(foreignCallValidator),
