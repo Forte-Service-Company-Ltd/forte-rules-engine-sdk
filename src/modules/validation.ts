@@ -239,13 +239,23 @@ const validateReferencedCalls = (input: any): boolean => {
   const trackerNames = input.Trackers.map((tracker: any) => tracker.name)
   const mappedTrackerNames = input.MappedTrackers.map((tracker: any) => tracker.name)
 
-  const testInputs = input.Rules.map((rule: any) => [rule.condition, rule.positiveEffects, rule.negativeEffects]).flat(
-    2
-  )
+  const testInputs: Record<string, string[]> = input.Rules.reduce((acc: Record<string, string[]>, rule: any) => {
+    const inputs = [rule.condition, ...rule.positiveEffects, ...rule.negativeEffects]
+    if (!acc[rule.callingFunction]) {
+      acc[rule.callingFunction] = inputs
+    } else {
+      acc[rule.callingFunction].push(...inputs)
+    }
+    return acc
+  }, {})
 
-  const validatedInputs = testInputs
-    .map((input: string) => {
-      return validateInputReferencedCalls(foreignCallNames, trackerNames, mappedTrackerNames, input)
+  const groupedFC = input.ForeignCalls.reduce(groupFCByCallingFunction, {})
+
+  const validatedInputs = Object.entries(testInputs)
+    .map((input: [string, string[]]) => {
+      return input[1]
+        .map((syntax) => validateInputReferencedCalls(groupedFC[input[0]], trackerNames, mappedTrackerNames, syntax))
+        .every((isValid) => isValid)
     })
     .every((isValid: boolean) => isValid)
 
@@ -319,7 +329,7 @@ export const validateRuleJSON = (rule: string): Either<RulesError[], RuleJSON> =
   } else {
     const errors: RulesError[] = parsed.error.issues.map((err) => ({
       errorType: 'INPUT',
-      message: `${err.message}: Field ${err.path.join('.')}`,
+      message: `Rule ${err.message}: Field ${err.path.join('.')}`,
       state: { input: rule },
     }))
     return makeLeft(errors)
@@ -387,7 +397,7 @@ export const validateForeignCallJSON = (foreignCall: string): Either<RulesError[
   } else {
     const errors: RulesError[] = parsed.error.issues.map((err) => ({
       errorType: 'INPUT',
-      message: `${err.message}: Field ${err.path.join('.')}`,
+      message: `Foreign Call ${err.message}: Field ${err.path.join('.')}`,
       state: { input: foreignCall },
     }))
     return makeLeft(errors)
@@ -473,9 +483,13 @@ const validateMappedTrackerInitialLengths = (data: any): boolean => {
   return data.initialKeys.length === data.initialValues.length
 }
 
+const validateUniqueKeys = <T>(keys: T[]): boolean => {
+  const uniqueKeys = new Set(keys)
+  return uniqueKeys.size === keys.length
+}
+
 const validateMappedTrackerUniqueKeys = (data: any): boolean => {
-  const uniqueKeys = new Set(data.initialKeys)
-  return uniqueKeys.size === data.initialKeys.length
+  return validateUniqueKeys(data.initialKeys)
 }
 
 export const trackerValidator = z
@@ -531,7 +545,7 @@ export const validateTrackerJSON = (tracker: string): Either<RulesError[], Track
   } else {
     const errors: RulesError[] = parsed.error.issues.map((err) => ({
       errorType: 'INPUT',
-      message: `${err.message}: Field ${err.path.join('.')}`,
+      message: `Tracker ${err.message}: Field ${err.path.join('.')}`,
       state: { input: tracker },
     }))
     return makeLeft(errors)
@@ -556,7 +570,7 @@ export const validateMappedTrackerJSON = (tracker: string): Either<RulesError[],
   } else {
     const errors: RulesError[] = parsed.error.issues.map((err) => ({
       errorType: 'INPUT',
-      message: `${err.message}: Field ${err.path.join('.')}`,
+      message: `Mapped Tracker ${err.message}: Field ${err.path.join('.')}`,
       state: { input: tracker },
     }))
     return makeLeft(errors)
@@ -586,11 +600,33 @@ export const validateCallingFunctionJSON = (callingFunction: string): Either<Rul
   } else {
     const errors: RulesError[] = parsed.error.issues.map((err) => ({
       errorType: 'INPUT',
-      message: `${err.message}: Field ${err.path.join('.')}`,
+      message: `Calling Function${err.message}: Field ${err.path.join('.')}`,
       state: { input: callingFunction },
     }))
     return makeLeft(errors)
   }
+}
+
+const groupFCByCallingFunction = (acc: Record<string, string[]>, fc: any) => {
+  const callingFunction = fc.callingFunction
+  if (!acc[callingFunction]) {
+    acc[callingFunction] = [fc.name]
+  } else {
+    acc[callingFunction].push(fc.name)
+  }
+  return acc
+}
+
+const validateUniqueNames = (input: any): boolean => {
+  const trackerKeys = input.Trackers.map((tracker: any) => tracker.name)
+  const mappedTrackerKeys = input.MappedTrackers.map((tracker: any) => tracker.name)
+  const callingFunctions = input.CallingFunctions.map((fn: any) => fn.name)
+
+  const foreignCalls = input.ForeignCalls.reduce(groupFCByCallingFunction, {})
+
+  return [trackerKeys, mappedTrackerKeys, callingFunctions, ...Object.values(foreignCalls)]
+    .map(validateUniqueKeys)
+    .every((isValid) => isValid)
 }
 
 export const policyJSONValidator = z
@@ -605,6 +641,8 @@ export const policyJSONValidator = z
     Rules: z.array(ruleValidator),
   })
   .refine(validateReferencedCalls, { message: 'Invalid reference call' })
+  .refine(validateUniqueNames, { message: 'Names cannot be duplicated' })
+
 export interface PolicyJSON extends z.infer<typeof policyJSONValidator> {}
 
 /**
@@ -625,7 +663,7 @@ export const validatePolicyJSON = (policy: string): Either<RulesError[], PolicyJ
   } else {
     const errors: RulesError[] = parsed.error.issues.map((err) => ({
       errorType: 'INPUT',
-      message: `${err.message}${err.path.length ? `: Field ${err.path.join('.')}` : ''}`,
+      message: `Policy ${err.message}${err.path.length ? `: Field ${err.path.join('.')}` : ''}`,
       state: { input: policy },
     }))
     return makeLeft(errors)
