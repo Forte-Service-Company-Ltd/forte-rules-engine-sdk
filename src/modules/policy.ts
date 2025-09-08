@@ -108,7 +108,6 @@ export const createPolicy = async (
   let ruleToCallingFunction = new Map<string, number[]>()
   let callingFunctions: string[] = []
   let callingFunctionParamSets = []
-  let callingFunctionIds: number[] = []
   let rulesDoubleMapping = []
   let callingFunctionSelectors = []
   let allFunctionMappings: hexToFunctionString[] = []
@@ -152,7 +151,6 @@ export const createPolicy = async (
           callingFunctionJSON.encodedValues,
           confirmationCount
         )
-        callingFunctionIds.push(fsId)
         callingFunctionParamSets.push(parseCallingFunction(callingFunctionJSON))
         allFunctionMappings.push({
           hex: toFunctionSelector(callingFunction),
@@ -171,7 +169,6 @@ export const createPolicy = async (
       rulesEnginePolicyContract,
       policyId,
       fsSelectors,
-      fsIds,
       emptyRules,
       policyJSON.Policy,
       policyJSON.Description,
@@ -289,7 +286,6 @@ export const createPolicy = async (
       rulesEnginePolicyContract,
       policyId,
       callingFunctionSelectors,
-      callingFunctionIds,
       rulesDoubleMapping,
       policyJSON.Policy,
       policyJSON.Description,
@@ -315,7 +311,6 @@ export const updatePolicy = async (
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyId: number,
   signatures: any[],
-  ids: number[],
   ruleIds: any[],
   policyName: string,
   policyDescription: string,
@@ -328,7 +323,7 @@ export const updatePolicy = async (
         address: rulesEnginePolicyContract.address,
         abi: rulesEnginePolicyContract.abi,
         functionName: 'updatePolicy',
-        args: [policyId, signatures, ids, ruleIds, 1, policyName, policyDescription],
+        args: [policyId, signatures, ruleIds, 1, policyName, policyDescription],
       })
       break
     } catch (error) {
@@ -548,21 +543,15 @@ export const getPolicy = async (
     if (policyMeta == null) {
       throw new Error(`Policy with ID ${policyId} does not exist.`)
     }
-    let policyResult = retrievePolicy as any;
-    let callingFunctions: any = policyResult[0];
-    let ruleIds2DArray: any = policyResult[2];
-    
-    const PolicyType = await isClosedPolicy(
-      config,
-      rulesEnginePolicyContract,
-      policyId,
-      blockParams
-    );
+
+    let policyResult = retrievePolicy as any
+    let callingFunctions: any = policyResult[0]
+    let ruleIds2DArray: any = policyResult[1]
+    const PolicyType = await isClosedPolicy(config, rulesEnginePolicyContract, policyId, blockParams)
 
     var iter = 1
-
-    for (var _cfId in callingFunctions) {
-      var mapp = await getCallingFunctionMetadata(config, rulesEngineComponentContract, policyId, iter, blockParams)
+    for (var _cfId of callingFunctions) {
+      var mapp = await getCallingFunctionMetadata(config, rulesEngineComponentContract, policyId, _cfId, blockParams)
       var newMapping: hexToFunctionString = {
         hex: mapp.signature,
         functionString: mapp.callingFunction,
@@ -576,7 +565,7 @@ export const getPolicy = async (
         encodedValues: mapp.encodedValues,
       }
       const callingFunctionData: CallingFunctionData = {
-        id: Number(iter),
+        id: _cfId,
         ...callingFunctionJSON,
       }
       callingFunctionsDataAndJSON.push({
@@ -634,7 +623,7 @@ export const getPolicy = async (
         config,
         rulesEngineComponentContract,
         policyId,
-        fc.callingFunctionIndex,
+        fc.callingFunctionSelector,
         blockParams
       )
 
@@ -797,7 +786,7 @@ export async function policyExists(
       args: [policyId],
       ...blockParams,
     })
-    if ((policyExists as any)[0] != null && (policyExists as any)[2] != null) {
+    if ((policyExists as any)[0] != null && (policyExists as any)[1] != null) {
       return true
     }
     return false

@@ -222,7 +222,6 @@ export class RulesEngine {
       this.rulesEnginePolicyContract,
       policyId,
       callingFunctions,
-      ids,
       ruleIds,
       name,
       description,
@@ -929,7 +928,7 @@ export class RulesEngine {
    */
   getCallingFunctionMetadata(
     policyId: number,
-    callingFunctionId: number,
+    callingFunctionId: string,
     blockParams?: ContractBlockParameters
   ): Promise<CallingFunctionHashMapping> {
     return getCallingFunctionMetadataInternal(

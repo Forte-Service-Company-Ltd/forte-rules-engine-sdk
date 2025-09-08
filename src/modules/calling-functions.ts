@@ -148,7 +148,7 @@ export const getCallingFunctionMetadata = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  callingFunctionId: number,
+  callingFunctionId: string,
   blockParams?: ContractBlockParameters
 ): Promise<CallingFunctionHashMapping> => {
   try {

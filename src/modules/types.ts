@@ -1,11 +1,11 @@
 /// SPDX-License-Identifier: BUSL-1.1
 import { Address, BlockNumber, BlockTag, ByteArray, GetContractReturnType, Hex } from 'viem'
 
-import RulesEnginePolicyLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEnginePolicyFacet.sol/RulesEnginePolicyFacet.json'
-import RulesEngineComponentLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineComponentFacet.sol/RulesEngineComponentFacet.json'
-import RulesEngineRuleLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineRuleFacet.sol/RulesEngineRuleFacet.json'
-import RulesEngineAdminLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineAdminRolesFacet.sol/RulesEngineAdminRolesFacet.json'
-import RulesEngineForeignCallLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineForeignCallFacet.sol/RulesEngineForeignCallFacet.json'
+// import RulesEnginePolicyLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEnginePolicyFacet.sol/RulesEnginePolicyFacet.json'
+// import RulesEngineComponentLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineComponentFacet.sol/RulesEngineComponentFacet.json'
+// import RulesEngineRuleLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineRuleFacet.sol/RulesEngineRuleFacet.json'
+// import RulesEngineAdminLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineAdminRolesFacet.sol/RulesEngineAdminRolesFacet.json'
+// import RulesEngineForeignCallLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineForeignCallFacet.sol/RulesEngineForeignCallFacet.json'
 import {
   CallingFunctionJSON,
   ForeignCallJSON,
@@ -14,6 +14,12 @@ import {
   RuleJSON,
   TrackerJSON,
 } from './validation'
+
+import RulesEnginePolicyLogicArtifact from "../../abis/RulesEnginePolicyFacet.json"
+import RulesEngineComponentLogicArtifact from "../../abis/RulesEngineComponentFacet.json"
+import RulesEngineRuleLogicArtifact from "../../abis/RulesEngineRuleFacet.json"
+import RulesEngineAdminLogicArtifact from "../../abis/RulesEngineAdminRolesFacet.json"
+import RulesEngineForeignCallLogicArtifact from "../../abis/RulesEngineForeignCallFacet.json"
 
 /**
  * @file types.ts
@@ -181,7 +187,7 @@ export type CallingFunctionHashMapping = {
 }
 
 export interface CallingFunctionData extends CallingFunctionJSON {
-  id: number
+  id: string
 }
 
 export type CallingFunctionDataAndJSON = {
@@ -328,7 +334,7 @@ export type ForeignCallOnChain = {
   /** Indices for mapped tracker keys */
   mappedTrackerKeyIndices: ForeignCallEncodedIndex[]
   /** Index of the calling function */
-  callingFunctionIndex: number
+  callingFunctionSelector: string
 }
 
 /**

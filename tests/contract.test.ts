@@ -252,7 +252,6 @@ describe("Rules Engine Interactions", async () => {
       getRulesEnginePolicyContract(rulesEngineContract, client),
       result.policyId,
       [selector],
-      [fsId],
       [[ruleId]],
       "Test Policy",
       "This is a test policy",
@@ -314,7 +313,6 @@ describe("Rules Engine Interactions", async () => {
       getRulesEnginePolicyContract(rulesEngineContract, client),
       result.policyId,
       [selector],
-      [fsId],
       [[ruleId]],
       "Test Policy",
       "This is a test policy",
@@ -378,7 +376,6 @@ describe("Rules Engine Interactions", async () => {
       getRulesEnginePolicyContract(rulesEngineContract, client),
       result.policyId,
       [selector],
-      [fsId],
       [[ruleId]],
       "Test Policy",
       "This is a test policy",
@@ -453,7 +450,6 @@ describe("Rules Engine Interactions", async () => {
       getRulesEnginePolicyContract(rulesEngineContract, client),
       result.policyId,
       [selector],
-      [fsId],
       [[ruleId]],
       "Test Policy",
       "This is a test policy",
@@ -540,7 +536,6 @@ describe("Rules Engine Interactions", async () => {
       getRulesEnginePolicyContract(rulesEngineContract, client),
       result.policyId,
       [selector],
-      [fsId],
       [[ruleId]],
       "Test Policy",
       "This is a test policy",
@@ -596,7 +591,6 @@ describe("Rules Engine Interactions", async () => {
       getRulesEnginePolicyContract(rulesEngineContract, client),
       result.policyId,
       [selector],
-      [fsId],
       [[]],
       "Test Policy",
       "This is a test policy",
@@ -664,7 +658,6 @@ describe("Rules Engine Interactions", async () => {
       getRulesEnginePolicyContract(rulesEngineContract, client),
       result.policyId,
       [selector],
-      [fsId],
       [[]],
       "Test Policy",
       "This is a test policy",
@@ -726,7 +719,6 @@ describe("Rules Engine Interactions", async () => {
       getRulesEnginePolicyContract(rulesEngineContract, client),
       result.policyId,
       [selector],
-      [fsId],
       [[]],
       "Test Policy",
       "This is a test policy",
@@ -806,7 +798,6 @@ describe("Rules Engine Interactions", async () => {
       getRulesEnginePolicyContract(rulesEngineContract, client),
       result.policyId,
       [selector],
-      [fsId],
       [[]],
       "Test Policy",
       "This is a test policy",
@@ -1297,7 +1288,6 @@ describe("Rules Engine Interactions", async () => {
 
     expect(parsed).toEqual(input);
     expect(parsed.Policy).toEqual(input.Policy);
-
     // Verify Policy data mirrors input fields
     assertPolicyDataMatchesInput(retVal?.Policy!, input);
   });
@@ -1429,14 +1419,12 @@ describe("Rules Engine Interactions", async () => {
     );
     expect(retVal?.policyName).toEqual("Test Policy");
     expect(retVal?.policyDescription).toEqual("Test Policy Description");
-
     var updateResult = await updatePolicy(
       config,
       getRulesEnginePolicyContract(rulesEngineContract, client),
       result.policyId,
       [],
       [],
-      [[]],
       "Updated Policy",
       "Updated Policy Description",
       1
@@ -1596,8 +1584,7 @@ describe("Rules Engine Interactions", async () => {
         getRulesEngineRulesContract(rulesEngineContract, client),
         result.policyId
       )) as any;
-      expect(rules?.length).toEqual(1);
-      expect(rules![0].length).toEqual(0);
+      expect(rules?.length).toEqual(0);
       var trAllRetrieve = await getAllTrackers(
         config,
         getRulesEngineComponentContract(rulesEngineContract, client),
