@@ -2019,4 +2019,89 @@ describe("Rules Engine Interactions", async () => {
     expect(mappedTrackerMetadata.arrayType).toEqual(trackerArrayType.UINT_ARRAY);
   });
 
+  test("Can create rules with custom ordering", async () => {
+    var policyJSON = `{
+      "Policy": "Test Rule Ordering",
+      "Description": "Test that rules are created in specified order",
+      "PolicyType": "open",
+      "CallingFunctions": [
+        {
+          "name": "transfer(address to, uint256 value)",
+          "functionSignature": "transfer(address to, uint256 value)",
+          "encodedValues": "address to, uint256 value"
+        }
+      ],
+      "ForeignCalls": [],
+      "Trackers": [],
+      "MappedTrackers": [],
+      "Rules": [
+        {
+          "Name": "Rule C - Should be Third",
+          "Description": "Third rule by order",
+          "condition": "value > 300",
+          "positiveEffects": ["emit RuleC"],
+          "negativeEffects": ["revert()"],
+          "callingFunction": "transfer(address to, uint256 value)",
+          "order": 3
+        },
+        {
+          "Name": "Rule A - Should be First",
+          "Description": "First rule by order", 
+          "condition": "value > 100",
+          "positiveEffects": ["emit RuleA"],
+          "negativeEffects": ["revert()"],
+          "callingFunction": "transfer(address to, uint256 value)",
+          "order": 1
+        },
+        {
+          "Name": "Rule B - Should be Second",
+          "Description": "Second rule by order",
+          "condition": "value > 200", 
+          "positiveEffects": ["emit RuleB"],
+          "negativeEffects": ["revert()"],
+          "callingFunction": "transfer(address to, uint256 value)",
+          "order": 2
+        }
+      ]
+    }`;
+
+    var result = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      policyJSON
+    );
+    expect(result.policyId).toBeGreaterThan(0);
+
+    // Retrieve the policy to verify rule order
+    var retVal = await getPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      result.policyId
+    );
+
+    expect(retVal).toBeDefined();
+    expect(retVal!.Policy).toBeDefined();
+    
+    const parsed = retVal?.JSON ? JSON.parse(retVal?.JSON) : null;
+    expect(parsed).toBeDefined();
+    expect(parsed.Rules).toHaveLength(3);
+
+    // Verify that rules are in the correct order based on the 'order' field
+    expect(parsed.Rules[0].Name).toEqual("Rule A - Should be First");
+    expect(parsed.Rules[1].Name).toEqual("Rule B - Should be Second"); 
+    expect(parsed.Rules[2].Name).toEqual("Rule C - Should be Third");
+    
+    // Also verify descriptions are preserved
+    expect(parsed.Rules[0].Description).toEqual("First rule by order");
+    expect(parsed.Rules[1].Description).toEqual("Second rule by order");
+    expect(parsed.Rules[2].Description).toEqual("Third rule by order");
+  }, 10000); // 10 second timeout
+
 });

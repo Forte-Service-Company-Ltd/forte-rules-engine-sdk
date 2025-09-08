@@ -445,11 +445,42 @@ export const reverseParsePlaceholder = (
   }
 }
 
-export const reverseParseEffect = (effect: any, placeholders: string[]): string => {
+/**
+ * Decodes a hex-encoded string to human-readable text.
+ * Handles both hex strings with '0x' prefix and without.
+ * 
+ * @param hexString - The hex-encoded string to decode
+ * @returns The decoded human-readable string
+ */
+function decodeHexString(hexString: string): string {
+  // If it's already a regular string (not hex), return it as is
+  if (!hexString.startsWith('0x') && !/^[0-9a-fA-F]+$/.test(hexString)) {
+    return hexString;
+  }
+  
+  // Remove '0x' prefix if present
+  const cleanHex = hexString.startsWith('0x') ? hexString.slice(2) : hexString;
+  
+  try {
+    // Convert hex to buffer and then to string, removing null padding
+    const decoded = Buffer.from(cleanHex, 'hex').toString('utf8').replace(/\0+$/, '');
+    return decoded || hexString; // Return original if decoding results in empty string
+  } catch (error) {
+    // If decoding fails, return the original string
+    return hexString;
+  }
+}
+
+export const reverseParseEffect = (
+  effect: any,
+  placeholders: string[]
+): string => {
   if (effect.effectType == 0) {
-    return "revert('" + effect.text + "')"
+    const decodedText = decodeHexString(effect.text);
+    return "revert('" + decodedText + "')";
   } else if (effect.effectType == 1) {
-    return 'emit ' + effect.text
+    const decodedText = decodeHexString(effect.text);
+    return "emit " + decodedText;
   } else {
     return reverseParseInstructionSet(effect.instructionSet, placeholders, [])
   }
