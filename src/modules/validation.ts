@@ -656,11 +656,10 @@ export const policyJSONValidator = z
     
     // If all rules have order, validate they are unique
     if (rulesWithOrder.length === data.Rules.length && data.Rules.length > 0) {
-      const orders = rulesWithOrder.map(rule => rule.order!).sort((a, b) => a - b);
-      const uniqueOrders = new Set(orders);
+      const orders = rulesWithOrder.map(rule => rule.order!);
       
-      // Check for duplicate order values
-      if (uniqueOrders.size !== orders.length) {
+      // Check for duplicate order values using convenience function
+      if (!validateUniqueKeys(orders)) {
         return false;
       }
     }
