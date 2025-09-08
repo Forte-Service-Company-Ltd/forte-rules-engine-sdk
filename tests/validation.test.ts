@@ -183,19 +183,43 @@ test('Can validate rule JSON', () => {
   }
 })
 
+test('Can validate rule JSON missing name and description', () => {
+  const parsedJSON = JSON.parse(ruleJSON)
+  delete parsedJSON.Name
+  delete parsedJSON.Description
+  const parsedRule = validateRuleJSON(JSON.stringify(parsedJSON))
+  expect(isRight(parsedRule)).toBeTruthy()
+  if (isRight(parsedRule)) {
+    const rule = unwrapEither(parsedRule)
+
+    expect(rule.callingFunction).toEqual(JSON.parse(ruleJSON).callingFunction)
+  }
+})
+
+test('Can validate rule JSON missing name and description undefined', () => {
+  const parsedJSON = JSON.parse(ruleJSON)
+  parsedJSON.Name = undefined
+  parsedJSON.Description = undefined
+  const parsedRule = validateRuleJSON(JSON.stringify(parsedJSON))
+  expect(isRight(parsedRule)).toBeTruthy()
+  if (isRight(parsedRule)) {
+    const rule = unwrapEither(parsedRule)
+
+    expect(rule.callingFunction).toEqual(JSON.parse(ruleJSON).callingFunction)
+  }
+})
+
 test('Can catch all missing required fields in rule JSON', () => {
   const parsedRule = validateRuleJSON('{}')
   expect(isLeft(parsedRule)).toBeTruthy()
   if (isLeft(parsedRule)) {
     const errors = unwrapEither(parsedRule)
 
-    expect(errors.length).toEqual(6)
-    expect(errors[0].message).toEqual('Rule Invalid input: expected string, received undefined: Field Name')
-    expect(errors[1].message).toEqual('Rule Invalid input: expected string, received undefined: Field Description')
-    expect(errors[2].message).toEqual('Rule Invalid input: expected string, received undefined: Field condition')
-    expect(errors[3].message).toEqual('Rule Invalid input: expected array, received undefined: Field positiveEffects')
-    expect(errors[4].message).toEqual('Rule Invalid input: expected array, received undefined: Field negativeEffects')
-    expect(errors[5].message).toEqual('Rule Invalid input: expected string, received undefined: Field callingFunction')
+    expect(errors.length).toEqual(4)
+    expect(errors[0].message).toEqual('Rule Invalid input: expected string, received undefined: Field condition')
+    expect(errors[1].message).toEqual('Rule Invalid input: expected array, received undefined: Field positiveEffects')
+    expect(errors[2].message).toEqual('Rule Invalid input: expected array, received undefined: Field negativeEffects')
+    expect(errors[3].message).toEqual('Rule Invalid input: expected string, received undefined: Field callingFunction')
   }
 })
 
@@ -555,6 +579,32 @@ test('Can validate policy JSON', () => {
   }
 })
 
+test('Can validate policy JSON with missing name and description', () => {
+  const defaultValue = ''
+  const parsedInput = JSON.parse(policyJSON)
+  delete parsedInput.Policy
+  delete parsedInput.Description
+  const parsedPolicy = validatePolicyJSON(JSON.stringify(parsedInput))
+  expect(isRight(parsedPolicy)).toBeTruthy()
+  if (isRight(parsedPolicy)) {
+    const policy = unwrapEither(parsedPolicy)
+    expect(policy.Policy).toEqual(defaultValue)
+  }
+})
+
+test('Can validate policy JSON with missing name and description undefined', () => {
+  const defaultValue = ''
+  const parsedInput = JSON.parse(policyJSON)
+  parsedInput.Policy = undefined
+  parsedInput.Description = undefined
+  const parsedPolicy = validatePolicyJSON(JSON.stringify(parsedInput))
+  expect(isRight(parsedPolicy)).toBeTruthy()
+  if (isRight(parsedPolicy)) {
+    const policy = unwrapEither(parsedPolicy)
+    expect(policy.Policy).toEqual(defaultValue)
+  }
+})
+
 test('Can validate full policy JSON', () => {
   const parsedPolicy = validatePolicyJSON(policyJSONFull)
   expect(isRight(parsedPolicy)).toBeTruthy()
@@ -628,16 +678,15 @@ test('Can catch all missing required fields in policy JSON', () => {
   if (isLeft(parsedPolicy)) {
     const errors = unwrapEither(parsedPolicy)
 
-    expect(errors.length).toEqual(8)
-    expect(errors[0].message).toEqual('Policy Invalid input: expected string, received undefined: Field Policy')
-    expect(errors[1].message).toEqual('Policy Invalid input: expected string, received undefined: Field Description')
-    expect(errors[2].message).toEqual('Policy Invalid input: expected string, received undefined: Field PolicyType')
-    expect(errors[3].message).toEqual(
+    expect(errors.length).toEqual(6)
+    expect(errors[0].message).toEqual('Policy Invalid input: expected string, received undefined: Field PolicyType')
+    expect(errors[1].message).toEqual(
       'Policy Invalid input: expected array, received undefined: Field CallingFunctions'
     )
-    expect(errors[4].message).toEqual('Policy Invalid input: expected array, received undefined: Field ForeignCalls')
-    expect(errors[5].message).toEqual('Policy Invalid input: expected array, received undefined: Field Trackers')
-    expect(errors[7].message).toEqual('Policy Invalid input: expected array, received undefined: Field Rules')
+    expect(errors[2].message).toEqual('Policy Invalid input: expected array, received undefined: Field ForeignCalls')
+    expect(errors[3].message).toEqual('Policy Invalid input: expected array, received undefined: Field Trackers')
+    expect(errors[4].message).toEqual('Policy Invalid input: expected array, received undefined: Field MappedTrackers')
+    expect(errors[5].message).toEqual('Policy Invalid input: expected array, received undefined: Field Rules')
   }
 })
 
