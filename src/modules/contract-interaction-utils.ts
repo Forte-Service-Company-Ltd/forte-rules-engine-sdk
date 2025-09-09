@@ -139,7 +139,8 @@ export function buildARuleStruct(
     instructionSet,
     rawData: rawData,
     placeHolders: output.placeHolders,
-    effectPlaceHolders: output.effectPlaceHolders,
+    positiveEffectPlaceHolders: output.positiveEffectPlaceHolders,
+    negativeEffectPlaceHolders: output.negativeEffectPlaceHolders,
     posEffects: effect.positiveEffects,
     negEffects: effect.negativeEffects,
   }

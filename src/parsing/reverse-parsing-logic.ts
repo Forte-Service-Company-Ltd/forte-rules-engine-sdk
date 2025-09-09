@@ -536,12 +536,32 @@ export function convertRuleStructToString(
   rJSON.condition = reverseParseInstructionSet(ruleS!.instructionSet, plhArray, [])
   rJSON.callingFunction = functionString
 
-  const effectPlhArray = ruleS.effectPlaceHolders.map((placeholder) =>
-    reverseParsePlaceholder(placeholder, names, foreignCalls, trackers, mappings)
-  )
+  const posEffectPlhArray = ruleS.positiveEffectPlaceHolders.map((placeholder) =>
+    reverseParsePlaceholder(
+      placeholder,
+      names,
+      foreignCalls,
+      trackers,
+      mappings
+    )
+  );
 
-  rJSON.positiveEffects = ruleS.posEffects.map((effect) => reverseParseEffect(effect, effectPlhArray))
-  rJSON.negativeEffects = ruleS.negEffects.map((effect) => reverseParseEffect(effect, effectPlhArray))
+  const negEffectPlhArray = ruleS.negativeEffectPlaceHolders.map((placeholder) =>
+    reverseParsePlaceholder(
+      placeholder,
+      names,
+      foreignCalls,
+      trackers,
+      mappings
+    )
+  );
+  rJSON.positiveEffects = ruleS.posEffects.map((effect) =>
+    reverseParseEffect(effect, posEffectPlhArray)
+  );
+  rJSON.negativeEffects = ruleS.negEffects.map((effect) =>
+    reverseParseEffect(effect, negEffectPlhArray)
+  );
+
 
   const ruleData: RuleData = {
     id: Number(ruleId),

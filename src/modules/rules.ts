@@ -265,7 +265,7 @@ export const updateRule = async (
   })
 
   let policyResult = retrievePolicy as any
-  let callingFunctionIds: string[] = policyResult[1]
+  let callingFunctionIds: string[] = policyResult[0]
   const callingFunctionsMetadataCalls = callingFunctionIds.map((cfId) =>
     getCallingFunctionMetadata(config, rulesEngineComponentContract, policyId, cfId)
   )

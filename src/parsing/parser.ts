@@ -9,6 +9,7 @@ import {
   keccak256,
 } from 'viem'
 import {
+  EffectDefinition,
   FCNameToID,
   ForeignCallDefinition,
   ForeignCallEncodedIndex,
@@ -16,6 +17,7 @@ import {
   matchArray,
   Maybe,
   operandArray,
+  PlaceholderStruct,
   PT,
   RuleComponent,
   RuleDefinition,
@@ -96,8 +98,8 @@ function getProcessedEffects(
   indexMap: trackerIndexNameMapping[],
   additionalEffectForeignCalls: string[],
   effects: string[]
-): [string[], RuleComponent[][]] {
-  return effects.reduce(
+): [EffectDefinition[], PlaceholderStruct[]] {
+  var retVal = effects.reduce(
     (acc: [string[], RuleComponent[][]], effect) => {
       const [updatedEffect, effectCalls] = processSyntax(
         encodedValues,
@@ -112,6 +114,14 @@ function getProcessedEffects(
     },
     [[], []]
   )
+  const efectNames = cleanseForeignCallLists(retVal[1]);
+  let effectPlaceHolders = buildPlaceholderList(efectNames);
+  effectPlaceHolders = [...new Set(effectPlaceHolders)];
+
+  const positiveEffects = retVal[0].map(
+    (effect) => parseEffect(effect, efectNames, effectPlaceHolders, indexMap)
+  );
+  return [positiveEffects, effectPlaceHolders]
 }
 
 /**
@@ -142,7 +152,7 @@ export function parseRuleSyntax(
 
   const placeHolders = buildPlaceholderList(ruleComponents)
 
-  const [processedPositiveEffects, positiveEffectComponents] = getProcessedEffects(
+  const [positiveEffects, positiveEffectPlaceHolders] = getProcessedEffects(
     encodedValues,
     foreignCallNameToID,
     indexMap,
@@ -150,23 +160,12 @@ export function parseRuleSyntax(
     syntax.positiveEffects
   )
 
-  const [processedNegativeEffects, negativeEffectComponents] = getProcessedEffects(
+  const [negativeEffects, negativeEffectPlaceHolders] = getProcessedEffects(
     encodedValues,
     foreignCallNameToID,
     indexMap,
     additionalEffectForeignCalls,
     syntax.negativeEffects
-  )
-
-  const effectNames = cleanseForeignCallLists([...positiveEffectComponents, ...negativeEffectComponents])
-  let effectPlaceHolders = buildPlaceholderList(effectNames)
-  effectPlaceHolders = [...new Set(effectPlaceHolders)]
-
-  const positiveEffects = processedPositiveEffects.map((effect) =>
-    parseEffect(effect, effectNames, effectPlaceHolders, indexMap)
-  )
-  const negativeEffects = processedNegativeEffects.map((effect) =>
-    parseEffect(effect, effectNames, effectPlaceHolders, indexMap)
   )
 
   const conditionInstructionSet = convertHumanReadableToInstructionSet(
@@ -191,8 +190,10 @@ export function parseRuleSyntax(
     positiveEffects,
     negativeEffects,
     placeHolders,
-    effectPlaceHolders,
-  }
+    positiveEffectPlaceHolders,
+    negativeEffectPlaceHolders
+  };
+
 }
 
 export function parseMappedTrackerSyntax(syntax: MappedTrackerJSON): MappedTrackerDefinition {
