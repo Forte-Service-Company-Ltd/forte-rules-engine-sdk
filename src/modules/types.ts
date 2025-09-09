@@ -181,7 +181,7 @@ export type CallingFunctionHashMapping = {
 }
 
 export interface CallingFunctionData extends CallingFunctionJSON {
-  id: number
+  id: string
 }
 
 export type CallingFunctionDataAndJSON = {
@@ -328,7 +328,7 @@ export type ForeignCallOnChain = {
   /** Indices for mapped tracker keys */
   mappedTrackerKeyIndices: ForeignCallEncodedIndex[]
   /** Index of the calling function */
-  callingFunctionIndex: number
+  callingFunctionSelector: string
 }
 
 /**

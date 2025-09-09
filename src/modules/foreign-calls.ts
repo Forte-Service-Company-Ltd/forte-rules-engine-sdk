@@ -107,7 +107,7 @@ export const createForeignCall = async (
   })
 
   let policyResult = retrievePolicy as any
-  let callingFunctionIds: number[] = policyResult[1]
+  let callingFunctionIds: string[] = policyResult[0]
   const callingFunctionsMetadataCalls = callingFunctionIds.map((cfId) =>
     getCallingFunctionMetadata(config, rulesEngineComponentContract, policyId, cfId)
   )
@@ -118,7 +118,7 @@ export const createForeignCall = async (
     throw new Error(getRulesErrorMessages(unwrapEither(json)))
   }
   const fcJSON: ForeignCallJSON = unwrapEither(json)
-  var iter = 1
+  var iter = 0
   var encodedValues: string[] = []
   for (var mapp of callingFunctionMetadata) {
     if (mapp.callingFunction.trim() == fcJSON.callingFunction) {
@@ -142,7 +142,7 @@ export const createForeignCall = async (
     parameterTypes: foreignCall.parameterTypes,
     encodedIndices: foreignCall.encodedIndices,
     mappedTrackerKeyIndices: foreignCall.mappedTrackerKeyIndices,
-    callingFunctionIndex: iter,
+    callingFunctionSelector: callingFunctionIds[iter],
   }
   var addFC
   while (true) {
@@ -236,7 +236,7 @@ export const updateForeignCall = async (
   })
 
   let policyResult = retrievePolicy as any
-  let callingFunctionIds: number[] = policyResult[1]
+  let callingFunctionIds: string[] = policyResult[0]
   const callingFunctionsMetadataCalls = callingFunctionIds.map((cfId) =>
     getCallingFunctionMetadata(config, rulesEngineComponentContract, policyId, cfId)
   )
@@ -247,7 +247,7 @@ export const updateForeignCall = async (
     throw new Error(getRulesErrorMessages(unwrapEither(json)))
   }
   const fcJSON = unwrapEither(json)
-  var iter = 1
+  var iter = 0
   var encodedValues: string[] = []
   for (var mapp of callingFunctionMetadata) {
     if (mapp.callingFunction.trim() == fcJSON.callingFunction.trim()) {
@@ -273,7 +273,7 @@ export const updateForeignCall = async (
     parameterTypes: foreignCall.parameterTypes,
     encodedIndices: foreignCall.encodedIndices,
     mappedTrackerKeyIndices: foreignCall.mappedTrackerKeyIndices,
-    callingFunctionIndex: iter,
+    callingFunctionSelector: callingFunctionIds[iter],
   }
   var addFC
 

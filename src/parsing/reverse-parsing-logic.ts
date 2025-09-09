@@ -578,7 +578,7 @@ export function convertForeignCallStructsToStrings(
 
     const returnTypeString = PT.find((pType) => pType.enumeration == call.returnType)?.name
 
-    const callingFunction = callingFunctionMappings.find((mapping) => mapping.index == call.callingFunctionIndex)
+    const callingFunction = callingFunctionMappings.find((mapping) => mapping.hex == call.callingFunctionSelector)
     const inputs: ForeignCallJSON = {
       name: functionMeta?.functionString || '',
       address: call.foreignCallAddress as Address,
