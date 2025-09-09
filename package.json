@@ -15,7 +15,7 @@
   "bugs": {
     "url": "https://github.com/Forte-Service-Company-Ltd/forte-rules-engine-sdk/issues"
   },
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "",
   "type": "module",
   "main": "./dist/cjs/index.js",
