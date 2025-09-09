@@ -1,29 +1,25 @@
 /// SPDX-License-Identifier: BUSL-1.1
-import { expect, test } from "vitest";
-import { generateModifier } from "../src/codeGeneration/generate-solidity";
-import { injectModifier } from "../src/codeGeneration/inject-modifier";
-import * as fs from "fs";
-import { policyModifierGeneration } from "../src/codeGeneration/code-modification-script";
+import { expect, test } from 'vitest'
+import { generateModifier } from '../src/codeGeneration/generate-solidity'
+import { injectModifier } from '../src/codeGeneration/inject-modifier'
+import * as fs from 'fs'
+import { policyModifierGeneration } from '../src/codeGeneration/code-modification-script'
 
-test("Code Modification test)", () => {
-  policyModifierGeneration(
-    "./tests/testPolicy.json",
-    "./tests/testOutput/TestContract.sol",
-    []
-  );
+test('Code Modification test)', () => {
+  policyModifierGeneration('./tests/testPolicy.json', './tests/testOutput/TestContract.sol', [])
 
-  fs.readFile("tests/testOutput/TestContract.sol", "utf-8", (err, data) => {
+  fs.readFile('tests/testOutput/TestContract.sol', 'utf-8', (err, data) => {
     if (err) {
-      console.error("Error reading file:", err);
-      return;
+      console.error('Error reading file:', err)
+      return
     }
-    console.log(data);
+    console.log(data)
 
-    expect(data.includes("checkRulesBeforetransfer(")).toBeTruthy();
-  });
-});
+    expect(data.includes('checkRulesBeforetransfer(')).toBeTruthy()
+  })
+})
 
-test("Code Generation test)", () => {
+test('Code Generation test)', () => {
   const policyJSON = `
         {
         "Policy": "Test Policy",
@@ -65,25 +61,27 @@ test("Code Generation test)", () => {
                 "callingFunction": "transfer(address to, uint256 value)"
             }
         ]
-        }`;
+        }`
 
-  generateModifier(policyJSON, "tests/testOutput/testFileA.sol");
+  generateModifier(policyJSON, 'tests/testOutput/testFileA.sol')
   injectModifier(
-    "transfer",
-    "address to, uint256 value, uint256 somethinElse",
-    "tests/testOutput/UserContract.sol",
-    "tests/testOutput/diff.diff",
-    "tests/testOutput/testFileA.sol"
-  );
-  expect(fs.existsSync("tests/testOutput/diff.diff")).toBeTruthy();
-  expect(fs.existsSync("tests/testOutput/testFileA.sol")).toBeTruthy();
+    'transfer',
+    'address to, uint256 value, uint256 somethinElse',
+    'tests/testOutput/UserContract.sol',
+    'tests/testOutput/diff.diff',
+    'tests/testOutput/testFileA.sol'
+  )
+  expect(fs.existsSync('tests/testOutput/diff.diff')).toBeTruthy()
+  expect(fs.existsSync('tests/testOutput/testFileA.sol')).toBeTruthy()
 
-  fs.readFile("tests/testOutput/UserContract.sol", "utf-8", (err, data) => {
+  fs.readFile('tests/testOutput/UserContract.sol', 'utf-8', (err, data) => {
     if (err) {
-      console.error("Error reading file:", err);
-      return;
+      console.error('Error reading file:', err)
+      return
     }
 
-    expect(data.includes("checkRulesBeforetransfer(")).toBeTruthy();
-  });
-});
+    expect(data.includes('checkRulesBeforetransfer(')).toBeTruthy()
+
+    expect(data.includes('setCallingContractAdmin(')).toBeTruthy()
+  })
+})

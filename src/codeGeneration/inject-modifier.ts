@@ -84,7 +84,7 @@ export function injectModifier(
 
   // Find and replace Contract Name Line with proper inheritance
   // Improved regex that specifically targets contract declarations
-  var regNew = /contract\s+([a-zA-Z0-9_]+)(\s+is\s+[^{]+|\s*)(?={)/g
+  var regNew = /contract\s+([a-zA-Z0-9_]+)(\s+is\s+[^{]+|\s*){/g
   const contractMatches = modifiedData.matchAll(regNew)
 
   for (const match of contractMatches) {
@@ -99,13 +99,20 @@ export function injectModifier(
       // Contract already has inheritance, add our interface to the list
       if (!existingInheritance.includes('RulesEngineClientCustom')) {
         newInheritance = existingInheritance.replace(' is ', ' is RulesEngineClientCustom, ')
-        modifiedData = modifiedData.replace(fullMatch, `contract ${contractName}${newInheritance}`)
       }
     } else {
       // No existing inheritance, add our interface as the only one
       newInheritance = ` is RulesEngineClientCustom${existingInheritance}`
-      modifiedData = modifiedData.replace(fullMatch, `contract ${contractName}${newInheritance}`)
     }
+
+    newInheritance += '{'
+
+    // Check and add security override function if not present
+    if (!contractHasSecurityOverride(modifiedData)) {
+      newInheritance = `${newInheritance}\n${getSecurityOverride()}`
+    }
+
+    modifiedData = modifiedData.replace(fullMatch, `contract ${contractName}${newInheritance}`)
     break
   }
 
@@ -156,4 +163,19 @@ export function injectModifier(
 
     fs.writeFileSync(diffPath, newData, 'utf-8')
   }
+}
+
+function contractHasSecurityOverride(fileContent: string): boolean {
+  const overrideRegex = /function\s+setCallingContractAdmin\s*\(\s*address\s+\w+\s*\)\s+public\s+{[^}]*}/g
+  return overrideRegex.test(fileContent)
+}
+
+export function getSecurityOverride() {
+  const securityFunction = `
+    /**
+     * @notice This function overrides a function in the RulesEngineClient and must be updated for successful compilation.
+     */
+    function setCallingContractAdmin(address callingContractAdmin) public {}
+  `
+  return securityFunction
 }
