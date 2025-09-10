@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: BUSL-1.1
 import { expect, test } from 'vitest'
 import { generateModifier } from '../src/codeGeneration/generate-solidity'
-import { injectModifier } from '../src/codeGeneration/inject-modifier'
+import { contractHasSecurityOverride, injectModifier } from '../src/codeGeneration/inject-modifier'
 import * as fs from 'fs'
 import { policyModifierGeneration } from '../src/codeGeneration/code-modification-script'
 
@@ -84,4 +84,17 @@ test('Code Generation test)', () => {
 
     expect(data.includes('setCallingContractAdmin(')).toBeTruthy()
   })
+})
+
+test('Security override detection', () => {
+  const singleLineDeclaration = 'function setCallingContractAdmin(address callingContractAdmin) public {})'
+  const multiLineDeclaration = 'function setCallingContractAdmin(address callingContractAdmin) public {})'
+
+  const singleLineDetected = contractHasSecurityOverride(singleLineDeclaration)
+  const multiLineDetected = contractHasSecurityOverride(multiLineDeclaration)
+  const noDeclarationDetected = contractHasSecurityOverride('function someOtherFunction() public {}')
+
+  expect(singleLineDetected).toBe(true)
+  expect(multiLineDetected).toBe(true)
+  expect(noDeclarationDetected).toBe(false)
 })

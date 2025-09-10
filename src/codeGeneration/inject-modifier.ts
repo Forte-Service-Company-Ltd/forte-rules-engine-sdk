@@ -92,25 +92,24 @@ export function injectModifier(
     const contractName = match[1]
     const existingInheritance = match[2] || ''
 
-    let newInheritance
+    // initialize newInheritance with security override if its not
+    let newInheritance = ''
 
     // Check if there's already an inheritance clause
     if (existingInheritance.includes(' is ')) {
       // Contract already has inheritance, add our interface to the list
       if (!existingInheritance.includes('RulesEngineClientCustom')) {
         newInheritance = existingInheritance.replace(' is ', ' is RulesEngineClientCustom, ')
+      } else {
+        newInheritance = existingInheritance // No change needed
       }
     } else {
       // No existing inheritance, add our interface as the only one
       newInheritance = ` is RulesEngineClientCustom${existingInheritance}`
     }
 
-    newInheritance += '{'
-
-    // Check and add security override function if not present
-    if (!contractHasSecurityOverride(modifiedData)) {
-      newInheritance = `${newInheritance}\n${getSecurityOverride()}`
-    }
+    const hasSecurity = contractHasSecurityOverride(modifiedData)
+    newInheritance = `${newInheritance}{${hasSecurity ? '' : getSecurityOverride()}`
 
     modifiedData = modifiedData.replace(fullMatch, `contract ${contractName}${newInheritance}`)
     break
@@ -165,7 +164,7 @@ export function injectModifier(
   }
 }
 
-function contractHasSecurityOverride(fileContent: string): boolean {
+export function contractHasSecurityOverride(fileContent: string): boolean {
   const overrideRegex = /function\s+setCallingContractAdmin\s*\(\s*address\s+\w+\s*\)\s+public\s+{[^}]*}/g
   return overrideRegex.test(fileContent)
 }
