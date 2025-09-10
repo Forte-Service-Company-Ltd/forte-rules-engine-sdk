@@ -86,8 +86,9 @@ test('Code Generation test)', () => {
 })
 
 test('Security override detection', () => {
-  const singleLineDeclaration = 'function setCallingContractAdmin(address callingContractAdmin) public {})'
-  const multiLineDeclaration = 'function setCallingContractAdmin(address callingContractAdmin) public {})'
+  const singleLineDeclaration = 'function setCallingContractAdmin(address callingContractAdmin) public {}'
+  const multiLineDeclaration = `function setCallingContractAdmin(address callingContractAdmin) public {
+  }`
 
   const singleLineDetected = contractHasSecurityOverride(singleLineDeclaration)
   const multiLineDetected = contractHasSecurityOverride(multiLineDeclaration)
