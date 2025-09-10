@@ -11,10 +11,5 @@ pragma solidity ^0.8.24;
  *              for modifiers that are generated and injected programmatically.
  */
 abstract contract RulesEngineClientCustom is RulesEngineClient {
-    /**
-     * @notice This function overrides a function in the RulesEngineClient and must be updated for successful compilation.
-     */
-    function setCallingContractAdmin(address callingContractAdmin) public {}
-
     // Modifier Here
 }`

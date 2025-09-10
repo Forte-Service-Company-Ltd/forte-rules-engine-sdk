@@ -84,7 +84,7 @@ export function injectModifier(
 
   // Find and replace Contract Name Line with proper inheritance
   // Improved regex that specifically targets contract declarations
-  var regNew = /contract\s+([a-zA-Z0-9_]+)(\s+is\s+[^{]+|\s*)(?={)/g
+  var regNew = /contract\s+([a-zA-Z0-9_]+)(\s+is\s+[^{]+|\s*){/g
   const contractMatches = modifiedData.matchAll(regNew)
 
   for (const match of contractMatches) {
@@ -92,20 +92,26 @@ export function injectModifier(
     const contractName = match[1]
     const existingInheritance = match[2] || ''
 
-    let newInheritance
+    // initialize newInheritance with security override if its not
+    let newInheritance = ''
 
     // Check if there's already an inheritance clause
     if (existingInheritance.includes(' is ')) {
       // Contract already has inheritance, add our interface to the list
       if (!existingInheritance.includes('RulesEngineClientCustom')) {
         newInheritance = existingInheritance.replace(' is ', ' is RulesEngineClientCustom, ')
-        modifiedData = modifiedData.replace(fullMatch, `contract ${contractName}${newInheritance}`)
+      } else {
+        newInheritance = existingInheritance // No change needed
       }
     } else {
       // No existing inheritance, add our interface as the only one
       newInheritance = ` is RulesEngineClientCustom${existingInheritance}`
-      modifiedData = modifiedData.replace(fullMatch, `contract ${contractName}${newInheritance}`)
     }
+
+    const hasSecurity = contractHasSecurityOverride(modifiedData)
+    newInheritance = `${newInheritance}{${hasSecurity ? '' : getSecurityOverride()}`
+
+    modifiedData = modifiedData.replace(fullMatch, `contract ${contractName}${newInheritance}`)
     break
   }
 
@@ -156,4 +162,19 @@ export function injectModifier(
 
     fs.writeFileSync(diffPath, newData, 'utf-8')
   }
+}
+
+export function contractHasSecurityOverride(fileContent: string): boolean {
+  const overrideRegex = /function\s+setCallingContractAdmin\s*\(\s*address\s+\w+\s*\)\s+public\s+{[^}]*}/g
+  return overrideRegex.test(fileContent)
+}
+
+export function getSecurityOverride() {
+  const securityFunction = `
+    /**
+     * @notice This function overrides a function in the RulesEngineClient and must be updated for successful compilation.
+     */
+    function setCallingContractAdmin(address callingContractAdmin) public {}
+  `
+  return securityFunction
 }
