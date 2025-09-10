@@ -13,7 +13,6 @@ test('Code Modification test)', () => {
       console.error('Error reading file:', err)
       return
     }
-    console.log(data)
 
     expect(data.includes('checkRulesBeforetransfer(')).toBeTruthy()
   })
