@@ -37,22 +37,14 @@ import { createRule, getRuleMetadata, getAllRules } from './rules'
 import { createMappedTracker, getAllTrackers, getTrackerMetadata } from './trackers'
 import { sleep } from './contract-interaction-utils'
 import { createCallingFunction, getCallingFunctionMetadata } from './calling-functions'
-import { getRule } from './rules'
 import { createTracker } from './trackers'
 import {
   convertRuleStructToString,
   convertForeignCallStructsToStrings,
   convertTrackerStructsToStrings,
 } from '../parsing/reverse-parsing-logic'
-import {
-  CallingFunctionJSON,
-  ForeignCallJSON,
-  getRulesErrorMessages,
-  PolicyJSON,
-  validatePolicyJSON,
-} from './validation'
+import { getRulesErrorMessages, PolicyJSON, validatePolicyJSON } from './validation'
 import { isLeft, unwrapEither } from './utils'
-import { id } from 'zod/dist/types/v4/locales'
 
 /**
  * @file policy.ts
