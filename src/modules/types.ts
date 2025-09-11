@@ -1,12 +1,21 @@
 /// SPDX-License-Identifier: BUSL-1.1
 import { Address, BlockNumber, BlockTag, ByteArray, GetContractReturnType, Hex } from 'viem'
 
-import RulesEnginePolicyLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEnginePolicyFacet.sol/RulesEnginePolicyFacet.json";
-import RulesEngineComponentLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineComponentFacet.sol/RulesEngineComponentFacet.json";
-import RulesEngineRuleLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineRuleFacet.sol/RulesEngineRuleFacet.json";
-import RulesEngineAdminLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineAdminRolesFacet.sol/RulesEngineAdminRolesFacet.json";
-import RulesEngineForeignCallLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEngineForeignCallFacet.sol/RulesEngineForeignCallFacet.json";
-import { CallingFunctionJSON, ForeignCallJSON, MappedTrackerJSON, PolicyJSON, RuleJSON, TrackerJSON } from "./validation";
+// import RulesEnginePolicyLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEnginePolicyFacet.sol/RulesEnginePolicyFacet.json";
+import RulesEngineComponentLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineComponentFacet.sol/RulesEngineComponentFacet.json'
+import RulesEngineRuleLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineRuleFacet.sol/RulesEngineRuleFacet.json'
+import RulesEngineAdminLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineAdminRolesFacet.sol/RulesEngineAdminRolesFacet.json'
+import RulesEngineForeignCallLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineForeignCallFacet.sol/RulesEngineForeignCallFacet.json'
+import {
+  CallingFunctionJSON,
+  ForeignCallJSON,
+  MappedTrackerJSON,
+  PolicyJSON,
+  RuleJSON,
+  TrackerJSON,
+} from './validation'
+
+import RulesEnginePolicyLogicArtifact from '../../abis/RulesEnginePolicyFacet.json'
 
 /**
  * @file types.ts
@@ -55,6 +64,21 @@ export type RulesEngineForeignCallContract = GetContractReturnType<typeof RulesE
 // -----------------------------------------------------------------------------
 // Utility Types
 // -----------------------------------------------------------------------------
+
+export type versionStruct = {
+  major: number
+  minor: string
+  tertiary: string
+}
+
+export function convertToVersionStruct(str: string): versionStruct {
+  var numbers = str.split('v')[1]
+  var major = Number(numbers.split('.')[0])
+  var minor = numbers.split('.')[1]
+  var tertiary = numbers.split('.')[2]
+
+  return { major: major, minor: minor, tertiary: tertiary }
+}
 
 /**
  * Maps foreign call names to their IDs
@@ -193,12 +217,12 @@ export type RuleBase = {
   /** Set of instructions that make up the rule */
   instructionSet: any[]
   /** Placeholders used in the rule */
-  placeHolders: any[];
+  placeHolders: any[]
   /** Placeholders used in the rule's positive effects */
-  positiveEffectPlaceHolders: any[];
+  positiveEffectPlaceHolders: any[]
   /** Placeholders used in the rule's negative effects */
-  negativeEffectPlaceHolders: any[];
-};
+  negativeEffectPlaceHolders: any[]
+}
 
 /**
  * Complete definition of a rule including effects
@@ -684,6 +708,8 @@ export type PTNameTracker = (typeof PTNamesTracker)[number]
 export const PTTrackerKey = PTTracker.filter((pt) => !pt.name.includes('[]'))
 export const PTNamesTrackerKey = PTTrackerKey.map((pt) => pt.name)
 export type PTNameTrackerKey = (typeof PTNamesTrackerKey)[number]
+
+export const supportedVersion: versionStruct = { major: 0, minor: '4', tertiary: '0' }
 
 // -----------------------------------------------------------------------------
 // Error Types
