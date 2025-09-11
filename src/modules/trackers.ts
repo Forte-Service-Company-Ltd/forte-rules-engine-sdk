@@ -126,44 +126,65 @@ export const createTracker = async (
     throw new Error(getRulesErrorMessages(unwrapEither(json)))
   }
   const tracker = parseTrackerSyntax(unwrapEither(json))
-  var transactionTracker = {
-    set: true,
-    pType: tracker.type,
-    mapped: false,
-    trackerKeyType: tracker.type,
-    trackerValue: tracker.initialValue,
-    trackerIndex: 0,
-  }
-  var addTR
-  while (true) {
-    try {
-      addTR = await simulateContract(config, {
-        address: rulesEngineComponentContract.address,
-        abi: rulesEngineComponentContract.abi,
-        functionName: 'createTracker',
-        args: [policyId, transactionTracker, tracker.name, tracker.arrayValueType],
-      })
-      break
-    } catch (err) {
-      // TODO: Look into replacing this loop/sleep with setTimeout
-      await sleep(1000)
+  var duplicate = await checkIfTrackerExists(config, rulesEngineComponentContract, policyId, tracker.name)
+  if (!duplicate) {
+    var transactionTracker = {
+      set: true,
+      pType: tracker.type,
+      mapped: false,
+      trackerKeyType: tracker.type,
+      trackerValue: tracker.initialValue,
+      trackerIndex: 0,
     }
-  }
-  if (addTR != null) {
-    const returnHash = await writeContract(config, {
-      ...addTR.request,
-      account: config.getClient().account,
-    })
-    await waitForTransactionReceipt(config, {
-      confirmations: confirmationCount,
-      hash: returnHash,
-    })
+    var addTR
+    while (true) {
+      try {
+        addTR = await simulateContract(config, {
+          address: rulesEngineComponentContract.address,
+          abi: rulesEngineComponentContract.abi,
+          functionName: 'createTracker',
+          args: [policyId, transactionTracker, tracker.name, tracker.arrayValueType],
+        })
+        break
+      } catch (err) {
+        // TODO: Look into replacing this loop/sleep with setTimeout
+        await sleep(1000)
+      }
+    }
+    if (addTR != null) {
+      const returnHash = await writeContract(config, {
+        ...addTR.request,
+        account: config.getClient().account,
+      })
+      await waitForTransactionReceipt(config, {
+        confirmations: confirmationCount,
+        hash: returnHash,
+      })
 
-    let trackerResult = addTR.result
-    return trackerResult
+      let trackerResult = addTR.result
+      return trackerResult
+    }
   }
   return -1
 }
+
+const checkIfTrackerExists = async (
+  config: Config,
+  rulesEngineComponentContract: RulesEngineComponentContract,
+  policyId: number,
+  trackerName: string
+): Promise<boolean> => {
+  var existingTrackers = await getAllTrackers(config, rulesEngineComponentContract, policyId)
+  for (var existing of existingTrackers) {
+    var meta = await getTrackerMetadata(config, rulesEngineComponentContract, policyId, existing.trackerIndex)
+    if (meta.trackerName == trackerName) {
+      return true
+    }
+  }
+
+  return false
+}
+
 /**
  * Asynchronously updates a tracker in the rules engine component contract.
  *
