@@ -59,35 +59,53 @@ export const createCallingFunction = async (
 ): Promise<number> => {
   const args: number[] = encodedValues.split(',').map((val) => determinePTEnumeration(val.trim().split(' ')[0]))
   var addRule
-  while (true) {
-    try {
-      addRule = await simulateContract(config, {
-        address: rulesEngineComponentContract.address,
-        abi: rulesEngineComponentContract.abi,
-        functionName: 'createCallingFunction',
-        args: [policyId, toFunctionSelector(callingFunction), args, callingFunction, encodedValues],
-      })
-      break
-    } catch (err) {
-      // TODO: Look into replacing this loop/sleep with setTimeout
-      await sleep(1000)
+  var duplicate = await checkIfSelectorExists(config, rulesEngineComponentContract, policyId, callingFunction)
+  if (!duplicate) {
+    while (true) {
+      try {
+        addRule = await simulateContract(config, {
+          address: rulesEngineComponentContract.address,
+          abi: rulesEngineComponentContract.abi,
+          functionName: 'createCallingFunction',
+          args: [policyId, toFunctionSelector(callingFunction), args, callingFunction, encodedValues],
+        })
+        break
+      } catch (err) {
+        // TODO: Look into replacing this loop/sleep with setTimeout
+        await sleep(1000)
+      }
     }
-  }
-  if (addRule != null) {
-    const returnHash = await writeContract(config, {
-      ...addRule.request,
-      account: config.getClient().account,
-    })
-    await waitForTransactionReceipt(config, {
-      confirmations: confirmationCount,
-      hash: returnHash,
-    })
+    if (addRule != null) {
+      const returnHash = await writeContract(config, {
+        ...addRule.request,
+        account: config.getClient().account,
+      })
+      await waitForTransactionReceipt(config, {
+        confirmations: confirmationCount,
+        hash: returnHash,
+      })
 
-    return addRule.result
+      return addRule.result
+    }
   }
   return -1
 }
 
+const checkIfSelectorExists = async (
+  config: Config,
+  rulesEngineComponentContract: RulesEngineComponentContract,
+  policyId: number,
+  callingFunction: string
+): Promise<boolean> => {
+  var existingCFs = await getCallingFunctions(config, rulesEngineComponentContract, policyId)
+  for (var existing of existingCFs) {
+    if (existing.signature == toFunctionSelector(callingFunction)) {
+      return true
+    }
+  }
+
+  return false
+}
 /**
  * Delete a calling function from the rules engine component contract.
  *
