@@ -72,12 +72,12 @@ export type versionStruct = {
 }
 
 export function convertToVersionStruct(str: string): versionStruct {
-  var numbers = str.split('v')[1]
-  var major = Number(numbers.split('.')[0])
-  var minor = numbers.split('.')[1]
-  var tertiary = numbers.split('.')[2]
+  const numbers = str.split('v')[1]
+  const major = Number(numbers.split('.')[0])
+  const minor = numbers.split('.')[1]
+  const tertiary = numbers.split('.')[2]
 
-  return { major: major, minor: minor, tertiary: tertiary }
+  return { major, minor, tertiary }
 }
 
 /**
@@ -709,7 +709,7 @@ export const PTTrackerKey = PTTracker.filter((pt) => !pt.name.includes('[]'))
 export const PTNamesTrackerKey = PTTrackerKey.map((pt) => pt.name)
 export type PTNameTrackerKey = (typeof PTNamesTrackerKey)[number]
 
-export const supportedVersion: versionStruct = { major: 0, minor: '4', tertiary: '0' }
+export const SUPPORTEDVERSION: versionStruct = { major: 0, minor: '4', tertiary: '0' }
 
 // -----------------------------------------------------------------------------
 // Error Types

@@ -30,7 +30,7 @@ import {
   ForeignCallDataAndJSON,
   PolicyData,
   convertToVersionStruct,
-  supportedVersion,
+  SUPPORTEDVERSION,
 } from './types'
 import { createForeignCall, getAllForeignCalls, getForeignCallMetadata } from './foreign-calls'
 import { createRule, getRuleMetadata, getAllRules } from './rules'
@@ -527,12 +527,12 @@ export const getVersionCompatible = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract
 ): Promise<boolean> => {
-  var reVersion = await getRulesEngineVersion(config, rulesEnginePolicyContract)
-  var comparisonStruct = convertToVersionStruct(reVersion)
+  const reVersion = await getRulesEngineVersion(config, rulesEnginePolicyContract)
+  const comparisonStruct = convertToVersionStruct(reVersion)
   return (
-    comparisonStruct.major == supportedVersion.major &&
-    (comparisonStruct.minor == supportedVersion.minor || supportedVersion.minor == 'X') &&
-    (comparisonStruct.tertiary == supportedVersion.tertiary || supportedVersion.tertiary == 'X')
+    comparisonStruct.major == SUPPORTEDVERSION.major &&
+    (comparisonStruct.minor == SUPPORTEDVERSION.minor || SUPPORTEDVERSION.minor == 'X') &&
+    (comparisonStruct.tertiary == SUPPORTEDVERSION.tertiary || SUPPORTEDVERSION.tertiary == 'X')
   )
 }
 

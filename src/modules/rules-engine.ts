@@ -194,12 +194,12 @@ export class RulesEngine {
     client: any,
     localConfirmationCount: number = 1
   ): Promise<Maybe<RulesEngine>> {
-    var tempPolicyContract = getContract({
+    const tempPolicyContract = getContract({
       address: rulesEngineAddress,
       abi: RulesEnginePolicyABI,
       client,
     })
-    var compatible = await getVersionCompatibleInternal(localConfig, tempPolicyContract)
+    const compatible = await getVersionCompatibleInternal(localConfig, tempPolicyContract)
     if (compatible) {
       return new RulesEngine(rulesEngineAddress, localConfig, client, localConfirmationCount)
     }
