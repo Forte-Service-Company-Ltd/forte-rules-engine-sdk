@@ -124,7 +124,13 @@ export const createRule = async (
       if (id.name.trim() == fc.trim()) {
         var fcChain = await getForeignCall(config, rulesEngineForeignCallContract, policyId, id.id)
         var fcChainMeta = await getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, id.id)
-        for (var ind of fcChain!.encodedIndices) {
+        
+        if (!fcChain || !fcChainMeta) {
+          console.error(`Failed to retrieve foreign call data for ${fc} (id: ${id.id})`)
+          continue
+        }
+        
+        for (var ind of fcChain.encodedIndices) {
           if (ind.eType == 1) {
             var fcChainInternal = await getForeignCallMetadata(
               config,
@@ -159,7 +165,13 @@ export const createRule = async (
       if (id.name.trim() == fc.trim()) {
         var fcChain = await getForeignCall(config, rulesEngineForeignCallContract, policyId, id.id)
         var fcChainMeta = await getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, id.id)
-        for (var ind of fcChain!.encodedIndices) {
+        
+        if (!fcChain || !fcChainMeta) {
+          console.error(`Failed to retrieve foreign call data for ${fc} (id: ${id.id}) in effects`)
+          continue
+        }
+        
+        for (var ind of fcChain.encodedIndices) {
           if (ind.eType == 1) {
             var fcChainInternal = await getForeignCallMetadata(
               config,
@@ -288,7 +300,13 @@ export const updateRule = async (
       if (id.name.trim() == fc.trim()) {
         var fcChain = await getForeignCall(config, rulesEngineForeignCallContract, policyId, id.id)
         var fcChainMeta = await getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, id.id)
-        for (var ind of fcChain!.encodedIndices) {
+        
+        if (!fcChain || !fcChainMeta) {
+          console.error(`Failed to retrieve foreign call data for ${fc} (id: ${id.id}) in updateRule condition`)
+          continue
+        }
+        
+        for (var ind of fcChain.encodedIndices) {
           if (ind.eType == 1) {
             var fcChainInternal = await getForeignCallMetadata(
               config,
@@ -314,7 +332,13 @@ export const updateRule = async (
       if (id.name.trim() == fc.trim()) {
         var fcChain = await getForeignCall(config, rulesEngineForeignCallContract, policyId, id.id)
         var fcChainMeta = await getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, id.id)
-        for (var ind of fcChain!.encodedIndices) {
+        
+        if (!fcChain || !fcChainMeta) {
+          console.error(`Failed to retrieve foreign call data for ${fc} (id: ${id.id}) in updateRule effects`)
+          continue
+        }
+        
+        for (var ind of fcChain.encodedIndices) {
           if (ind.eType == 1) {
             var fcChainInternal = await getForeignCallMetadata(
               config,

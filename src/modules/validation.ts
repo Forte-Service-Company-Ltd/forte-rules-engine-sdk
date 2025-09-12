@@ -2,6 +2,10 @@ import * as z from 'zod'
 import { Either, PT, RulesError } from './types'
 import { isLeft, makeLeft, makeRight, unwrapEither } from './utils'
 import { Address, checksumAddress, isAddress } from 'viem'
+import { 
+  createCallingFunctionLookupMaps,
+  resolveCallingFunction,
+} from './calling-function-types'
 
 const EMPTY_STRING = ''
 /**
@@ -213,16 +217,24 @@ const validateValuesToPass = (
 }
 
 /**
- * Validates referenced calls, Foreign Calls, Trackers, and Mapped Trackers and Calling Functions args
- *
- * @param condition - string representing the rule condition.
- * @returns boolean, true if all referenced calls are valid, otherwise false.
+ * Validates that all foreign calls and rules reference existing calling functions
+ * @param input - The policy JSON object
+ * @returns boolean indicating if all references are valid
  */
 const validateReferencedCalls = (input: any): boolean => {
-  const callingFunctionNames = input.CallingFunctions.map((call: any) => call.name)
-  const fcCallingFunctions: string[] = input.ForeignCalls.map((fc: any) => fc.callingFunction)
+  // Early return if no calling functions defined
+  if (!input.CallingFunctions || input.CallingFunctions.length === 0) {
+    return (input.ForeignCalls?.length ?? 0) === 0 && (input.Rules?.length ?? 0) === 0
+  }
 
-  if (!fcCallingFunctions.every((fcName) => callingFunctionNames.includes(fcName))) {
+  const callingFunctionNames = input.CallingFunctions.map((call: CallingFunctionJSON) => call.name)
+  const callingFunctionSignatures = input.CallingFunctions.map((call: CallingFunctionJSON) => call.functionSignature || call.name)
+  const fcCallingFunctions: string[] = input.ForeignCalls?.map((fc: any) => fc.callingFunction) ?? []
+
+  // Allow foreign calls to reference either the name or the full signature
+  if (!fcCallingFunctions.every((fcName) => 
+    callingFunctionNames.includes(fcName) || callingFunctionSignatures.includes(fcName)
+  )) {
     return false
   }
 
@@ -230,7 +242,11 @@ const validateReferencedCalls = (input: any): boolean => {
     (acc: Record<string, string[]>, call: CallingFunctionJSON) => {
       const typeValues = call.encodedValues.split(',')
       const values: string[] = typeValues.map((v: string) => v.trim().split(' ')[1].trim())
+      // Index by both name and functionSignature for lookup flexibility
       acc[call.name] = values
+      if (call.functionSignature && call.functionSignature !== call.name) {
+        acc[call.functionSignature] = values
+      }
       return acc
     },
     {} as Record<string, string[]>
@@ -240,17 +256,29 @@ const validateReferencedCalls = (input: any): boolean => {
   const trackerNames = input.Trackers.map((tracker: any) => tracker.name)
   const mappedTrackerNames = input.MappedTrackers.map((tracker: any) => tracker.name)
 
+  // Create lookup maps for O(1) resolution instead of O(n) find operations
+  const lookupMaps = createCallingFunctionLookupMaps(input.CallingFunctions)
+
   const testInputs: Record<string, string[]> = input.Rules.reduce((acc: Record<string, string[]>, rule: any) => {
     const inputs = [rule.condition, ...rule.positiveEffects, ...rule.negativeEffects]
-    if (!acc[rule.callingFunction]) {
-      acc[rule.callingFunction] = inputs
+    const resolvedCallingFunction = resolveCallingFunction(rule.callingFunction, lookupMaps)
+    if (!acc[resolvedCallingFunction]) {
+      acc[resolvedCallingFunction] = inputs
     } else {
-      acc[rule.callingFunction].push(...inputs)
+      acc[resolvedCallingFunction].push(...inputs)
     }
     return acc
   }, {})
 
-  const groupedFC = input.ForeignCalls.reduce(groupFCByCallingFunction, {})
+  const groupedFC = input.ForeignCalls.reduce((acc: Record<string, string[]>, fc: any) => {
+    const resolvedCallingFunction = resolveCallingFunction(fc.callingFunction, lookupMaps)
+    if (!acc[resolvedCallingFunction]) {
+      acc[resolvedCallingFunction] = [fc.name]
+    } else {
+      acc[resolvedCallingFunction].push(fc.name)
+    }
+    return acc
+  }, {})
 
   const validatedInputs = Object.entries(testInputs)
     .map((input: [string, string[]]) => {
@@ -261,8 +289,9 @@ const validateReferencedCalls = (input: any): boolean => {
     .every((isValid: boolean) => isValid)
 
   const validatedForeignCallValuesToPass = input.ForeignCalls.map((call: any) => {
+    const resolvedCallingFunction = resolveCallingFunction(call.callingFunction, lookupMaps)
     return validateValuesToPass(
-      callingFunctionEncodedValues[call.callingFunction],
+      callingFunctionEncodedValues[resolvedCallingFunction],
       foreignCallNames,
       trackerNames,
       mappedTrackerNames,
