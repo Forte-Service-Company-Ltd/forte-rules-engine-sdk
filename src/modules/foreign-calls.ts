@@ -191,11 +191,17 @@ const checkIfForeignCallExists = async (
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   policyId: number,
   foreignCallName: string,
-  callingFunctionSelector: string
+  callingFunctionSelector: string,
+  existingID: number = -1
 ): Promise<boolean> => {
   var existingFCs = await getAllForeignCalls(config, rulesEngineForeignCallContract, policyId)
   for (var existing of existingFCs) {
     var meta = await getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, existing.foreignCallIndex)
+    if (existingID != -1) {
+      if (existing.foreignCallIndex == existingID) {
+        continue
+      }
+    }
     if (meta == foreignCallName && existing.callingFunctionSelector == callingFunctionSelector) {
       return true
     }
@@ -293,54 +299,56 @@ export const updateForeignCall = async (
     }
     iter += 1
   }
-
   const foreignCall = parseForeignCallDefinition(fcJSON, fcMap, indexMap, encodedValues)
 
-  var fc = {
-    set: true,
-    foreignCallAddress: foreignCall.address,
-    signature: toFunctionSelector(foreignCall.function),
-    foreignCallIndex: 0,
-    returnType: foreignCall.returnType,
-    parameterTypes: foreignCall.parameterTypes,
-    encodedIndices: foreignCall.encodedIndices,
-    mappedTrackerKeyIndices: foreignCall.mappedTrackerKeyIndices,
-    callingFunctionSelector: callingFunctionIds[iter],
-  }
-  var addFC
-
-  let retryAttempts = 0
-  const maxRetryAttempts = 5
-
-  while (retryAttempts < maxRetryAttempts) {
-    try {
-      addFC = await simulateContract(config, {
-        address: rulesEngineForeignCallContract.address,
-        abi: rulesEngineForeignCallContract.abi,
-        functionName: 'updateForeignCall',
-        args: [policyId, foreignCallId, fc],
-      })
-      break
-    } catch (err) {
-      retryAttempts++
-      if (retryAttempts >= maxRetryAttempts) {
-        console.error(`Failed to update foreign call after ${maxRetryAttempts} attempts:`, err)
-        return -1
-      }
-      await sleep(1000)
+  var duplicate = await checkIfForeignCallExists(
+    config,
+    rulesEngineForeignCallContract,
+    policyId,
+    foreignCall.name,
+    callingFunctionIds[iter],
+    foreignCallId
+  )
+  if (!duplicate) {
+    var fc = {
+      set: true,
+      foreignCallAddress: foreignCall.address,
+      signature: toFunctionSelector(foreignCall.function),
+      foreignCallIndex: 0,
+      returnType: foreignCall.returnType,
+      parameterTypes: foreignCall.parameterTypes,
+      encodedIndices: foreignCall.encodedIndices,
+      mappedTrackerKeyIndices: foreignCall.mappedTrackerKeyIndices,
+      callingFunctionSelector: callingFunctionIds[iter],
     }
-  }
-  if (addFC != null) {
-    const returnHash = await writeContract(config, {
-      ...addFC.request,
-      account: config.getClient().account,
-    })
-    await waitForTransactionReceipt(config, {
-      confirmations: confirmationCount,
-      hash: returnHash,
-    })
-    let foreignCallResult = addFC.result as any
-    return foreignCallResult.foreignCallIndex
+    var addFC
+
+    while (true) {
+      try {
+        addFC = await simulateContract(config, {
+          address: rulesEngineForeignCallContract.address,
+          abi: rulesEngineForeignCallContract.abi,
+          functionName: 'updateForeignCall',
+          args: [policyId, foreignCallId, fc],
+        })
+        break
+      } catch (err) {
+        // TODO: Look into replacing this loop/sleep with setTimeout
+        await sleep(1000)
+      }
+    }
+    if (addFC != null) {
+      const returnHash = await writeContract(config, {
+        ...addFC.request,
+        account: config.getClient().account,
+      })
+      await waitForTransactionReceipt(config, {
+        confirmations: confirmationCount,
+        hash: returnHash,
+      })
+      let foreignCallResult = addFC.result as any
+      return foreignCallResult.foreignCallIndex
+    }
   }
   return -1
 }
