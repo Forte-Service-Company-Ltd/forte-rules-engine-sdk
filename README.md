@@ -26,5 +26,5 @@ The primary license for Forte Protocol Rules Engine SDK is the Business Source L
 
 ### Other Exceptions
 
-[version-image]: https://img.shields.io/badge/Version-0.7.0-brightgreen?style=for-the-badge&logo=appveyor
+[version-image]: https://img.shields.io/badge/Version-0.8.0-brightgreen?style=for-the-badge&logo=appveyor
 [version-url]: https://github.com/Forte-Service-Company-Ltd/forte-rules-engine-sdk
