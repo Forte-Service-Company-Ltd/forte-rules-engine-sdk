@@ -111,7 +111,57 @@ export const createPolicy = async (
     }
     const policyJSON = unwrapEither(validatedPolicyJSON)
 
-    const addPolicy = await simulateContract(config, {
+  // Create lookup maps for O(1) resolution instead of O(n) find operations
+  const callingFunctionByName = new Map<string, CallingFunctionJSON>()
+  const callingFunctionBySignature = new Map<string, CallingFunctionJSON>()
+  const callingFunctionByNameLower = new Map<string, CallingFunctionJSON>()
+  
+  // Pre-populate lookup maps for efficient resolution
+  for (const cf of policyJSON.CallingFunctions) {
+    callingFunctionByName.set(cf.name, cf)
+    callingFunctionByNameLower.set(cf.name.toLowerCase(), cf)
+    if (cf.functionSignature && cf.functionSignature !== cf.name) {
+      callingFunctionBySignature.set(cf.functionSignature, cf)
+    }
+  }
+
+  /**
+   * Helper function to resolve calling function name to full signature.
+   * Supports backward compatibility by accepting both name-only references and full signatures.
+   * Uses O(1) Map lookups for optimal performance.
+   * 
+   * @param callingFunctionRef - Either a short name or full function signature
+   * @returns The resolved function signature or the original reference if not found
+   */
+  const resolveCallingFunction = (callingFunctionRef: string): string => {
+    // First check if it's already a full signature (contains parentheses)
+    if (callingFunctionRef.includes('(')) {
+      return callingFunctionRef
+    }
+    
+    // Try to find by name field (exact match) - O(1)
+    const foundByName = callingFunctionByName.get(callingFunctionRef)
+    if (foundByName) {
+      return foundByName.functionSignature || foundByName.name
+    }
+    
+    // Try case-insensitive name match - O(1)
+    const foundByNameIgnoreCase = callingFunctionByNameLower.get(callingFunctionRef.toLowerCase())
+    if (foundByNameIgnoreCase) {
+      return foundByNameIgnoreCase.functionSignature || foundByNameIgnoreCase.name
+    }
+    
+    // Try to find by functionSignature field - O(1)
+    const foundBySignature = callingFunctionBySignature.get(callingFunctionRef)
+    if (foundBySignature) {
+      return foundBySignature.functionSignature || foundBySignature.name
+    }
+    
+    // Return as-is if not found (will be validated elsewhere)
+    return callingFunctionRef
+  }
+
+  const addPolicy = await simulateContract(config, {
       address: rulesEnginePolicyContract.address,
       abi: rulesEnginePolicyContract.abi,
       functionName: 'createPolicy',
@@ -205,31 +255,54 @@ export const createPolicy = async (
     }
     if (policyJSON.ForeignCalls != null) {
       for (var foreignCall of policyJSON.ForeignCalls) {
-        var encodedValues: string[] = []
-        var iter = 0
-        for (var calling of callingFunctions) {
-          if (foreignCall.callingFunction.trim() == calling.trim()) {
-            encodedValues = callingFunctionParamSets[iter]
-            break
+        const resolvedForeignCallFunction = resolveCallingFunction(foreignCall.callingFunction)
+        try {
+          // Find the calling function and its encoded values using the resolved function name
+          const callingFunctionIndex = callingFunctions.findIndex(cf => cf.trim() === resolvedForeignCallFunction.trim())
+          if (callingFunctionIndex === -1) {
+            throw new Error(`Calling function not found: ${resolvedForeignCallFunction}`)
           }
-          iter += 1
+          const encodedValues = callingFunctionParamSets[callingFunctionIndex]
+          
+          // Create a copy of the foreign call with the resolved calling function name
+          const resolvedForeignCall = {
+            ...foreignCall,
+            callingFunction: resolvedForeignCallFunction
+          }
+          
+          const fcStruct = parseForeignCallDefinition(resolvedForeignCall, fcIds, trackerIds, encodedValues)
+          const fcId = await createForeignCall(
+            config,
+            rulesEngineForeignCallContract,
+            rulesEngineComponentContract,
+            rulesEnginePolicyContract,
+            policyId,
+            JSON.stringify(resolvedForeignCall),
+            confirmationCount
+          )
+          
+          // Only add successfully created foreign calls to the mapping
+          if (fcId !== -1) {
+            var struc: FCNameToID = {
+              id: fcId,
+              name: fcStruct.name.split('(')[0],
+              type: 0,
+            }
+            fcIds.push(struc)
+          } else {
+            console.error(`Failed to create foreign call: ${fcStruct.name}`)
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error)
+          
+          // Re-throw self-reference validation errors to fail the policy creation
+          if (errorMessage.includes("cannot reference itself")) {
+            throw error
+          }
+          
+          // For other errors, log and continue (existing behavior)
+          console.error(`Skipping foreign call ${foreignCall.name}: ${errorMessage}`)
         }
-        const fcStruct = parseForeignCallDefinition(foreignCall, fcIds, trackerIds, encodedValues)
-        const fcId = await createForeignCall(
-          config,
-          rulesEngineForeignCallContract,
-          rulesEngineComponentContract,
-          rulesEnginePolicyContract,
-          policyId,
-          JSON.stringify(foreignCall),
-          confirmationCount
-        )
-        var struc: FCNameToID = {
-          id: fcId,
-          name: fcStruct.name.split('(')[0],
-          type: 0,
-        }
-        fcIds.push(struc)
       }
     }
 
@@ -257,10 +330,11 @@ export const createPolicy = async (
         return { policyId: -1 }
       }
       ruleIds.push(ruleId)
-      if (ruleToCallingFunction.has(rule.callingFunction)) {
-        ruleToCallingFunction.get(rule.callingFunction)?.push(ruleId)
+      const resolvedCallingFunction = resolveCallingFunction(rule.callingFunction)
+      if (ruleToCallingFunction.has(resolvedCallingFunction)) {
+        ruleToCallingFunction.get(resolvedCallingFunction)?.push(ruleId)
       } else {
-        ruleToCallingFunction.set(rule.callingFunction, [ruleId])
+        ruleToCallingFunction.set(resolvedCallingFunction, [ruleId])
       }
     }
     for (var cf of callingFunctions) {

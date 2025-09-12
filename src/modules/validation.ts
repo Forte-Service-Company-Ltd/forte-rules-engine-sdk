@@ -213,16 +213,24 @@ const validateValuesToPass = (
 }
 
 /**
- * Validates referenced calls, Foreign Calls, Trackers, and Mapped Trackers and Calling Functions args
- *
- * @param condition - string representing the rule condition.
- * @returns boolean, true if all referenced calls are valid, otherwise false.
+ * Validates that all foreign calls and rules reference existing calling functions
+ * @param input - The policy JSON object
+ * @returns boolean indicating if all references are valid
  */
 const validateReferencedCalls = (input: any): boolean => {
-  const callingFunctionNames = input.CallingFunctions.map((call: any) => call.name)
-  const fcCallingFunctions: string[] = input.ForeignCalls.map((fc: any) => fc.callingFunction)
+  // Early return if no calling functions defined
+  if (!input.CallingFunctions || input.CallingFunctions.length === 0) {
+    return (input.ForeignCalls?.length ?? 0) === 0 && (input.Rules?.length ?? 0) === 0
+  }
 
-  if (!fcCallingFunctions.every((fcName) => callingFunctionNames.includes(fcName))) {
+  const callingFunctionNames = input.CallingFunctions.map((call: CallingFunctionJSON) => call.name)
+  const callingFunctionSignatures = input.CallingFunctions.map((call: CallingFunctionJSON) => call.functionSignature || call.name)
+  const fcCallingFunctions: string[] = input.ForeignCalls?.map((fc: any) => fc.callingFunction) ?? []
+
+  // Allow foreign calls to reference either the name or the full signature
+  if (!fcCallingFunctions.every((fcName) => 
+    callingFunctionNames.includes(fcName) || callingFunctionSignatures.includes(fcName)
+  )) {
     return false
   }
 
@@ -230,7 +238,11 @@ const validateReferencedCalls = (input: any): boolean => {
     (acc: Record<string, string[]>, call: CallingFunctionJSON) => {
       const typeValues = call.encodedValues.split(',')
       const values: string[] = typeValues.map((v: string) => v.trim().split(' ')[1].trim())
+      // Index by both name and functionSignature for lookup flexibility
       acc[call.name] = values
+      if (call.functionSignature && call.functionSignature !== call.name) {
+        acc[call.functionSignature] = values
+      }
       return acc
     },
     {} as Record<string, string[]>
@@ -240,17 +252,76 @@ const validateReferencedCalls = (input: any): boolean => {
   const trackerNames = input.Trackers.map((tracker: any) => tracker.name)
   const mappedTrackerNames = input.MappedTrackers.map((tracker: any) => tracker.name)
 
+  // Create lookup maps for O(1) resolution instead of O(n) find operations
+  const callingFunctionByName = new Map<string, CallingFunctionJSON>()
+  const callingFunctionBySignature = new Map<string, CallingFunctionJSON>()
+  const callingFunctionByNameLower = new Map<string, CallingFunctionJSON>()
+  
+  // Pre-populate lookup maps for efficient resolution
+  for (const cf of input.CallingFunctions) {
+    callingFunctionByName.set(cf.name, cf)
+    callingFunctionByNameLower.set(cf.name.toLowerCase(), cf)
+    if (cf.functionSignature && cf.functionSignature !== cf.name) {
+      callingFunctionBySignature.set(cf.functionSignature, cf)
+    }
+  }
+
+  /**
+   * Helper function to resolve calling function name to full signature.
+   * Supports backward compatibility by accepting both name-only references and full signatures.
+   * Uses O(1) Map lookups for optimal performance.
+   * 
+   * @param callingFunctionRef - Either a short name or full function signature
+   * @returns The resolved function signature or the original reference if not found
+   */
+  const resolveCallingFunction = (callingFunctionRef: string): string => {
+    // First check if it's already a full signature (contains parentheses)
+    if (callingFunctionRef.includes('(')) {
+      return callingFunctionRef
+    }
+    
+    // Try to find by name field (exact match) - O(1)
+    const foundByName = callingFunctionByName.get(callingFunctionRef)
+    if (foundByName) {
+      return foundByName.functionSignature || foundByName.name
+    }
+    
+    // Try case-insensitive name match - O(1)
+    const foundByNameIgnoreCase = callingFunctionByNameLower.get(callingFunctionRef.toLowerCase())
+    if (foundByNameIgnoreCase) {
+      return foundByNameIgnoreCase.functionSignature || foundByNameIgnoreCase.name
+    }
+    
+    // Try to find by functionSignature field - O(1)
+    const foundBySignature = callingFunctionBySignature.get(callingFunctionRef)
+    if (foundBySignature) {
+      return foundBySignature.functionSignature || foundBySignature.name
+    }
+    
+    // Return as-is if not found (will be validated elsewhere)
+    return callingFunctionRef
+  }
+
   const testInputs: Record<string, string[]> = input.Rules.reduce((acc: Record<string, string[]>, rule: any) => {
     const inputs = [rule.condition, ...rule.positiveEffects, ...rule.negativeEffects]
-    if (!acc[rule.callingFunction]) {
-      acc[rule.callingFunction] = inputs
+    const resolvedCallingFunction = resolveCallingFunction(rule.callingFunction)
+    if (!acc[resolvedCallingFunction]) {
+      acc[resolvedCallingFunction] = inputs
     } else {
-      acc[rule.callingFunction].push(...inputs)
+      acc[resolvedCallingFunction].push(...inputs)
     }
     return acc
   }, {})
 
-  const groupedFC = input.ForeignCalls.reduce(groupFCByCallingFunction, {})
+  const groupedFC = input.ForeignCalls.reduce((acc: Record<string, string[]>, fc: any) => {
+    const resolvedCallingFunction = resolveCallingFunction(fc.callingFunction)
+    if (!acc[resolvedCallingFunction]) {
+      acc[resolvedCallingFunction] = [fc.name]
+    } else {
+      acc[resolvedCallingFunction].push(fc.name)
+    }
+    return acc
+  }, {})
 
   const validatedInputs = Object.entries(testInputs)
     .map((input: [string, string[]]) => {
@@ -261,8 +332,9 @@ const validateReferencedCalls = (input: any): boolean => {
     .every((isValid: boolean) => isValid)
 
   const validatedForeignCallValuesToPass = input.ForeignCalls.map((call: any) => {
+    const resolvedCallingFunction = resolveCallingFunction(call.callingFunction)
     return validateValuesToPass(
-      callingFunctionEncodedValues[call.callingFunction],
+      callingFunctionEncodedValues[resolvedCallingFunction],
       foreignCallNames,
       trackerNames,
       mappedTrackerNames,

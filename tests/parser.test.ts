@@ -3032,3 +3032,66 @@ test("Evaluates a syntax string that includes the Tx Origin Global Variable", ()
 
   expect(retVal.placeHolders[1].flags).toEqual(0x14);
 });
+
+test("Foreign call self-reference validation - should throw error for self-reference in valuesToPass", () => {
+  const selfReferencingForeignCall = {
+    "name": "SelfReferencingCall",
+    "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC" as `0x${string}`,
+    "function": "SelfReferencingCall(uint256)",
+    "returnType": "uint256",
+    "valuesToPass": "FC:SelfReferencingCall",
+    "mappedTrackerKeyValues": "",
+    "callingFunction": "transfer(address to, uint256 value)"
+  };
+
+  expect(() => {
+    parseForeignCallDefinition(
+      selfReferencingForeignCall,
+      [],
+      [],
+      ["value"]
+    );
+  }).toThrow("Foreign call \"SelfReferencingCall\" cannot reference itself in valuesToPass. Self-referential foreign calls are not allowed as they would create infinite loops.");
+});
+
+test("Foreign call self-reference validation - should throw error for self-reference in mappedTrackerKeyValues", () => {
+  const selfReferencingForeignCall = {
+    "name": "SelfReferencingCall",
+    "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC" as `0x${string}`, 
+    "function": "SelfReferencingCall(uint256)",
+    "returnType": "uint256",
+    "valuesToPass": "to",
+    "mappedTrackerKeyValues": "FC:SelfReferencingCall",
+    "callingFunction": "transfer(address to, uint256 value)"
+  };
+
+  expect(() => {
+    parseForeignCallDefinition(
+      selfReferencingForeignCall,
+      [],
+      [],
+      ["to"]
+    );
+  }).toThrow("Foreign call \"SelfReferencingCall\" cannot reference itself in mappedTrackerKeyValues. Self-referential foreign calls are not allowed as they would create infinite loops.");
+});
+
+test("Foreign call self-reference validation - should allow valid foreign call references", () => {
+  const validForeignCall = {
+    "name": "ValidCall",
+    "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC" as `0x${string}`,
+    "function": "ValidCall(uint256)",
+    "returnType": "uint256", 
+    "valuesToPass": "FC:AnotherCall",
+    "mappedTrackerKeyValues": "",
+    "callingFunction": "transfer(address to, uint256 value)"
+  };
+
+  expect(() => {
+    parseForeignCallDefinition(
+      validForeignCall,
+      [{ id: 1, name: "AnotherCall", type: 1 }],
+      [],
+      ["value"]
+    );
+  }).not.toThrow();
+});

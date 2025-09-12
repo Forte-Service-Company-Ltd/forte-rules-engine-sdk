@@ -11,6 +11,11 @@ import "tests/testOutput/testFileA.sol";
  */
 contract ExampleUserContract is RulesEngineClientCustom {
     /**
+     * @notice This function overrides a function in the RulesEngineClient and must be updated for successful compilation.
+     */
+    function setCallingContractAdmin(address callingContractAdmin) public {}
+  
+    /**
      * @notice Transfers a specified amount of tokens to a given address.
      * @dev This function allows transferring tokens to another address with an additional parameter.
      * @param to The address of the recipient.
