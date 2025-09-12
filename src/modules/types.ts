@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: BUSL-1.1
 import { Address, BlockNumber, BlockTag, ByteArray, GetContractReturnType, Hex } from 'viem'
 
-// import RulesEnginePolicyLogicArtifact from "@fortefoundation/forte-rules-engine/out/RulesEnginePolicyFacet.sol/RulesEnginePolicyFacet.json";
+import RulesEnginePolicyLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEnginePolicyFacet.sol/RulesEnginePolicyFacet.json'
 import RulesEngineComponentLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineComponentFacet.sol/RulesEngineComponentFacet.json'
 import RulesEngineRuleLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineRuleFacet.sol/RulesEngineRuleFacet.json'
 import RulesEngineAdminLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineAdminRolesFacet.sol/RulesEngineAdminRolesFacet.json'
@@ -14,8 +14,6 @@ import {
   RuleJSON,
   TrackerJSON,
 } from './validation'
-
-import RulesEnginePolicyLogicArtifact from '../../abis/RulesEnginePolicyFacet.json'
 
 /**
  * @file types.ts
@@ -709,7 +707,7 @@ export const PTTrackerKey = PTTracker.filter((pt) => !pt.name.includes('[]'))
 export const PTNamesTrackerKey = PTTrackerKey.map((pt) => pt.name)
 export type PTNameTrackerKey = (typeof PTNamesTrackerKey)[number]
 
-export const SUPPORTEDVERSION: versionStruct = { major: 0, minor: '4', tertiary: '0' }
+export const SUPPORTEDVERSION: versionStruct = { major: 0, minor: '5', tertiary: '0' }
 
 // -----------------------------------------------------------------------------
 // Error Types
