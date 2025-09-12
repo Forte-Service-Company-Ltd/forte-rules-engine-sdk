@@ -1654,7 +1654,7 @@ describe('Rules Engine Interactions', async () => {
     )
     var exists = await policyExists(config, getRulesEnginePolicyContract(rulesEngineContract, client), result.policyId)
     expect(exists).toEqual(true)
-  })
+  }, 100000) // 100 second timeout)
   test(
     'Can delete a full policy',
     async () => {

@@ -34,7 +34,7 @@ import { createForeignCall, getAllForeignCalls, getForeignCallMetadata } from '.
 import { createRule, getRuleMetadata, getAllRules } from './rules'
 import { createMappedTracker, getAllTrackers, getTrackerMetadata } from './trackers'
 import { sleep } from './contract-interaction-utils'
-import { checkIfSelectorExists, createCallingFunction, getCallingFunctionMetadata } from './calling-functions'
+import { createCallingFunction, getCallingFunctionMetadata } from './calling-functions'
 import { getRule } from './rules'
 import { createTracker } from './trackers'
 import {
