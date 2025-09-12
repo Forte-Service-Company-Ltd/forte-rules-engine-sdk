@@ -49,6 +49,7 @@ import {
   setPolicies as setPoliciesInternal,
   appendPolicy as appendPolicyInternal,
   deletePolicy as deletePolicyInternal,
+  getRulesEngineVersion as getRulesEngineVersionInternal,
   getPolicy as getPolicyInternal,
   policyExists as policyExistsInternal,
   getAppliedPolicyIds as getAppliedPolicyIdsInternal,
@@ -61,6 +62,7 @@ import {
   cementPolicy as cementPolicyInternal,
   isCementedPolicy as isCementedPolicyInternal,
   getPolicyMetadata as getPolicyMetadataInternal,
+  getVersionCompatible as getVersionCompatibleInternal,
 } from './policy'
 
 import {
@@ -125,13 +127,18 @@ export class RulesEngine {
   private confirmationCount: number
 
   /**
-   * @constructor
+   * @constructor - private constructor, must be called via the create function
    * @param {Address} rulesEngineAddress - The address of the deployed Rules Engine smart contract.
    * @param {Config} localConfig - The configuration object containing network and wallet information.
    * @param {any} client - The client instance for interacting with the blockchain.
    * @param {number} localConfirmationCount - The number of confirmations (blocks that have passed) to wait before resolving transaction receipts (default is 1).
    */
-  constructor(rulesEngineAddress: Address, localConfig: Config, client: any, localConfirmationCount: number = 1) {
+  private constructor(
+    rulesEngineAddress: Address,
+    localConfig: Config,
+    client: any,
+    localConfirmationCount: number = 1
+  ) {
     this.rulesEnginePolicyContract = getContract({
       address: rulesEngineAddress,
       abi: RulesEnginePolicyABI,
@@ -172,6 +179,34 @@ export class RulesEngine {
   public getRulesEngineForeignCallContract(): RulesEngineForeignCallContract {
     return this.rulesEngineForeignCallContract
   }
+
+  /**
+   * Creates a Rules Engine instance using the private constructor if the supplied rules engine address is compatible.
+   *
+   * @param {Address} rulesEngineAddress - The address of the deployed Rules Engine smart contract.
+   * @param {Config} localConfig - The configuration object containing network and wallet information.
+   * @param {any} client - The client instance for interacting with the blockchain.
+   * @param {number} localConfirmationCount - The number of confirmations (blocks that have passed) to wait before resolving transaction receipts (default is 1).
+   */
+  public static async create(
+    rulesEngineAddress: Address,
+    localConfig: Config,
+    client: any,
+    localConfirmationCount: number = 1
+  ): Promise<Maybe<RulesEngine>> {
+    const tempPolicyContract = getContract({
+      address: rulesEngineAddress,
+      abi: RulesEnginePolicyABI,
+      client,
+    })
+    const compatible = await getVersionCompatibleInternal(localConfig, tempPolicyContract)
+    if (compatible) {
+      return new RulesEngine(rulesEngineAddress, localConfig, client, localConfirmationCount)
+    }
+    console.log('The version of the Rules Engine the address points to is not compatible with this version of the SDK')
+    return null
+  }
+
   /**
    * Creates a policy in the Rules Engine.
    *
@@ -188,6 +223,14 @@ export class RulesEngine {
       this.confirmationCount,
       policyJSON
     )
+  }
+
+  getRulesEngineVersion(): Promise<string> {
+    return getRulesEngineVersionInternal(config, this.rulesEnginePolicyContract)
+  }
+
+  getVersionCompatible(): Promise<boolean> {
+    return getVersionCompatibleInternal(config, this.rulesEnginePolicyContract)
   }
 
   /**

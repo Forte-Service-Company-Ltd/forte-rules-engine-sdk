@@ -29,25 +29,16 @@ import {
   CallingFunctionDataAndJSON,
   ForeignCallDataAndJSON,
   PolicyData,
-} from "./types";
-import {
-  createForeignCall,
-  getAllForeignCalls,
-  getForeignCallMetadata,
-} from "./foreign-calls";
-import { createRule, getRuleMetadata, getAllRules } from "./rules";
-import {
-  createMappedTracker,
-  getAllTrackers,
-  getTrackerMetadata,
-} from "./trackers";
-import { sleep } from "./contract-interaction-utils";
-import {
-  createCallingFunction,
-  getCallingFunctionMetadata,
-} from "./calling-functions";
-import { getRule } from "./rules";
-import { createTracker } from "./trackers";
+  convertToVersionStruct,
+  SUPPORTEDVERSION,
+} from './types'
+import { createForeignCall, getAllForeignCalls, getForeignCallMetadata } from './foreign-calls'
+import { createRule, getRuleMetadata, getAllRules } from './rules'
+import { createMappedTracker, getAllTrackers, getTrackerMetadata } from './trackers'
+import { sleep } from './contract-interaction-utils'
+import { createCallingFunction, getCallingFunctionMetadata } from './calling-functions'
+import { getRule } from './rules'
+import { createTracker } from './trackers'
 import {
   convertRuleStructToString,
   convertForeignCallStructsToStrings,
@@ -244,9 +235,9 @@ export const createPolicy = async (
 
     // Sort rules by order field if provided, otherwise maintain original order
     const sortedRules = [...policyJSON.Rules].sort((a, b) => {
-      const orderA = a.order !== undefined ? a.order : Number.MAX_SAFE_INTEGER;
-      const orderB = b.order !== undefined ? b.order : Number.MAX_SAFE_INTEGER;
-      return orderA - orderB;
+      const orderA = a.order !== undefined ? a.order : Number.MAX_SAFE_INTEGER
+      const orderB = b.order !== undefined ? b.order : Number.MAX_SAFE_INTEGER
+      return orderA - orderB
     })
 
     for (var rule of sortedRules) {
@@ -280,7 +271,7 @@ export const createPolicy = async (
       }
       callingFunctionSelectors.push(toFunctionSelector(cf))
     }
-    
+
     policyId = await updatePolicy(
       config,
       rulesEnginePolicyContract,
@@ -508,6 +499,44 @@ const reverseParseEncodedArgs = (
 }
 
 /**
+ * Retrieves the version of the Rules Engine for a compatibility check.
+ *
+ * @param config - The configuration object containing network and wallet information.
+ * @param rulesEnginePolicyContract - The contract instance for interacting with the Rules Engine Policy.
+ * @returns A string representation of the Rules Engine version.
+ */
+export const getRulesEngineVersion = async (
+  config: Config,
+  rulesEnginePolicyContract: RulesEnginePolicyContract
+): Promise<string> => {
+  try {
+    const retrievePolicy = await readContract(config, {
+      address: rulesEnginePolicyContract.address,
+      abi: rulesEnginePolicyContract.abi,
+      functionName: 'version',
+      args: [],
+    })
+    return retrievePolicy as string
+  } catch (error) {
+    console.error(error)
+    return ''
+  }
+}
+
+export const getVersionCompatible = async (
+  config: Config,
+  rulesEnginePolicyContract: RulesEnginePolicyContract
+): Promise<boolean> => {
+  const reVersion = await getRulesEngineVersion(config, rulesEnginePolicyContract)
+  const comparisonStruct = convertToVersionStruct(reVersion)
+  return (
+    comparisonStruct.major == SUPPORTEDVERSION.major &&
+    (comparisonStruct.minor == SUPPORTEDVERSION.minor || SUPPORTEDVERSION.minor == 'X') &&
+    (comparisonStruct.tertiary == SUPPORTEDVERSION.tertiary || SUPPORTEDVERSION.tertiary == 'X')
+  )
+}
+
+/**
  * Retrieves the full policy, including rules, trackers, and foreign calls.
  *
  * @param config - The configuration object containing network and wallet information.
@@ -644,16 +673,11 @@ export const getPolicy = async (
     }
     const callStrings: ForeignCallDataAndJSON[] = convertForeignCallStructsToStrings(foreignCalls, allFunctionMappings)
 
-    var iter = 0;
-    var ruleJSONObjs = [];
-    
-    const allRulesFromContract = await getAllRules(
-      config,
-      rulesEngineRulesContract,
-      policyId,
-      blockParams
-    );
-    
+    var iter = 0
+    var ruleJSONObjs = []
+
+    const allRulesFromContract = await getAllRules(config, rulesEngineRulesContract, policyId, blockParams)
+
     for (var innerArray of ruleIds2DArray) {
       var functionString = ''
       var encodedValues: string = ''
@@ -665,21 +689,15 @@ export const getPolicy = async (
           break
         }
       }
-      
-      // Use the index to get rules from getAllRules result
-      const rulesForThisFunction = allRulesFromContract?.[iter] || [];
-      for (let ruleIndex = 0; ruleIndex < rulesForThisFunction.length; ruleIndex++) {
-        const actualRuleId = ruleIndex + 1; // Rule IDs start from 1
-        const ruleS = rulesForThisFunction[ruleIndex];
 
-        const ruleM = await getRuleMetadata(
-          config,
-          rulesEngineRulesContract,
-          policyId,
-          actualRuleId,
-          blockParams
-        );
-        
+      // Use the index to get rules from getAllRules result
+      const rulesForThisFunction = allRulesFromContract?.[iter] || []
+      for (let ruleIndex = 0; ruleIndex < rulesForThisFunction.length; ruleIndex++) {
+        const actualRuleId = ruleIndex + 1 // Rule IDs start from 1
+        const ruleS = rulesForThisFunction[ruleIndex]
+
+        const ruleM = await getRuleMetadata(config, rulesEngineRulesContract, policyId, actualRuleId, blockParams)
+
         if (ruleS != null && ruleM != null) {
           ruleJSONObjs.push(
             convertRuleStructToString(
