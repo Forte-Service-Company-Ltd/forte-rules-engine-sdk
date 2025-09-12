@@ -36,6 +36,32 @@ import { cleanString } from '../parsing/parsing-utilities'
  *       to integrate rule enforcement logic.
  */
 
+function addModifierToFunctionDeclaration(data: string, declaration: string, modifier: string): string {
+  const visibilityKeywordRegex = /\s(public|private|internal|external)\s|$/
+
+  let newDecl = declaration.replace(visibilityKeywordRegex, ` $1 ${modifier} `)
+  newDecl = newDecl.replace(/\s{2,}/g, ' ') // Clean up any extra spaces
+  return data.replace(declaration, newDecl)
+}
+
+export function addModifierToFunctionDeclarations(
+  data: string,
+  functionName: string,
+  funcName: string,
+  modifier: string
+): string {
+  const regex = new RegExp(
+    `${functionName}\\s*${funcName}\\s*\\([^)]*\\)\\s*(public|private|internal|external)[^{]*`,
+    'g'
+  )
+  const funcMatches = data.matchAll(regex) || []
+
+  return Array.from(funcMatches)
+    .map((match) => match[0])
+    .filter((decl) => !decl.includes(modifier))
+    .reduce((acc: string, decl) => addModifierToFunctionDeclaration(acc, decl, modifier), data)
+}
+
 /**
  * Injects a modifier into a Solidity contract file by modifying its content.
  *
@@ -125,23 +151,8 @@ export function injectModifier(
     .replace(/bytes /g, '')
 
   const modifierToAdd = `checkRulesBefore${funcName}(${argListUpdate})`
-  const regex = new RegExp(
-    `${functionName}\\s*${funcName}\\s*\\([^)]*\\)\\s*(public|private|internal|external)[^{]*`,
-    'g'
-  )
-  const funcMatches = data.matchAll(regex)
 
-  for (const match of funcMatches) {
-    const fullFuncDecl = match[0]
-
-    // Only add modifier if it's not already present in the full function declaration
-    if (!fullFuncDecl.includes(modifierToAdd)) {
-      const visibilityKeywordRegex = /(public|private|internal|external)\s*/
-      const newDecl = fullFuncDecl.replace(visibilityKeywordRegex, `$1 ${modifierToAdd} `)
-      modifiedData = modifiedData.replace(fullFuncDecl, newDecl)
-    }
-    break
-  }
+  modifiedData = addModifierToFunctionDeclarations(modifiedData, functionName, funcName, modifierToAdd)
 
   // Write the modified data back to the file
   fs.writeFileSync(userFilePath, modifiedData, 'utf-8')
