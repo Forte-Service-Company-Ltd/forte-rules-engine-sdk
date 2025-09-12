@@ -29,25 +29,14 @@ import {
   CallingFunctionDataAndJSON,
   ForeignCallDataAndJSON,
   PolicyData,
-} from "./types";
-import {
-  createForeignCall,
-  getAllForeignCalls,
-  getForeignCallMetadata,
-} from "./foreign-calls";
-import { createRule, getRuleMetadata, getAllRules } from "./rules";
-import {
-  createMappedTracker,
-  getAllTrackers,
-  getTrackerMetadata,
-} from "./trackers";
-import { sleep } from "./contract-interaction-utils";
-import {
-  createCallingFunction,
-  getCallingFunctionMetadata,
-} from "./calling-functions";
-import { getRule } from "./rules";
-import { createTracker } from "./trackers";
+} from './types'
+import { createForeignCall, getAllForeignCalls, getForeignCallMetadata } from './foreign-calls'
+import { createRule, getRuleMetadata, getAllRules } from './rules'
+import { createMappedTracker, getAllTrackers, getTrackerMetadata } from './trackers'
+import { sleep } from './contract-interaction-utils'
+import { createCallingFunction, getCallingFunctionMetadata } from './calling-functions'
+import { getRule } from './rules'
+import { createTracker } from './trackers'
 import {
   convertRuleStructToString,
   convertForeignCallStructsToStrings,
@@ -113,6 +102,7 @@ export const createPolicy = async (
   let allFunctionMappings: hexToFunctionString[] = []
 
   var policyId = -1
+
   if (policySyntax !== undefined) {
     const validatedPolicyJSON = validatePolicyJSON(policySyntax)
     if (isLeft(validatedPolicyJSON)) {
@@ -142,7 +132,6 @@ export const createPolicy = async (
     for (var callingFunctionJSON of policyJSON.CallingFunctions) {
       var callingFunction = callingFunctionJSON.functionSignature
       if (!callingFunctions.includes(callingFunction)) {
-        callingFunctions.push(callingFunction)
         const fsId = await createCallingFunction(
           config,
           rulesEngineComponentContract,
@@ -151,6 +140,7 @@ export const createPolicy = async (
           callingFunctionJSON.encodedValues,
           confirmationCount
         )
+        callingFunctions.push(callingFunction)
         callingFunctionParamSets.push(parseCallingFunction(callingFunctionJSON))
         allFunctionMappings.push({
           hex: toFunctionSelector(callingFunction),
@@ -162,6 +152,8 @@ export const createPolicy = async (
         fsSelectors.push(selector)
         fsIds.push(fsId)
         emptyRules.push([])
+      } else {
+        console.log('Policy JSON contained a duplicate calling function, the duplicate was not created')
       }
     }
     await updatePolicy(
@@ -185,18 +177,21 @@ export const createPolicy = async (
           JSON.stringify(tracker),
           confirmationCount
         )
-        var struc: FCNameToID = {
-          id: trId,
-          name: parsedTracker.name,
-          type: parsedTracker.type,
+        if (trId != -1) {
+          var struc: FCNameToID = {
+            id: trId,
+            name: parsedTracker.name,
+            type: parsedTracker.type,
+          }
+          trackerIds.push(struc)
         }
-        trackerIds.push(struc)
       }
     }
 
     if (policyJSON.MappedTrackers != null) {
       for (var mTracker of policyJSON.MappedTrackers) {
         const parsedTracker = parseMappedTrackerSyntax(mTracker)
+
         const trId = await createMappedTracker(
           config,
           rulesEngineComponentContract,
@@ -204,12 +199,14 @@ export const createPolicy = async (
           JSON.stringify(mTracker),
           confirmationCount
         )
-        var struc: FCNameToID = {
-          id: trId,
-          name: parsedTracker.name,
-          type: parsedTracker.valueType,
+        if (trId != -1) {
+          var struc: FCNameToID = {
+            id: trId,
+            name: parsedTracker.name,
+            type: parsedTracker.valueType,
+          }
+          trackerIds.push(struc)
         }
-        trackerIds.push(struc)
       }
     }
     if (policyJSON.ForeignCalls != null) {
@@ -244,9 +241,9 @@ export const createPolicy = async (
 
     // Sort rules by order field if provided, otherwise maintain original order
     const sortedRules = [...policyJSON.Rules].sort((a, b) => {
-      const orderA = a.order !== undefined ? a.order : Number.MAX_SAFE_INTEGER;
-      const orderB = b.order !== undefined ? b.order : Number.MAX_SAFE_INTEGER;
-      return orderA - orderB;
+      const orderA = a.order !== undefined ? a.order : Number.MAX_SAFE_INTEGER
+      const orderB = b.order !== undefined ? b.order : Number.MAX_SAFE_INTEGER
+      return orderA - orderB
     })
 
     for (var rule of sortedRules) {
@@ -280,7 +277,7 @@ export const createPolicy = async (
       }
       callingFunctionSelectors.push(toFunctionSelector(cf))
     }
-    
+
     policyId = await updatePolicy(
       config,
       rulesEnginePolicyContract,
@@ -644,16 +641,11 @@ export const getPolicy = async (
     }
     const callStrings: ForeignCallDataAndJSON[] = convertForeignCallStructsToStrings(foreignCalls, allFunctionMappings)
 
-    var iter = 0;
-    var ruleJSONObjs = [];
-    
-    const allRulesFromContract = await getAllRules(
-      config,
-      rulesEngineRulesContract,
-      policyId,
-      blockParams
-    );
-    
+    var iter = 0
+    var ruleJSONObjs = []
+
+    const allRulesFromContract = await getAllRules(config, rulesEngineRulesContract, policyId, blockParams)
+
     for (var innerArray of ruleIds2DArray) {
       var functionString = ''
       var encodedValues: string = ''
@@ -665,21 +657,15 @@ export const getPolicy = async (
           break
         }
       }
-      
-      // Use the index to get rules from getAllRules result
-      const rulesForThisFunction = allRulesFromContract?.[iter] || [];
-      for (let ruleIndex = 0; ruleIndex < rulesForThisFunction.length; ruleIndex++) {
-        const actualRuleId = ruleIndex + 1; // Rule IDs start from 1
-        const ruleS = rulesForThisFunction[ruleIndex];
 
-        const ruleM = await getRuleMetadata(
-          config,
-          rulesEngineRulesContract,
-          policyId,
-          actualRuleId,
-          blockParams
-        );
-        
+      // Use the index to get rules from getAllRules result
+      const rulesForThisFunction = allRulesFromContract?.[iter] || []
+      for (let ruleIndex = 0; ruleIndex < rulesForThisFunction.length; ruleIndex++) {
+        const actualRuleId = ruleIndex + 1 // Rule IDs start from 1
+        const ruleS = rulesForThisFunction[ruleIndex]
+
+        const ruleM = await getRuleMetadata(config, rulesEngineRulesContract, policyId, actualRuleId, blockParams)
+
         if (ruleS != null && ruleM != null) {
           ruleJSONObjs.push(
             convertRuleStructToString(
