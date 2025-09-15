@@ -50,11 +50,9 @@ import {
   getRulesErrorMessages,
   PolicyJSON,
   validatePolicyJSON,
-} from './validation'
-import { 
   createCallingFunctionLookupMaps,
   resolveCallingFunction,
-} from './calling-function-types'
+} from './validation'
 import { isLeft, unwrapEither } from './utils'
 
 /**

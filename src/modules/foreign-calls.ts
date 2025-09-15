@@ -90,21 +90,11 @@ export const createForeignCall = async (
   )
   var fcMap: FCNameToID[] = []
   const foreignCallMetadata = await Promise.all(foreignCallMetadataCalls)
-  const fcMapAdditions: FCNameToID[] = foreignCallMetadata.map((nameData: any, index: number) => {
-    // Handle case where nameData might not be a string (new contract format returns object with name and signature)
-    let nameString: string
-    if (typeof nameData === 'string') {
-      nameString = nameData
-    } else if (nameData && typeof nameData === 'object' && nameData.name) {
-      // New format: object with name and foreignCallSignature fields
-      nameString = nameData.name
-    } else {
-      console.warn(`Foreign call metadata returned unexpected format for index ${index}:`, typeof nameData, nameData)
-      nameString = String(nameData)
-    }
+  const fcMapAdditions: FCNameToID[] = foreignCallMetadata.map((nameData: string, index: number) => {
+    const extractedName = nameData.split('(')[0] || `UnknownFC_${index}`
     
     return {
-      name: nameString.split('(')[0],
+      name: extractedName,
       id: foreignCalls[index].foreignCallIndex,
       type: 0,
     }
@@ -241,10 +231,10 @@ export const updateForeignCall = async (
   )
   var fcMap: FCNameToID[] = []
   const foreignCallMetadata = await Promise.all(foreignCallMetadataCalls)
-  const fcMapAdditions: FCNameToID[] = foreignCallMetadata.map((name: string, index: number) => {
-    // Handle case where name might not be a string (new contract format)
-    const nameString = typeof name === 'string' ? name : String(name)
-    return { name: nameString, id: foreignCalls[index].foreignCallIndex, type: 0 }
+  const fcMapAdditions: FCNameToID[] = foreignCallMetadata.map((nameData: string, index: number) => {
+    // nameData is now always a string from getForeignCallMetadata
+    const extractedName = nameData || `UnknownFC_${index}`
+    return { name: extractedName, id: foreignCalls[index].foreignCallIndex, type: 0 }
   })
   fcMap = [...fcMap, ...fcMapAdditions]
 
@@ -443,12 +433,8 @@ export const getForeignCallMetadata = async (
       ...blockParams,
     })
 
-    const foreignCallResult = getMeta as string | { name: string; foreignCallSignature: string }
-    
-    // Handle both old string format and new object format
-    return typeof foreignCallResult === 'string' 
-      ? foreignCallResult 
-      : foreignCallResult?.name ?? ''
+    const foreignCallResult = getMeta as { name: string; foreignCallSignature: string }
+    return foreignCallResult.name
   } catch (error) {
     console.error(error)
     return ''

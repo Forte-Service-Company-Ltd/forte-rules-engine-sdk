@@ -15,7 +15,7 @@ export { getTrackerToRuleIds } from './modules/trackers.js'
 export { 
   createCallingFunctionLookupMaps,
   resolveCallingFunction,
-} from './modules/calling-function-types.js'
+} from './modules/validation.js'
 
 export { 
   createPolicy,
@@ -107,9 +107,5 @@ export type {
   CallingFunctionJSON,
   PolicyJSON,
 } from './modules/validation.js'
-
-export type {
-  CallingFunctionJSON as CallingFunctionJSONShared
-} from './modules/calling-function-types.js'
 
 export { isLeft, isRight, unwrapEither } from './modules/utils.js'
