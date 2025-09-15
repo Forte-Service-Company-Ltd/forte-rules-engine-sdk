@@ -7,6 +7,7 @@ import {
   EffectStruct,
   EffectStructs,
   FCNameToID,
+  Maybe,
   RulesEngineAdminABI,
   RulesEngineAdminContract,
   RulesEngineComponentABI,
@@ -119,7 +120,7 @@ export function buildARuleStruct(
   encodedValues: string,
   additionalForeignCalls: string[],
   additionalEffectForeignCalls: string[]
-): RuleStruct {
+): Maybe<RuleStruct> {
   var output = parseRuleSyntax(
     ruleSyntax,
     trackerNameToID,
@@ -128,7 +129,9 @@ export function buildARuleStruct(
     additionalForeignCalls,
     additionalEffectForeignCalls
   )
-
+  if (output == null) {
+    return null
+  }
   var rawData = {
     instructionSetIndex: [],
     argumentTypes: [],
@@ -176,7 +179,7 @@ export function buildAnEffectStruct(
   encodedValues: string,
   additionalForeignCalls: string[],
   additionalEffectForeignCalls: string[]
-): EffectStructs {
+): Maybe<EffectStructs> {
   var output = parseRuleSyntax(
     ruleSyntax,
     trackerNameToID,
@@ -185,6 +188,9 @@ export function buildAnEffectStruct(
     additionalForeignCalls,
     additionalEffectForeignCalls
   )
+  if (output == null) {
+    return null
+  }
   var pEffects: EffectStruct[] = []
   var nEffects: EffectStruct[] = []
 
