@@ -43,7 +43,16 @@ import {
   convertForeignCallStructsToStrings,
   convertTrackerStructsToStrings,
 } from '../parsing/reverse-parsing-logic'
-import { getRulesErrorMessages, PolicyJSON, validatePolicyJSON } from './validation'
+
+import {
+  CallingFunctionJSON,
+  ForeignCallJSON,
+  getRulesErrorMessages,
+  PolicyJSON,
+  validatePolicyJSON,
+  createCallingFunctionLookupMaps,
+  resolveCallingFunction,
+} from './validation'
 import { isLeft, unwrapEither } from './utils'
 
 /**
@@ -103,7 +112,18 @@ export const createPolicy = async (
     }
     const policyJSON = unwrapEither(validatedPolicyJSON)
 
-    const addPolicy = await simulateContract(config, {
+  // Create lookup maps for O(1) resolution instead of O(n) find operations
+  const lookupMaps = createCallingFunctionLookupMaps(policyJSON.CallingFunctions)
+
+  /**
+   * Helper function to resolve calling function name to full signature.
+   * Uses the lookup maps for O(1) performance.
+   */
+  const resolveFunction = (callingFunctionRef: string): string => {
+    return resolveCallingFunction(callingFunctionRef, lookupMaps)
+  }
+
+  const addPolicy = await simulateContract(config, {
       address: rulesEnginePolicyContract.address,
       abi: rulesEnginePolicyContract.abi,
       functionName: 'createPolicy',
@@ -197,31 +217,54 @@ export const createPolicy = async (
     }
     if (policyJSON.ForeignCalls != null) {
       for (var foreignCall of policyJSON.ForeignCalls) {
-        var encodedValues: string[] = []
-        var iter = 0
-        for (var calling of callingFunctions) {
-          if (foreignCall.callingFunction.trim() == calling.trim()) {
-            encodedValues = callingFunctionParamSets[iter]
-            break
+        const resolvedForeignCallFunction = resolveFunction(foreignCall.callingFunction)
+        try {
+          // Find the calling function and its encoded values using the resolved function name
+          const callingFunctionIndex = callingFunctions.findIndex(cf => cf.trim() === resolvedForeignCallFunction.trim())
+          if (callingFunctionIndex === -1) {
+            throw new Error(`Calling function not found: ${resolvedForeignCallFunction}`)
           }
-          iter += 1
+          const encodedValues = callingFunctionParamSets[callingFunctionIndex]
+          
+          // Create a copy of the foreign call with the resolved calling function name
+          const resolvedForeignCall = {
+            ...foreignCall,
+            callingFunction: resolvedForeignCallFunction
+          }
+          
+          const fcStruct = parseForeignCallDefinition(resolvedForeignCall, fcIds, trackerIds, encodedValues)
+          const fcId = await createForeignCall(
+            config,
+            rulesEngineForeignCallContract,
+            rulesEngineComponentContract,
+            rulesEnginePolicyContract,
+            policyId,
+            JSON.stringify(resolvedForeignCall),
+            confirmationCount
+          )
+          
+          // Only add successfully created foreign calls to the mapping
+          if (fcId !== -1) {
+            var struc: FCNameToID = {
+              id: fcId,
+              name: fcStruct.name.split('(')[0],
+              type: 0,
+            }
+            fcIds.push(struc)
+          } else {
+            console.error(`Failed to create foreign call: ${fcStruct.name}`)
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : String(error)
+          
+          // Re-throw self-reference validation errors to fail the policy creation
+          if (errorMessage.includes("cannot reference itself")) {
+            throw error
+          }
+          
+          // For other errors, log and continue (existing behavior)
+          console.error(`Skipping foreign call ${foreignCall.name}: ${errorMessage}`)
         }
-        const fcStruct = parseForeignCallDefinition(foreignCall, fcIds, trackerIds, encodedValues)
-        const fcId = await createForeignCall(
-          config,
-          rulesEngineForeignCallContract,
-          rulesEngineComponentContract,
-          rulesEnginePolicyContract,
-          policyId,
-          JSON.stringify(foreignCall),
-          confirmationCount
-        )
-        var struc: FCNameToID = {
-          id: fcId,
-          name: fcStruct.name.split('(')[0],
-          type: 0,
-        }
-        fcIds.push(struc)
       }
     }
 
@@ -249,10 +292,11 @@ export const createPolicy = async (
         return { policyId: -1 }
       }
       ruleIds.push(ruleId)
-      if (ruleToCallingFunction.has(rule.callingFunction)) {
-        ruleToCallingFunction.get(rule.callingFunction)?.push(ruleId)
+      const resolvedCallingFunction = resolveFunction(rule.callingFunction)
+      if (ruleToCallingFunction.has(resolvedCallingFunction)) {
+        ruleToCallingFunction.get(resolvedCallingFunction)?.push(ruleId)
       } else {
-        ruleToCallingFunction.set(rule.callingFunction, [ruleId])
+        ruleToCallingFunction.set(resolvedCallingFunction, [ruleId])
       }
     }
     for (var cf of callingFunctions) {

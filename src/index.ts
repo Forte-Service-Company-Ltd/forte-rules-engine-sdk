@@ -12,6 +12,33 @@ export { policyModifierGeneration } from './codeGeneration/code-modification-scr
 
 export { getTrackerToRuleIds } from './modules/trackers.js'
 
+export { 
+  createCallingFunctionLookupMaps,
+  resolveCallingFunction,
+} from './modules/validation.js'
+
+export { 
+  createPolicy,
+  updatePolicy,
+  setPolicies,
+  appendPolicy,
+  deletePolicy,
+  getRulesEngineVersion,
+  getVersionCompatible,
+  getPolicy,
+  getPolicyMetadata,
+  policyExists,
+  getAppliedPolicyIds,
+  isClosedPolicy,
+  closePolicy,
+  openPolicy,
+  isClosedPolicySubscriber,
+  addClosedPolicySubscriber,
+  removeClosedPolicySubscriber,
+  cementPolicy,
+  isCementedPolicy
+} from './modules/policy.js'
+
 export {
   RulesEnginePolicyContract,
   RulesEngineComponentContract,

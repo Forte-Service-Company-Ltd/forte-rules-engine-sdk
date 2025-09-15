@@ -90,9 +90,11 @@ export const createForeignCall = async (
   )
   var fcMap: FCNameToID[] = []
   const foreignCallMetadata = await Promise.all(foreignCallMetadataCalls)
-  const fcMapAdditions: FCNameToID[] = foreignCallMetadata.map((name: string, index: number) => {
+  const fcMapAdditions: FCNameToID[] = foreignCallMetadata.map((nameData: string, index: number) => {
+    const extractedName = nameData.split('(')[0] || `UnknownFC_${index}`
+    
     return {
-      name: name.split('(')[0],
+      name: extractedName,
       id: foreignCalls[index].foreignCallIndex,
       type: 0,
     }
@@ -145,19 +147,25 @@ export const createForeignCall = async (
     callingFunctionSelector: callingFunctionIds[iter],
   }
   var addFC
-  while (true) {
+  let retryAttempts = 0
+  const maxRetryAttempts = 5
+  
+  while (retryAttempts < maxRetryAttempts) {
     try {
       addFC = await simulateContract(config, {
         address: rulesEngineForeignCallContract.address,
         abi: rulesEngineForeignCallContract.abi,
         functionName: 'createForeignCall',
-        args: [policyId, fc, foreignCall.name],
+        args: [policyId, fc, foreignCall.name, foreignCall.function],
       })
       break
     } catch (err) {
-      // TODO: Look into replacing this loop/sleep with setTimeout
+      retryAttempts++
+      if (retryAttempts >= maxRetryAttempts) {
+        console.error(`Failed to create foreign call after ${maxRetryAttempts} attempts:`, err)
+        return -1
+      }
       await sleep(1000)
-      return -1
     }
   }
 
@@ -223,8 +231,10 @@ export const updateForeignCall = async (
   )
   var fcMap: FCNameToID[] = []
   const foreignCallMetadata = await Promise.all(foreignCallMetadataCalls)
-  const fcMapAdditions: FCNameToID[] = foreignCallMetadata.map((name: string, index: number) => {
-    return { name: name, id: foreignCalls[index].foreignCallIndex, type: 0 }
+  const fcMapAdditions: FCNameToID[] = foreignCallMetadata.map((nameData: string, index: number) => {
+    // nameData is now always a string from getForeignCallMetadata
+    const extractedName = nameData || `UnknownFC_${index}`
+    return { name: extractedName, id: foreignCalls[index].foreignCallIndex, type: 0 }
   })
   fcMap = [...fcMap, ...fcMapAdditions]
 
@@ -277,7 +287,10 @@ export const updateForeignCall = async (
   }
   var addFC
 
-  while (true) {
+  let retryAttempts = 0
+  const maxRetryAttempts = 5
+
+  while (retryAttempts < maxRetryAttempts) {
     try {
       addFC = await simulateContract(config, {
         address: rulesEngineForeignCallContract.address,
@@ -287,7 +300,11 @@ export const updateForeignCall = async (
       })
       break
     } catch (err) {
-      // TODO: Look into replacing this loop/sleep with setTimeout
+      retryAttempts++
+      if (retryAttempts >= maxRetryAttempts) {
+        console.error(`Failed to update foreign call after ${maxRetryAttempts} attempts:`, err)
+        return -1
+      }
       await sleep(1000)
     }
   }
@@ -416,8 +433,8 @@ export const getForeignCallMetadata = async (
       ...blockParams,
     })
 
-    let foreignCallResult = getMeta as string
-    return foreignCallResult
+    const foreignCallResult = getMeta as { name: string; foreignCallSignature: string }
+    return foreignCallResult.name
   } catch (error) {
     console.error(error)
     return ''

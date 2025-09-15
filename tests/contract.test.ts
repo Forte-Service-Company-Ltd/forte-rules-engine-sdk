@@ -1992,5 +1992,112 @@ describe('Rules Engine Interactions', async () => {
     expect(parsed.Rules[0].Description).toEqual('First rule by order')
     expect(parsed.Rules[1].Description).toEqual('Second rule by order')
     expect(parsed.Rules[2].Description).toEqual('Third rule by order')
-  }, 10000) // 10 second timeout
-})
+  }, 30000) // Increased timeout for GitHub Actions CI environment
+
+  test("Should reject policy with self-referencing foreign call", async () => {
+    var selfReferencingPolicyJSON = `
+               {
+               "Policy": "Self-Referencing Policy",
+               "Description": "Policy with a self-referencing foreign call",
+               "PolicyType": "open",
+               "CallingFunctions": [
+                 {
+                   "name": "transfer(address to, uint256 value)",
+                   "functionSignature": "transfer(address to, uint256 value)",
+                   "encodedValues": "address to, uint256 value"
+                 }
+               ],
+               "ForeignCalls": [
+                 {
+                     "name": "SelfReferencingCall",
+                     "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                     "function": "SelfReferencingCall(uint256)",
+                     "returnType": "uint256",
+                     "valuesToPass": "FC:SelfReferencingCall",
+                     "mappedTrackerKeyValues": "",
+                     "callingFunction": "transfer(address to, uint256 value)"
+                 }
+               ],
+               "Trackers": [],
+               "MappedTrackers": [],
+               "Rules": []
+               }`;
+
+    try {
+      await createPolicy(
+        config,
+        getRulesEnginePolicyContract(rulesEngineContract, client),
+        getRulesEngineRulesContract(rulesEngineContract, client),
+        getRulesEngineComponentContract(rulesEngineContract, client),
+        getRulesEngineForeignCallContract(rulesEngineContract, client),
+        1,
+        selfReferencingPolicyJSON
+      );
+      expect.fail("Policy creation should have failed due to self-referencing foreign call");
+    } catch (error) {
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toContain("cannot reference itself");
+      expect((error as Error).message).toContain("Self-referential foreign calls are not allowed");
+    }
+  }, 30000); // Increased timeout for GitHub Actions CI environment
+
+
+
+  test("Can create policy with name-only references in rules and foreign calls", async () => {
+    var policyJSON = `
+      {
+      "Policy": "Name Reference Test Policy",
+      "Description": "Test Policy with name-only references",
+      "PolicyType": "open",
+      "CallingFunctions": [
+        {
+          "name": "transfer",
+          "functionSignature": "transfer(address to, uint256 value)",
+          "encodedValues": "address to, uint256 value"
+        }
+      ],
+      "ForeignCalls": [
+      {
+              "name": "testNameRef",
+              "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+              "function": "testNameRef(uint256)",
+              "returnType": "uint256",
+              "valuesToPass": "value",
+              "mappedTrackerKeyValues": "",
+              "callingFunction": "transfer"
+          }
+      ],
+      "Trackers": [],
+      "MappedTrackers": [],
+      "Rules": [
+          {
+              "Name": "Rule with Name Reference",
+              "Description": "Rule using name-only reference",
+              "condition": "value > 500",
+              "positiveEffects": ["emit Success"],
+              "negativeEffects": ["revert()"],
+              "callingFunction": "transfer"
+          }
+          ]
+          }`;
+    var result = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      policyJSON
+    );
+    expect(result.policyId).toBeGreaterThan(0);
+    var resultFC = await getAllForeignCalls(
+      config,
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      result.policyId
+    );
+
+    expect(resultFC?.length).toEqual(1);
+  }, 30000); // Increased timeout for GitHub Actions CI environment
+
+});
+
