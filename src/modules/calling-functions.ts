@@ -97,15 +97,12 @@ const checkIfSelectorExists = async (
   policyId: number,
   callingFunction: string
 ): Promise<boolean> => {
-  var existingCFs = await getCallingFunctions(config, rulesEngineComponentContract, policyId)
-  for (var existing of existingCFs) {
-    if (existing.signature == toFunctionSelector(callingFunction)) {
-      return true
-    }
-  }
+  const existingCFs = await getCallingFunctions(config, rulesEngineComponentContract, policyId)
 
-  return false
+  var comparisonSelector = toFunctionSelector(callingFunction)
+  return existingCFs.some((cf) => cf.signature == comparisonSelector)
 }
+
 /**
  * Delete a calling function from the rules engine component contract.
  *

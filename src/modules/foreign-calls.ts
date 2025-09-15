@@ -195,19 +195,13 @@ const checkIfForeignCallExists = async (
   existingID: number = -1
 ): Promise<boolean> => {
   var existingFCs = await getAllForeignCalls(config, rulesEngineForeignCallContract, policyId)
-  for (var existing of existingFCs) {
-    var meta = await getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, existing.foreignCallIndex)
-    if (existingID != -1) {
-      if (existing.foreignCallIndex == existingID) {
-        continue
-      }
-    }
-    if (meta == foreignCallName && existing.callingFunctionSelector == callingFunctionSelector) {
-      return true
-    }
-  }
-
-  return false
+  const newFCs = existingFCs.filter((fc) => !(existingID != -1 && fc.foreignCallIndex == existingID))
+  const fcMetas = await Promise.all(
+    newFCs.map((fc) => getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, fc.foreignCallIndex))
+  )
+  return fcMetas.some(
+    (meta, idx) => meta == foreignCallName && newFCs[idx].callingFunctionSelector == callingFunctionSelector
+  )
 }
 
 /**

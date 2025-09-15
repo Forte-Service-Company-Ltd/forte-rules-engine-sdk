@@ -179,19 +179,11 @@ const checkIfTrackerExists = async (
   existingID: number = -1
 ): Promise<boolean> => {
   var existingTrackers = await getAllTrackers(config, rulesEngineComponentContract, policyId)
-  for (var existing of existingTrackers) {
-    if (existingID != -1) {
-      if (existing.trackerIndex == existingID) {
-        continue
-      }
-    }
-    var meta = await getTrackerMetadata(config, rulesEngineComponentContract, policyId, existing.trackerIndex)
-    if (meta.trackerName == trackerName) {
-      return true
-    }
-  }
-
-  return false
+  const newTRs = existingTrackers.filter((tr) => !(existingID != -1 && tr.trackerIndex == existingID))
+  const trMetas = await Promise.all(
+    newTRs.map((tr) => getTrackerMetadata(config, rulesEngineComponentContract, policyId, tr.trackerIndex))
+  )
+  return trMetas.some((meta) => meta.trackerName == trackerName)
 }
 
 /**
