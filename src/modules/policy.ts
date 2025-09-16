@@ -114,16 +114,7 @@ export const createPolicy = async (
     }
     const policyJSON = unwrapEither(validatedPolicyJSON)
 
-    // Create lookup maps for O(1) resolution instead of O(n) find operations
-    const lookupMaps = createCallingFunctionLookupMaps(policyJSON.CallingFunctions)
-
-    /**
-     * Helper function to resolve calling function name to full signature.
-     * Uses the lookup maps for O(1) performance.
-     */
-    const resolveFunction = (callingFunctionRef: string): string => {
-      return resolveCallingFunction(callingFunctionRef, lookupMaps)
-    }
+    var nonDuplicatedCallingFunctions: CallingFunctionJSON[] = []
 
     const addPolicy = await simulateContract(config, {
       address: rulesEnginePolicyContract.address,
@@ -155,22 +146,37 @@ export const createPolicy = async (
           callingFunctionJSON.encodedValues,
           confirmationCount
         )
-        callingFunctions.push(callingFunction)
-        callingFunctionParamSets.push(parseCallingFunction(callingFunctionJSON))
-        allFunctionMappings.push({
-          hex: toFunctionSelector(callingFunction),
-          functionString: callingFunction,
-          encodedValues: callingFunctionJSON.encodedValues,
-          index: -1,
-        })
-        var selector = toFunctionSelector(callingFunction)
-        fsSelectors.push(selector)
-        fsIds.push(fsId)
-        emptyRules.push([])
+        if (fsId != -1) {
+          nonDuplicatedCallingFunctions.push(callingFunctionJSON)
+          callingFunctions.push(callingFunction)
+          callingFunctionParamSets.push(parseCallingFunction(callingFunctionJSON))
+          allFunctionMappings.push({
+            hex: toFunctionSelector(callingFunction),
+            functionString: callingFunction,
+            encodedValues: callingFunctionJSON.encodedValues,
+            index: -1,
+          })
+          var selector = toFunctionSelector(callingFunction)
+          fsSelectors.push(selector)
+          fsIds.push(fsId)
+          emptyRules.push([])
+        }
       } else {
         console.log('Policy JSON contained a duplicate calling function, the duplicate was not created')
       }
     }
+
+    // Create lookup maps for O(1) resolution instead of O(n) find operations
+    const lookupMaps = createCallingFunctionLookupMaps(nonDuplicatedCallingFunctions)
+
+    /**
+     * Helper function to resolve calling function name to full signature.
+     * Uses the lookup maps for O(1) performance.
+     */
+    const resolveFunction = (callingFunctionRef: string): string => {
+      return resolveCallingFunction(callingFunctionRef, lookupMaps)
+    }
+
     await updatePolicy(
       config,
       rulesEnginePolicyContract,
