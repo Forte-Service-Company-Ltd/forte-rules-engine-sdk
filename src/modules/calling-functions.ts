@@ -59,33 +59,48 @@ export const createCallingFunction = async (
 ): Promise<number> => {
   const args: number[] = encodedValues.split(',').map((val) => determinePTEnumeration(val.trim().split(' ')[0]))
   var addRule
-  while (true) {
-    try {
-      addRule = await simulateContract(config, {
-        address: rulesEngineComponentContract.address,
-        abi: rulesEngineComponentContract.abi,
-        functionName: 'createCallingFunction',
-        args: [policyId, toFunctionSelector(callingFunction), args, callingFunction, encodedValues],
+  var duplicate = await checkIfSelectorExists(config, rulesEngineComponentContract, policyId, callingFunction)
+  if (!duplicate) {
+    while (true) {
+      try {
+        addRule = await simulateContract(config, {
+          address: rulesEngineComponentContract.address,
+          abi: rulesEngineComponentContract.abi,
+          functionName: 'createCallingFunction',
+          args: [policyId, toFunctionSelector(callingFunction), args, callingFunction, encodedValues],
+        })
+        break
+      } catch (err) {
+        // TODO: Look into replacing this loop/sleep with setTimeout
+        await sleep(1000)
+      }
+    }
+    if (addRule != null) {
+      const returnHash = await writeContract(config, {
+        ...addRule.request,
+        account: config.getClient().account,
       })
-      break
-    } catch (err) {
-      // TODO: Look into replacing this loop/sleep with setTimeout
-      await sleep(1000)
+      await waitForTransactionReceipt(config, {
+        confirmations: confirmationCount,
+        hash: returnHash,
+      })
+
+      return addRule.result
     }
   }
-  if (addRule != null) {
-    const returnHash = await writeContract(config, {
-      ...addRule.request,
-      account: config.getClient().account,
-    })
-    await waitForTransactionReceipt(config, {
-      confirmations: confirmationCount,
-      hash: returnHash,
-    })
-
-    return addRule.result
-  }
   return -1
+}
+
+const checkIfSelectorExists = async (
+  config: Config,
+  rulesEngineComponentContract: RulesEngineComponentContract,
+  policyId: number,
+  callingFunction: string
+): Promise<boolean> => {
+  const existingCFs = await getCallingFunctions(config, rulesEngineComponentContract, policyId)
+
+  var comparisonSelector = toFunctionSelector(callingFunction)
+  return existingCFs.some((cf) => cf.signature == comparisonSelector)
 }
 
 /**
