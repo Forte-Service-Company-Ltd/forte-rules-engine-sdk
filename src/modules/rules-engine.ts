@@ -90,6 +90,8 @@ import {
 
 import {
   createTracker as createTrackerInternal,
+  createMappedTracker as createMappedTrackerInternal,
+  updateMappedTracker as updateMappedTrackerInternal,
   updateTracker as updateTrackerInternal,
   deleteTracker as deleteTrackerInternal,
   getTracker as getTrackerInternal,
@@ -832,6 +834,42 @@ export class RulesEngine {
    */
   createTracker(policyId: number, trSyntax: string): Promise<number> {
     return createTrackerInternal(config, this.rulesEngineComponentContract, policyId, trSyntax, this.confirmationCount)
+  }
+
+  /**
+   * Asynchronously creates a mapped tracker in the rules engine component contract.
+   *
+   * @param policyId - The ID of the policy associated with the tracker.
+   * @param trSyntax - A JSON string representing the tracker syntax.
+   * @param confirmationCount - The number of confirmations to wait for after writing the contract.
+   * @returns A promise that resolves to the new tracker ID
+   */
+  createMappedTracker(policyId: number, mappedTrackerSyntax: string): Promise<number> {
+    return createMappedTrackerInternal(
+      config,
+      this.rulesEngineComponentContract,
+      policyId,
+      mappedTrackerSyntax,
+      this.confirmationCount
+    )
+  }
+
+  /**
+   * Asynchronously updates a mapped tracker in the rules engine component contract.
+   *
+   * @param policyId - The ID of the policy associated with the tracker.
+   * @param mappedTrackerSyntax - A JSON string representing the tracker syntax.
+   * @param confirmationCount - The number of confirmations to wait for after writing the contract.
+   * @returns A promise that resolves to the new tracker ID
+   */
+  updateMappedTracker(policyId: number, mappedTrackerSyntax: string): Promise<number> {
+    return updateMappedTrackerInternal(
+      config,
+      this.rulesEngineComponentContract,
+      policyId,
+      mappedTrackerSyntax,
+      this.confirmationCount
+    )
   }
 
   /**
