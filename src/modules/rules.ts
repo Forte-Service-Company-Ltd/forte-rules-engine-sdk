@@ -124,12 +124,12 @@ export const createRule = async (
       if (id.name.trim() == fc.trim()) {
         var fcChain = await getForeignCall(config, rulesEngineForeignCallContract, policyId, id.id)
         var fcChainMeta = await getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, id.id)
-        
+
         if (!fcChain || !fcChainMeta) {
           console.error(`Failed to retrieve foreign call data for ${fc} (id: ${id.id})`)
           continue
         }
-        
+
         for (var ind of fcChain.encodedIndices) {
           if (ind.eType == 1) {
             var fcChainInternal = await getForeignCallMetadata(
@@ -138,13 +138,13 @@ export const createRule = async (
               policyId,
               ind.index
             )
-            fullFCList.push('FC:' + fcChainInternal)
+            fullFCList.push('FC:' + fcChainInternal.name)
           } else if (ind.eType == 2) {
             var trackerInternal = await getTrackerMetadata(config, rulesEngineComponentContract, policyId, ind.index)
             fullFCList.push('TR:' + trackerInternal.trackerName)
           }
         }
-        fullFCList.push('FC:' + fcChainMeta)
+        fullFCList.push('FC:' + fcChainMeta.name)
       }
     }
   }
@@ -165,12 +165,12 @@ export const createRule = async (
       if (id.name.trim() == fc.trim()) {
         var fcChain = await getForeignCall(config, rulesEngineForeignCallContract, policyId, id.id)
         var fcChainMeta = await getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, id.id)
-        
+
         if (!fcChain || !fcChainMeta) {
           console.error(`Failed to retrieve foreign call data for ${fc} (id: ${id.id}) in effects`)
           continue
         }
-        
+
         for (var ind of fcChain.encodedIndices) {
           if (ind.eType == 1) {
             var fcChainInternal = await getForeignCallMetadata(
@@ -179,13 +179,13 @@ export const createRule = async (
               policyId,
               ind.index
             )
-            fullFCListEff.push('FC:' + fcChainInternal)
+            fullFCListEff.push('FC:' + fcChainInternal.name)
           } else if (ind.eType == 2) {
             var trackerInternal = await getTrackerMetadata(config, rulesEngineComponentContract, policyId, ind.index)
             fullFCListEff.push('TR:' + trackerInternal.trackerName)
           }
         }
-        fullFCListEff.push('FC:' + fcChainMeta)
+        fullFCListEff.push('FC:' + fcChainMeta.name)
       }
     }
   }
@@ -300,12 +300,12 @@ export const updateRule = async (
       if (id.name.trim() == fc.trim()) {
         var fcChain = await getForeignCall(config, rulesEngineForeignCallContract, policyId, id.id)
         var fcChainMeta = await getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, id.id)
-        
+
         if (!fcChain || !fcChainMeta) {
           console.error(`Failed to retrieve foreign call data for ${fc} (id: ${id.id}) in updateRule condition`)
           continue
         }
-        
+
         for (var ind of fcChain.encodedIndices) {
           if (ind.eType == 1) {
             var fcChainInternal = await getForeignCallMetadata(
@@ -320,7 +320,7 @@ export const updateRule = async (
             fullFCList.push('TR:' + trackerInternal.trackerName)
           }
         }
-        fullFCList.push('FC:' + fcChainMeta)
+        fullFCList.push('FC:' + fcChainMeta.name)
       }
     }
   }
@@ -332,12 +332,12 @@ export const updateRule = async (
       if (id.name.trim() == fc.trim()) {
         var fcChain = await getForeignCall(config, rulesEngineForeignCallContract, policyId, id.id)
         var fcChainMeta = await getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, id.id)
-        
+
         if (!fcChain || !fcChainMeta) {
           console.error(`Failed to retrieve foreign call data for ${fc} (id: ${id.id}) in updateRule effects`)
           continue
         }
-        
+
         for (var ind of fcChain.encodedIndices) {
           if (ind.eType == 1) {
             var fcChainInternal = await getForeignCallMetadata(
@@ -346,13 +346,13 @@ export const updateRule = async (
               policyId,
               ind.index
             )
-            fullFCListEff.push('FC:' + fcChainInternal)
+            fullFCListEff.push('FC:' + fcChainInternal.name)
           } else if (ind.eType == 2) {
             var trackerInternal = await getTrackerMetadata(config, rulesEngineComponentContract, policyId, ind.index)
             fullFCListEff.push('TR:' + trackerInternal.trackerName)
           }
         }
-        fullFCListEff.push('FC:' + fcChainMeta)
+        fullFCListEff.push('FC:' + fcChainMeta.name)
       }
     }
   }

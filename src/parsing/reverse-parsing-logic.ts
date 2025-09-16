@@ -448,39 +448,36 @@ export const reverseParsePlaceholder = (
 /**
  * Decodes a hex-encoded string to human-readable text.
  * Handles both hex strings with '0x' prefix and without.
- * 
+ *
  * @param hexString - The hex-encoded string to decode
  * @returns The decoded human-readable string
  */
 function decodeHexString(hexString: string): string {
   // If it's already a regular string (not hex), return it as is
   if (!hexString.startsWith('0x') && !/^[0-9a-fA-F]+$/.test(hexString)) {
-    return hexString;
+    return hexString
   }
-  
+
   // Remove '0x' prefix if present
-  const cleanHex = hexString.startsWith('0x') ? hexString.slice(2) : hexString;
-  
+  const cleanHex = hexString.startsWith('0x') ? hexString.slice(2) : hexString
+
   try {
     // Convert hex to buffer and then to string, removing null padding
-    const decoded = Buffer.from(cleanHex, 'hex').toString('utf8').replace(/\0+$/, '');
-    return decoded || hexString; // Return original if decoding results in empty string
+    const decoded = Buffer.from(cleanHex, 'hex').toString('utf8').replace(/\0+$/, '')
+    return decoded || hexString // Return original if decoding results in empty string
   } catch (error) {
     // If decoding fails, return the original string
-    return hexString;
+    return hexString
   }
 }
 
-export const reverseParseEffect = (
-  effect: any,
-  placeholders: string[]
-): string => {
+export const reverseParseEffect = (effect: any, placeholders: string[]): string => {
   if (effect.effectType == 0) {
-    const decodedText = decodeHexString(effect.text);
-    return "revert('" + decodedText + "')";
+    const decodedText = decodeHexString(effect.text)
+    return "revert('" + decodedText + "')"
   } else if (effect.effectType == 1) {
-    const decodedText = decodeHexString(effect.text);
-    return "emit " + decodedText;
+    const decodedText = decodeHexString(effect.text)
+    return 'emit ' + decodedText
   } else {
     return reverseParseInstructionSet(effect.instructionSet, placeholders, [])
   }
@@ -537,31 +534,14 @@ export function convertRuleStructToString(
   rJSON.callingFunction = functionString
 
   const posEffectPlhArray = ruleS.positiveEffectPlaceHolders.map((placeholder) =>
-    reverseParsePlaceholder(
-      placeholder,
-      names,
-      foreignCalls,
-      trackers,
-      mappings
-    )
-  );
+    reverseParsePlaceholder(placeholder, names, foreignCalls, trackers, mappings)
+  )
 
   const negEffectPlhArray = ruleS.negativeEffectPlaceHolders.map((placeholder) =>
-    reverseParsePlaceholder(
-      placeholder,
-      names,
-      foreignCalls,
-      trackers,
-      mappings
-    )
-  );
-  rJSON.positiveEffects = ruleS.posEffects.map((effect) =>
-    reverseParseEffect(effect, posEffectPlhArray)
-  );
-  rJSON.negativeEffects = ruleS.negEffects.map((effect) =>
-    reverseParseEffect(effect, negEffectPlhArray)
-  );
-
+    reverseParsePlaceholder(placeholder, names, foreignCalls, trackers, mappings)
+  )
+  rJSON.positiveEffects = ruleS.posEffects.map((effect) => reverseParseEffect(effect, posEffectPlhArray))
+  rJSON.negativeEffects = ruleS.negEffects.map((effect) => reverseParseEffect(effect, negEffectPlhArray))
 
   const ruleData: RuleData = {
     id: Number(ruleId),
@@ -591,7 +571,8 @@ export function convertRuleStructToString(
  */
 export function convertForeignCallStructsToStrings(
   foreignCallsOnChain: ForeignCallOnChain[],
-  callingFunctionMappings: hexToFunctionString[]
+  callingFunctionMappings: hexToFunctionString[],
+  names: string[]
 ): ForeignCallDataAndJSON[] {
   const foreignCalls: ForeignCallDataAndJSON[] = foreignCallsOnChain.map((call, iter) => {
     const functionMeta = callingFunctionMappings.find((mapping) => mapping.hex === call.signature)
@@ -600,7 +581,7 @@ export function convertForeignCallStructsToStrings(
 
     const callingFunction = callingFunctionMappings.find((mapping) => mapping.hex == call.callingFunctionSelector)
     const inputs: ForeignCallJSON = {
-      name: functionMeta?.functionString || '',
+      name: names[iter],
       address: call.foreignCallAddress as Address,
       function: functionMeta?.functionString || '',
       returnType: returnTypeString || 'string',

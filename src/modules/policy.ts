@@ -709,7 +709,7 @@ export const getPolicy = async (
         blockParams
       )
 
-      foreignCallNames.push(name)
+      foreignCallNames.push(name.name)
       const encodedValues = reverseParseEncodedArgs(
         (await daData).encodedValues,
         foreignCallNames,
@@ -718,15 +718,20 @@ export const getPolicy = async (
       )
       var newMapping: hexToFunctionString = {
         hex: fc.signature,
-        functionString: name,
+        functionString: name.functionSignature,
         encodedValues,
         index: -1,
       }
       allFunctionMappings.push(newMapping)
     }
-    const callStrings: ForeignCallDataAndJSON[] = convertForeignCallStructsToStrings(foreignCalls, allFunctionMappings)
+    const callStrings: ForeignCallDataAndJSON[] = convertForeignCallStructsToStrings(
+      foreignCalls,
+      allFunctionMappings,
+      foreignCallNames
+    )
 
     var iter = 0
+    var ruleIndexIter = 0
     var ruleJSONObjs = []
 
     const allRulesFromContract = await getAllRules(config, rulesEngineRulesContract, policyId, blockParams)
@@ -746,8 +751,9 @@ export const getPolicy = async (
       // Use the index to get rules from getAllRules result
       const rulesForThisFunction = allRulesFromContract?.[iter] || []
       for (let ruleIndex = 0; ruleIndex < rulesForThisFunction.length; ruleIndex++) {
-        const actualRuleId = ruleIndex + 1 // Rule IDs start from 1
+        const actualRuleId = ruleIndexIter + 1 // Rule IDs start from 1
         const ruleS = rulesForThisFunction[ruleIndex]
+        ruleIndexIter++
 
         const ruleM = await getRuleMetadata(config, rulesEngineRulesContract, policyId, actualRuleId, blockParams)
 
