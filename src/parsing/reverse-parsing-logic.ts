@@ -477,7 +477,7 @@ export const reverseParseEffect = (effect: any, placeholders: string[]): string 
     return "revert('" + decodedText + "')"
   } else if (effect.effectType == 1) {
     const decodedText = decodeHexString(effect.text)
-    return 'emit ' + decodedText
+    return 'emit ' + '"' + decodedText + '"'
   } else {
     return reverseParseInstructionSet(effect.instructionSet, placeholders, [])
   }

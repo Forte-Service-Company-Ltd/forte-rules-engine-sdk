@@ -197,6 +197,9 @@ export const createRule = async (
     fullFCList,
     fullFCListEff
   )
+  if (effects == null) {
+    return -1
+  }
   var rule = buildARuleStruct(
     ruleSyntax,
     foreignCallNameToID,
@@ -206,6 +209,9 @@ export const createRule = async (
     fullFCList,
     fullFCListEff
   )
+  if (rule == null) {
+    return -1
+  }
   var addRule
   while (true) {
     try {
@@ -365,6 +371,9 @@ export const updateRule = async (
     fullFCList,
     fullFCListEff
   )
+  if (effects == null) {
+    return -1
+  }
   var rule = buildARuleStruct(
     ruleSyntax,
     foreignCallNameToID,
@@ -374,6 +383,9 @@ export const updateRule = async (
     fullFCList,
     fullFCListEff
   )
+  if (rule == null) {
+    return -1
+  }
   var addRule
   while (true) {
     try {

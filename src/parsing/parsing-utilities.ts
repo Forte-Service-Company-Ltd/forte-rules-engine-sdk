@@ -403,7 +403,7 @@ export function parseEffect(
   names: any[],
   placeholders: PlaceholderStruct[],
   indexMap: trackerIndexNameMapping[]
-): EffectDefinition {
+): Maybe<EffectDefinition> {
   var effectType = EffectType.REVERT
   var effectText = ''
   var effectInstructionSet: any[] = []
@@ -428,6 +428,14 @@ export function parseEffect(
       }
     } else {
       effectText = spli[0]
+    }
+    // Regex check ^".*"$
+    const quotesCheck = /^".*"$/g
+    let str: string = effectText
+    if (str.match(quotesCheck) == null) {
+      return null
+    } else {
+      effectText = str.slice(1, -1)
     }
   } else if (effect.includes('revert')) {
     effectType = EffectType.REVERT
@@ -459,31 +467,45 @@ export function parseEffect(
  *          - `argumentTypes`: An array of argument types (e.g., 1 for strings).
  *          - `dataValues`: An array of byte arrays representing the processed data values.
  */
-export function buildRawData(instructionSet: any[], excludeArray: string[]): number[] {
-  return instructionSet.map((instruction) => {
-    // Only capture values that aren't naturally numbers
-    if (!isNaN(Number(instruction))) {
-      return BigInt(instruction)
-    } else if (!excludeArray.includes(instruction.trim())) {
-      instruction = instruction.trim()
-      if (instruction == 'true') {
-        return 1n
-      } else if (instruction == 'false') {
-        return 0n
-      } else if (!operandArray.includes(instruction)) {
-        // Convert the string or bytes to a keccak256 hash then to a uint256
-        return BigInt(
-          keccak256(
-            encodeAbiParameters(parseAbiParameters(instruction.startsWith('0x') ? 'bytes' : 'string'), [instruction])
+export function buildRawData(instructionSet: any[], excludeArray: string[]): Maybe<number[]> {
+  try {
+    var retVal = instructionSet.map((instruction) => {
+      // Only capture values that aren't naturally numbers
+      if (!isNaN(Number(instruction))) {
+        return BigInt(instruction)
+      } else if (!excludeArray.includes(instruction.trim())) {
+        instruction = instruction.trim()
+        if (instruction == 'true') {
+          return 1n
+        } else if (instruction == 'false') {
+          return 0n
+        } else if (!operandArray.includes(instruction)) {
+          // Regex check ^".*"$
+          const quotesCheck = /^".*"$/g
+          let str: string = instruction
+          if (str.match(quotesCheck) == null) {
+            throw new Error('Strings must be in quotes')
+          } else {
+            instruction = str.slice(1, -1)
+          }
+
+          // Convert the string or bytes to a keccak256 hash then to a uint256
+          return BigInt(
+            keccak256(
+              encodeAbiParameters(parseAbiParameters(instruction.startsWith('0x') ? 'bytes' : 'string'), [instruction])
+            )
           )
-        )
+        } else {
+          return instruction
+        }
       } else {
         return instruction
       }
-    } else {
-      return instruction
-    }
-  })
+    })
+    return retVal
+  } catch (exception) {
+    return null
+  }
 }
 
 /**

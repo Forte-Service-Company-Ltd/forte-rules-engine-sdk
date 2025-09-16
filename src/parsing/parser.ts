@@ -98,7 +98,7 @@ function getProcessedEffects(
   indexMap: trackerIndexNameMapping[],
   additionalEffectForeignCalls: string[],
   effects: string[]
-): [EffectDefinition[], PlaceholderStruct[]] {
+): Maybe<[EffectDefinition[], PlaceholderStruct[]]> {
   var retVal = effects.reduce(
     (acc: [string[], RuleComponent[][]], effect) => {
       const [updatedEffect, effectCalls] = processSyntax(
@@ -114,14 +114,21 @@ function getProcessedEffects(
     },
     [[], []]
   )
-  const efectNames = cleanseForeignCallLists(retVal[1]);
-  let effectPlaceHolders = buildPlaceholderList(efectNames);
-  effectPlaceHolders = [...new Set(effectPlaceHolders)];
+  const efectNames = cleanseForeignCallLists(retVal[1])
+  let effectPlaceHolders = buildPlaceholderList(efectNames)
+  effectPlaceHolders = [...new Set(effectPlaceHolders)]
 
-  const positiveEffects = retVal[0].map(
-    (effect) => parseEffect(effect, efectNames, effectPlaceHolders, indexMap)
-  );
-  return [positiveEffects, effectPlaceHolders]
+  var positiveEffects = []
+  for (var effect of retVal[0]) {
+    var parsed = parseEffect(effect, efectNames, effectPlaceHolders, indexMap)
+    if (parsed == null) {
+      return null
+    } else {
+      positiveEffects.push(parsed)
+    }
+  }
+
+  return [positiveEffects as EffectDefinition[], effectPlaceHolders]
 }
 
 /**
@@ -141,7 +148,7 @@ export function parseRuleSyntax(
   encodedValues: string,
   additionalForeignCalls: string[],
   additionalEffectForeignCalls: string[]
-): RuleDefinition {
+): Maybe<RuleDefinition> {
   const [condition, ruleComponents] = processSyntax(
     encodedValues,
     foreignCallNameToID,
@@ -152,21 +159,29 @@ export function parseRuleSyntax(
 
   const placeHolders = buildPlaceholderList(ruleComponents)
 
-  const [positiveEffects, positiveEffectPlaceHolders] = getProcessedEffects(
+  const processedEffect = getProcessedEffects(
     encodedValues,
     foreignCallNameToID,
     indexMap,
     additionalEffectForeignCalls,
     syntax.positiveEffects
   )
+  if (processedEffect == null) {
+    return null
+  }
+  const [positiveEffects, positiveEffectPlaceHolders] = processedEffect
 
-  const [negativeEffects, negativeEffectPlaceHolders] = getProcessedEffects(
+  var retE = getProcessedEffects(
     encodedValues,
     foreignCallNameToID,
     indexMap,
     additionalEffectForeignCalls,
     syntax.negativeEffects
   )
+  if (retE == null) {
+    return null
+  }
+  const [negativeEffects, negativeEffectPlaceHolders] = retE
 
   const conditionInstructionSet = convertHumanReadableToInstructionSet(
     condition,
@@ -180,10 +195,24 @@ export function parseRuleSyntax(
   excludeArray.push(...operandArray)
 
   const instructionSet = buildRawData(conditionInstructionSet, excludeArray)
+  if (instructionSet == null) {
+    return null
+  }
+  positiveEffects.forEach((effect) => {
+    var instrucitonSet = buildRawData(effect.instructionSet, excludeArray)
+    if (instructionSet == null) {
+      return null
+    }
+    effect.instructionSet = instrucitonSet as any[]
+  })
 
-  positiveEffects.forEach((effect) => (effect.instructionSet = buildRawData(effect.instructionSet, excludeArray)))
-
-  negativeEffects.forEach((effect) => (effect.instructionSet = buildRawData(effect.instructionSet, excludeArray)))
+  negativeEffects.forEach((effect) => {
+    var instrucitonSet = buildRawData(effect.instructionSet, excludeArray)
+    if (instructionSet == null) {
+      return null
+    }
+    effect.instructionSet = instrucitonSet as any[]
+  })
 
   return {
     instructionSet,
@@ -191,9 +220,8 @@ export function parseRuleSyntax(
     negativeEffects,
     placeHolders,
     positiveEffectPlaceHolders,
-    negativeEffectPlaceHolders
-  };
-
+    negativeEffectPlaceHolders,
+  }
 }
 
 export function parseMappedTrackerSyntax(syntax: MappedTrackerJSON): MappedTrackerDefinition {
