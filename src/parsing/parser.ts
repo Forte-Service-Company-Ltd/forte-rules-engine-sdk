@@ -159,17 +159,17 @@ export function parseRuleSyntax(
 
   const placeHolders = buildPlaceholderList(ruleComponents)
 
-  var ret = getProcessedEffects(
+  const processedEffect = getProcessedEffects(
     encodedValues,
     foreignCallNameToID,
     indexMap,
     additionalEffectForeignCalls,
     syntax.positiveEffects
   )
-  if (ret == null) {
+  if (processedEffect == null) {
     return null
   }
-  const [positiveEffects, positiveEffectPlaceHolders] = ret
+  const [positiveEffects, positiveEffectPlaceHolders] = processedEffect
 
   var retE = getProcessedEffects(
     encodedValues,
