@@ -8,7 +8,7 @@ import {
   operandArray,
   EffectDefinition,
   FunctionArgument,
-  Tracker,
+  TrackerArgument,
   RuleComponent,
   PTNamesTracker,
   Maybe,
@@ -77,7 +77,7 @@ export function parseTrackers(
   condition: string,
   names: any[],
   indexMap: trackerIndexNameMapping[]
-): [string, Tracker[]] {
+): [string, TrackerArgument[]] {
   const trRegex = /TR:[a-zA-Z]+/g
   const truRegex = /TRU:[a-zA-Z]+/g
 
@@ -98,7 +98,7 @@ export function parseTrackers(
     return acc.replace(match, initialSplit + ' | ' + match.split('(')[0])
   }, condition)
 
-  const trackers: Tracker[] = matches.map((name) => {
+  const trackers: TrackerArgument[] = matches.map((name) => {
     let rawTypeTwo = 'address'
     let tIndex = 0
     const tracker = indexMap.find((index) => 'TR:' + index.name == name)
@@ -126,8 +126,8 @@ export function parseTrackers(
 
   const updateMatchesSet = [...new Set([...(condition.match(truRegex) || [])])]
 
-  const updatedTrackers: Tracker[] = updateMatchesSet
-    .map((name: string): Maybe<Tracker> => {
+  const updatedTrackers: TrackerArgument[] = updateMatchesSet
+    .map((name: string): Maybe<TrackerArgument> => {
       let tIndex = 0
       name = name.replace('TRU:', 'TR:')
       const tracker = indexMap.find((index) => 'TR:' + index.name == name)

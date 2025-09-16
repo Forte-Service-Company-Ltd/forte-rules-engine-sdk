@@ -12,12 +12,9 @@ export { policyModifierGeneration } from './codeGeneration/code-modification-scr
 
 export { getTrackerToRuleIds } from './modules/trackers.js'
 
-export { 
-  createCallingFunctionLookupMaps,
-  resolveCallingFunction,
-} from './modules/validation.js'
+export { createCallingFunctionLookupMaps, resolveCallingFunction } from './modules/validation.js'
 
-export { 
+export {
   createPolicy,
   updatePolicy,
   setPolicies,
@@ -36,7 +33,7 @@ export {
   addClosedPolicySubscriber,
   removeClosedPolicySubscriber,
   cementPolicy,
-  isCementedPolicy
+  isCementedPolicy,
 } from './modules/policy.js'
 
 export {
@@ -49,8 +46,6 @@ export {
   RuleStruct,
   ForeignCallDefinition,
   PlaceholderStruct,
-  IndividualArgumentMapping as IndividualArugmentMapping,
-  ForeignCallArgumentMappings,
   FunctionArgument,
   stringReplacement,
   trackerIndexNameMapping,
