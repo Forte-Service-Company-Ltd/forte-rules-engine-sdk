@@ -426,7 +426,12 @@ export const reverseParsePlaceholder = (
   if (placeholder.flags == 0x01) {
     const call = foreignCalls.find((call) => call.foreignCallIndex === placeholder.typeSpecificIndex)
     const map = mappings.find((map) => map.hex === call?.signature)
-    return 'FC:' + map?.functionString.split('(')[0]
+    if (map) {
+      // For foreign calls, the name field should always be provided since foreign call names are required
+      // Fallback to extracting from functionString for backward compatibility
+      return 'FC:' + (map.name || map.functionString.split('(')[0])
+    }
+    return 'FC:unknown'
   } else if (placeholder.flags == 0x02) {
     const map = mappings.find((map) => map.index === placeholder.typeSpecificIndex)
     return 'TR:' + map?.functionString

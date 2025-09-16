@@ -721,6 +721,7 @@ export const getPolicy = async (
         functionString: name.functionSignature,
         encodedValues,
         index: -1,
+        name: name.name, // Required for foreign calls to enable proper reverse interpretation
       }
       allFunctionMappings.push(newMapping)
     }

@@ -102,6 +102,8 @@ export type hexToFunctionString = {
   encodedValues: string
   /** Index of the function */
   index: number
+  /** Name field - should be provided for foreign calls since names are required */
+  name?: string
 }
 
 /**
