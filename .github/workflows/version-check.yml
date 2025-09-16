@@ -1,0 +1,38 @@
+name: Check SUPPORTEDVERSION Consistency
+
+on:
+  pull_request:
+    paths:
+      - 'src/modules/types.ts'
+      - 'package.json'
+  push:
+    paths:
+      - 'src/modules/types.ts'
+      - 'package.json'
+
+jobs:
+  version-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check SUPPORTEDVERSION against package.json version
+        run: |
+          PKG_VERSION=$(jq -r '.dependencies["@fortefoundation/forte-rules-engine"]' package.json | sed 's/[^0-9.]//g')
+          SUPPORTED=$(grep -Eo 'SUPPORTEDVERSION: versionStruct = \{ major: [0-9]+, minor: '\''[0-9]+'\''\, tertiary: '\''[0-9]+'\'' \}' src/modules/types.ts | grep -Eo '[0-9]+' | xargs)
+          SUP_MAJOR=$(echo $SUPPORTED | awk '{print $1}')
+          SUP_MINOR=$(echo $SUPPORTED | awk '{print $2}')
+          SUP_TERTIARY=$(echo $SUPPORTED | awk '{print $3}')
+          SUPPORTED_VERSION="$SUP_MAJOR.$SUP_MINOR.$SUP_TERTIARY"
+          if [ "$PKG_VERSION" != "$SUPPORTED_VERSION" ]; then
+            echo "❌ SUPPORTEDVERSION ($SUPPORTED_VERSION) does not match forte-rules-engine package version ($PKG_VERSION)"
+            exit 1
+          else
+            echo "✅ SUPPORTEDVERSION ($SUPPORTED_VERSION) matches forte-rules-engine package version ($PKG_VERSION)"
+          fi
