@@ -13,6 +13,7 @@ import {
   RulesEngineForeignCallContract,
   TrackerMetadataStruct,
   ContractBlockParameters,
+  ForeignCallMetadataStruct,
 } from './types'
 import { getAllTrackers, getTrackerMetadata } from './trackers'
 import { getCallingFunctionMetadata } from './calling-functions'
@@ -90,8 +91,8 @@ export const createForeignCall = async (
   )
   var fcMap: FCNameToID[] = []
   const foreignCallMetadata = await Promise.all(foreignCallMetadataCalls)
-  const fcMapAdditions: FCNameToID[] = foreignCallMetadata.map((nameData: string, index: number) => {
-    const extractedName = nameData.split('(')[0] || `UnknownFC_${index}`
+  const fcMapAdditions: FCNameToID[] = foreignCallMetadata.map((nameData: ForeignCallMetadataStruct, index: number) => {
+    const extractedName = nameData.name.split('(')[0] || `UnknownFC_${index}`
 
     return {
       name: extractedName,
@@ -200,7 +201,7 @@ const checkIfForeignCallExists = async (
     newFCs.map((fc) => getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, fc.foreignCallIndex))
   )
   return fcMetas.some(
-    (meta, idx) => meta == foreignCallName && newFCs[idx].callingFunctionSelector == callingFunctionSelector
+    (meta, idx) => meta.name == foreignCallName && newFCs[idx].callingFunctionSelector == callingFunctionSelector
   )
 }
 
@@ -253,9 +254,9 @@ export const updateForeignCall = async (
   )
   var fcMap: FCNameToID[] = []
   const foreignCallMetadata = await Promise.all(foreignCallMetadataCalls)
-  const fcMapAdditions: FCNameToID[] = foreignCallMetadata.map((nameData: string, index: number) => {
+  const fcMapAdditions: FCNameToID[] = foreignCallMetadata.map((nameData: ForeignCallMetadataStruct, index: number) => {
     // nameData is now always a string from getForeignCallMetadata
-    const extractedName = nameData || `UnknownFC_${index}`
+    const extractedName = nameData.name || `UnknownFC_${index}`
     return { name: extractedName, id: foreignCalls[index].foreignCallIndex, type: 0 }
   })
   fcMap = [...fcMap, ...fcMapAdditions]
@@ -447,7 +448,7 @@ export const getForeignCallMetadata = async (
   policyId: number,
   foreignCallId: number,
   blockParams?: ContractBlockParameters
-): Promise<string> => {
+): Promise<ForeignCallMetadataStruct> => {
   try {
     const getMeta = await readContract(config, {
       address: rulesEngineForeignCallContract.address,
@@ -458,10 +459,10 @@ export const getForeignCallMetadata = async (
     })
 
     const foreignCallResult = getMeta as { name: string; foreignCallSignature: string }
-    return foreignCallResult.name
+    return { name: foreignCallResult.name, functionSignature: foreignCallResult.foreignCallSignature }
   } catch (error) {
     console.error(error)
-    return ''
+    return { name: '', functionSignature: '' }
   }
 }
 

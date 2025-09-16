@@ -6,7 +6,14 @@ import RulesEngineComponentLogicArtifact from '@fortefoundation/forte-rules-engi
 import RulesEngineRuleLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineRuleFacet.sol/RulesEngineRuleFacet.json'
 import RulesEngineAdminLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineAdminRolesFacet.sol/RulesEngineAdminRolesFacet.json'
 import RulesEngineForeignCallLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineForeignCallFacet.sol/RulesEngineForeignCallFacet.json'
-import { CallingFunctionJSON, ForeignCallJSON, MappedTrackerJSON, PolicyJSON, RuleJSON, TrackerJSON } from "./validation";
+import {
+  CallingFunctionJSON,
+  ForeignCallJSON,
+  MappedTrackerJSON,
+  PolicyJSON,
+  RuleJSON,
+  TrackerJSON,
+} from './validation'
 
 /**
  * @file types.ts
@@ -238,6 +245,14 @@ export type RuleMetadataStruct = {
   ruleName: string
   /** Description of the rule */
   ruleDescription: string
+}
+
+/**
+ * Metadata about a Foreign Call
+ */
+export type ForeignCallMetadataStruct = {
+  name: string
+  functionSignature: string
 }
 
 /**

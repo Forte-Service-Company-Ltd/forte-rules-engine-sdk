@@ -1425,10 +1425,6 @@ describe('Rules Engine Interactions', async () => {
 
     const parsed = retVal?.JSON ? JSON.parse(retVal?.JSON) : null
 
-    // TODOupdate the input to match known limitations with the reverse parser
-    input.ForeignCalls[0].function = input.ForeignCalls[0].name
-    input.ForeignCalls[1].function = input.ForeignCalls[1].name
-
     input.Rules[0].negativeEffects[0] = "revert('Negative')"
 
     expect(parsed).toEqual(input)
