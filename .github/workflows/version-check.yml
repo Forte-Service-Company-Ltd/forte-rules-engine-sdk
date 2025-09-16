@@ -2,13 +2,13 @@ name: Check SUPPORTEDVERSION Consistency
 
 on:
   pull_request:
-    paths:
-      - 'src/modules/types.ts'
-      - 'package.json'
+    # paths:
+    #   - 'src/modules/types.ts'
+    #   - 'package.json'
   push:
-    paths:
-      - 'src/modules/types.ts'
-      - 'package.json'
+    # paths:
+    #   - 'src/modules/types.ts'
+    #   - 'package.json'
 
 jobs:
   version-check:
