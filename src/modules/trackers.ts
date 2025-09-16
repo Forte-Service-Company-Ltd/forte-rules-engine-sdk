@@ -187,6 +187,76 @@ const checkIfTrackerExists = async (
 }
 
 /**
+ *
+ * @param config - The configuration object containing network and wallet information.
+ * @param rulesEngineComponentContract - The contract instance for interacting with the rules engine component.
+ * @param policyId - The ID of the policy associated with the tracker.
+ * @param trSyntax - A JSON string representing the tracker syntax.
+ * @param confirmationCount - The number of confirmations to wait for after writing the contract.
+ * @returns A promise that resolves to the new tracker ID
+ */
+export const updateMappedTracker = async (
+  config: Config,
+  rulesEngineComponentContract: RulesEngineComponentContract,
+  policyId: number,
+  mappedTrackerSyntax: string,
+  confirmationCount: number
+): Promise<number> => {
+  const json = validateMappedTrackerJSON(mappedTrackerSyntax)
+  if (isLeft(json)) {
+    throw new Error(getRulesErrorMessages(unwrapEither(json)))
+  }
+  const parsedTracker = parseMappedTrackerSyntax(unwrapEither(json))
+  var duplicate = await checkIfTrackerExists(config, rulesEngineComponentContract, policyId, parsedTracker.name)
+  if (!duplicate) {
+    var transactionTracker = {
+      set: true,
+      pType: parsedTracker.valueType,
+      mapped: true,
+      trackerKeyType: parsedTracker.keyType,
+      trackerValue: encodePacked(['uint256'], [BigInt(0)]),
+      trackerIndex: 0,
+    }
+    var addTR
+    while (true) {
+      try {
+        addTR = await simulateContract(config, {
+          address: rulesEngineComponentContract.address,
+          abi: rulesEngineComponentContract.abi,
+          functionName: 'updateTracker',
+          args: [
+            policyId,
+            transactionTracker,
+            parsedTracker.name,
+            parsedTracker.initialKeys,
+            parsedTracker.initialValues,
+          ],
+        })
+        break
+      } catch (err) {
+        console.log(err)
+        // TODO: Look into replacing this loop/sleep with setTimeout
+        await sleep(1000)
+      }
+    }
+    if (addTR != null) {
+      const returnHash = await writeContract(config, {
+        ...addTR.request,
+        account: config.getClient().account,
+      })
+      await waitForTransactionReceipt(config, {
+        confirmations: confirmationCount,
+        hash: returnHash,
+      })
+
+      let trackerResult = addTR.result
+      return trackerResult
+    }
+  }
+  return -1
+}
+
+/**
  * Asynchronously updates a tracker in the rules engine component contract.
  *
  * @param config - The configuration object containing network and wallet information.
