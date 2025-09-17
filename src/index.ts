@@ -48,7 +48,6 @@ export {
   PlaceholderStruct,
   FunctionArgument,
   stringReplacement,
-  trackerIndexNameMapping,
   TrackerDefinition,
   RawData,
   RuleData,

@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: BUSL-1.1
 import { isAddress } from 'viem'
 import {
-  trackerIndexNameMapping,
+  FCNameToID,
   PlaceholderStruct,
   matchArray,
   truMatchArray,
@@ -52,7 +52,7 @@ var originalDelimiters: string[] = []
  *
  * @param syntax - The input syntax string to be interpreted.
  * @param names - An array of names used in the instruction set.
- * @param indexMap - A mapping of tracker indices to names.
+ * @param trackerNameToID - A mapping of tracker indices to names.
  * @param existingPlaceHolders - An array of existing placeholders to be considered.
  *
  * @returns An object containing:
@@ -62,7 +62,7 @@ var originalDelimiters: string[] = []
 export function convertHumanReadableToInstructionSet(
   syntax: string,
   names: any[],
-  indexMap: trackerIndexNameMapping[],
+  trackerNameToID: FCNameToID[],
   existingPlaceHolders: PlaceholderStruct[]
 ): InstructionSet {
   //Replace AND, OR and NOT with a placeholder value (PLA) so we can parse them simultaneously
@@ -118,7 +118,7 @@ export function convertHumanReadableToInstructionSet(
     iterator: { value: 0 },
   }
   // Convert the AST into the Instruction Set Syntax
-  convertASTToInstructionSet(astAccumulator, array_, names, existingPlaceHolders, indexMap)
+  convertASTToInstructionSet(astAccumulator, array_, names, existingPlaceHolders, trackerNameToID)
 
   for (var instructionIter in astAccumulator.instructionSet) {
     if (typeof astAccumulator.instructionSet[instructionIter] == 'string') {
@@ -140,14 +140,14 @@ export function convertHumanReadableToInstructionSet(
  * @param expression - The AST to convert.
  * @param parameterNames - An array of argument placeholders.
  * @param placeHolders - An array to store placeholders.
- * @param indexMap - A mapping of tracker IDs to their names and types.
+ * @param trackerNameToID - A mapping of tracker IDs to their names and types.
  */
 function convertASTToInstructionSet(
   acc: ASTAccumulator,
   expression: any[],
   parameterNames: any[],
   placeHolders: PlaceholderStruct[],
-  indexMap: trackerIndexNameMapping[]
+  trackerNameToID: FCNameToID[]
 ): ASTAccumulator {
   if (typeof expression[0] == 'string') {
     var foundMatch = false
@@ -218,7 +218,7 @@ function convertASTToInstructionSet(
           if (expCount == searchExpressions.length) {
             var sliced = expression.slice(1)
 
-            convertASTToInstructionSet(acc, sliced, parameterNames, placeHolders, indexMap)
+            convertASTToInstructionSet(acc, sliced, parameterNames, placeHolders, trackerNameToID)
           }
 
           // Check if the expression is a foreign call
@@ -238,7 +238,7 @@ function convertASTToInstructionSet(
             var sliced = expression.slice(1)
             acc.mem.push(acc.iterator.value)
             acc.iterator.value += 1
-            convertASTToInstructionSet(acc, sliced, parameterNames, placeHolders, indexMap)
+            convertASTToInstructionSet(acc, sliced, parameterNames, placeHolders, trackerNameToID)
           } else {
             plhIndex += 1
           }
@@ -266,7 +266,7 @@ function convertASTToInstructionSet(
               previousIndex = acc.iterator.value
             }
 
-            for (var ind of indexMap) {
+            for (var ind of trackerNameToID) {
               if (parameter.name == 'TR:' + ind.name) {
                 truIndex = ind.id
                 truKey = previousIndex
@@ -276,7 +276,7 @@ function convertASTToInstructionSet(
             var sliced = expression.slice(1)
             acc.mem.push(acc.iterator.value)
             acc.iterator.value += 1
-            convertASTToInstructionSet(acc, sliced, parameterNames, placeHolders, indexMap)
+            convertASTToInstructionSet(acc, sliced, parameterNames, placeHolders, trackerNameToID)
           } else {
             plhIndex += 1
           }
@@ -291,7 +291,7 @@ function convertASTToInstructionSet(
         if (matchArray.includes(split.trim()) || split.includes('PLA')) {
           foundMatch = true
           var sliced = expression.slice(1)
-          convertASTToInstructionSet(acc, sliced, parameterNames, placeHolders, indexMap)
+          convertASTToInstructionSet(acc, sliced, parameterNames, placeHolders, trackerNameToID)
           if (truMatchArray.includes(split.trim())) {
             switch (split.trim()) {
               case '+=':
@@ -339,7 +339,7 @@ function convertASTToInstructionSet(
               acc.instructionSet.push(truKey)
             }
             const trackerName = expression[1].split(':')[1]
-            const trackerType = getPTEnum(indexMap.find((mapping) => mapping.name == trackerName)?.type || 4) // Default to VOID if not found
+            const trackerType = getPTEnum(trackerNameToID.find((mapping) => mapping.name == trackerName)?.type || 4) // Default to VOID if not found
 
             // if trackerType is string(1) or bytes(5) then push 1 indicating placeholder tracker
             // else push 0 indicating memory tracker
@@ -363,7 +363,7 @@ function convertASTToInstructionSet(
         var sliced = expression.slice(1)
         acc.mem.push(acc.iterator.value)
         acc.iterator.value += 1
-        convertASTToInstructionSet(acc, sliced, parameterNames, placeHolders, indexMap)
+        convertASTToInstructionSet(acc, sliced, parameterNames, placeHolders, trackerNameToID)
       }
     }
 
@@ -375,13 +375,13 @@ function convertASTToInstructionSet(
     var sliced = expression.slice(1)
     acc.mem.push(acc.iterator.value)
     acc.iterator.value += 1
-    convertASTToInstructionSet(acc, sliced, parameterNames, placeHolders, indexMap)
+    convertASTToInstructionSet(acc, sliced, parameterNames, placeHolders, trackerNameToID)
     // If it's an array with a nested array as the first index recursively run with the nested array, update the memory map
     // and recursively run starting at the next index
   } else if (Array.isArray(expression[0])) {
-    convertASTToInstructionSet(acc, expression[0], parameterNames, placeHolders, indexMap)
+    convertASTToInstructionSet(acc, expression[0], parameterNames, placeHolders, trackerNameToID)
     expression = expression.slice(1)
-    convertASTToInstructionSet(acc, expression, parameterNames, placeHolders, indexMap)
+    convertASTToInstructionSet(acc, expression, parameterNames, placeHolders, trackerNameToID)
   }
   return acc
 }

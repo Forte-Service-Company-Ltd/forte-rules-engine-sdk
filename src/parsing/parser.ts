@@ -23,7 +23,6 @@ import {
   RuleDefinition,
   trackerArrayType,
   TrackerDefinition,
-  trackerIndexNameMapping,
 } from '../modules/types'
 import { convertHumanReadableToInstructionSet } from './internal-parsing-logic'
 import {
@@ -47,6 +46,7 @@ import {
   splitFunctionInput,
   TrackerJSON,
 } from '../modules/validation'
+import tr from 'zod/v4/locales/tr.cjs'
 
 /**
  * @file parser.ts
@@ -71,7 +71,7 @@ import {
 export function processSyntax(
   encodedValues: string,
   foreignCallNameToID: FCNameToID[],
-  indexMap: trackerIndexNameMapping[],
+  trackerNameToID: FCNameToID[],
   additionalForeignCalls: string[],
   syntax: string
 ): [string, RuleComponent[]] {
@@ -80,12 +80,12 @@ export function processSyntax(
     syntax,
     components,
     foreignCallNameToID,
-    indexMap,
+    trackerNameToID,
     additionalForeignCalls
   )
   components = [...components, ...effectCalls]
 
-  const [finalSyntax, effectTrackers] = parseTrackers(updatedSyntax, components, indexMap)
+  const [finalSyntax, effectTrackers] = parseTrackers(updatedSyntax, components, trackerNameToID)
 
   const gvEComponents = parseGlobalVariables(finalSyntax)
 
@@ -95,7 +95,7 @@ export function processSyntax(
 function getProcessedEffects(
   encodedValues: string,
   foreignCallNameToID: FCNameToID[],
-  indexMap: trackerIndexNameMapping[],
+  trackerNameToID: FCNameToID[],
   additionalEffectForeignCalls: string[],
   effects: string[]
 ): Maybe<[EffectDefinition[], PlaceholderStruct[]]> {
@@ -104,7 +104,7 @@ function getProcessedEffects(
       const [updatedEffect, effectCalls] = processSyntax(
         encodedValues,
         foreignCallNameToID,
-        indexMap,
+        trackerNameToID,
         additionalEffectForeignCalls,
         effect
       )
@@ -120,7 +120,7 @@ function getProcessedEffects(
 
   var positiveEffects = []
   for (var effect of retVal[0]) {
-    var parsed = parseEffect(effect, efectNames, effectPlaceHolders, indexMap)
+    var parsed = parseEffect(effect, efectNames, effectPlaceHolders, trackerNameToID)
     if (parsed == null) {
       return null
     } else {
@@ -135,7 +135,7 @@ function getProcessedEffects(
  * Parses the rule syntax and converts it into a raw instruction set.
  *
  * @param syntax - The JSON representation of the rule syntax.
- * @param indexMap - A mapping of tracker IDs to their names and types.
+ * @param trackerNameToID - A mapping of tracker IDs to their names and types.
  * @param foreignCallNameToID - A mapping of foreign call names to their IDs.
  * @returns An object containing the instruction set, raw data, positive effects, negative effects,
  *          placeholders, and effect placeholders.
@@ -143,7 +143,7 @@ function getProcessedEffects(
 
 export function parseRuleSyntax(
   syntax: RuleJSON,
-  indexMap: trackerIndexNameMapping[],
+  trackerNameToID: FCNameToID[],
   foreignCallNameToID: FCNameToID[],
   encodedValues: string,
   additionalForeignCalls: string[],
@@ -152,7 +152,7 @@ export function parseRuleSyntax(
   const [condition, ruleComponents] = processSyntax(
     encodedValues,
     foreignCallNameToID,
-    indexMap,
+    trackerNameToID,
     additionalForeignCalls,
     removeExtraParenthesis(syntax.condition)
   )
@@ -162,7 +162,7 @@ export function parseRuleSyntax(
   const processedEffect = getProcessedEffects(
     encodedValues,
     foreignCallNameToID,
-    indexMap,
+    trackerNameToID,
     additionalEffectForeignCalls,
     syntax.positiveEffects
   )
@@ -174,7 +174,7 @@ export function parseRuleSyntax(
   var retE = getProcessedEffects(
     encodedValues,
     foreignCallNameToID,
-    indexMap,
+    trackerNameToID,
     additionalEffectForeignCalls,
     syntax.negativeEffects
   )
@@ -186,7 +186,7 @@ export function parseRuleSyntax(
   const conditionInstructionSet = convertHumanReadableToInstructionSet(
     condition,
     ruleComponents,
-    indexMap,
+    trackerNameToID,
     placeHolders
   )
 
@@ -380,7 +380,7 @@ export function parseTrackerSyntax(syntax: TrackerJSON): TrackerDefinition {
 
 export function getFCEncodedIndex(
   foreignCallNameToID: FCNameToID[],
-  indexMap: FCNameToID[],
+  trackerNameToID: FCNameToID[],
   functionArguments: string[],
   encodedIndex: string
 ): Maybe<ForeignCallEncodedIndex> {
@@ -390,7 +390,7 @@ export function getFCEncodedIndex(
       return { eType: 1, index: fcMap.id }
     }
   } else if (encodedIndex.includes('TR:')) {
-    const trMap = indexMap.find((tr) => 'TR:' + tr.name.trim() === encodedIndex.trim())
+    const trMap = trackerNameToID.find((tr) => 'TR:' + tr.name.trim() === encodedIndex.trim())
     if (trMap) {
       if (trMap.type == 1) {
         return { eType: 4, index: trMap.id }
@@ -416,21 +416,21 @@ export function getFCEncodedIndex(
 export function parseForeignCallDefinition(
   syntax: ForeignCallJSON,
   foreignCallNameToID: FCNameToID[],
-  indexMap: FCNameToID[],
+  trackerNameToID: FCNameToID[],
   functionArguments: string[]
 ): ForeignCallDefinition {
   // Validate that the foreign call doesn't reference itself
   const selfReferences = syntax.valuesToPass
     .split(',')
-    .map(val => val.trim())
-    .filter(val => val.startsWith('FC:'))
-    .map(val => val.substring(3).trim())
-    .filter(fcName => fcName === syntax.name)
-  
+    .map((val) => val.trim())
+    .filter((val) => val.startsWith('FC:'))
+    .map((val) => val.substring(3).trim())
+    .filter((fcName) => fcName === syntax.name)
+
   if (selfReferences.length > 0) {
     throw new Error(
       `Foreign call "${syntax.name}" cannot reference itself in valuesToPass. ` +
-      `Self-referential foreign calls are not allowed as they would create infinite loops.`
+        `Self-referential foreign calls are not allowed as they would create infinite loops.`
     )
   }
 
@@ -438,22 +438,22 @@ export function parseForeignCallDefinition(
   if (syntax.mappedTrackerKeyValues && syntax.mappedTrackerKeyValues.trim() !== '') {
     const mappedSelfReferences = syntax.mappedTrackerKeyValues
       .split(',')
-      .map(val => val.trim())
-      .filter(val => val.startsWith('FC:'))
-      .map(val => val.substring(3).trim())
-      .filter(fcName => fcName === syntax.name)
-    
+      .map((val) => val.trim())
+      .filter((val) => val.startsWith('FC:'))
+      .map((val) => val.substring(3).trim())
+      .filter((fcName) => fcName === syntax.name)
+
     if (mappedSelfReferences.length > 0) {
       throw new Error(
         `Foreign call "${syntax.name}" cannot reference itself in mappedTrackerKeyValues. ` +
-        `Self-referential foreign calls are not allowed as they would create infinite loops.`
+          `Self-referential foreign calls are not allowed as they would create infinite loops.`
       )
     }
   }
 
   const encodedIndices = syntax.valuesToPass
     .split(',')
-    .map((encodedIndex) => getFCEncodedIndex(foreignCallNameToID, indexMap, functionArguments, encodedIndex))
+    .map((encodedIndex) => getFCEncodedIndex(foreignCallNameToID, trackerNameToID, functionArguments, encodedIndex))
     .filter((encoded) => encoded !== null)
 
   var mappedTrackerKeyIndices: ForeignCallEncodedIndex[] = []
@@ -461,7 +461,7 @@ export function parseForeignCallDefinition(
   } else {
     mappedTrackerKeyIndices = syntax.mappedTrackerKeyValues
       .split(',')
-      .map((encodedIndex) => getFCEncodedIndex(foreignCallNameToID, indexMap, functionArguments, encodedIndex))
+      .map((encodedIndex) => getFCEncodedIndex(foreignCallNameToID, trackerNameToID, functionArguments, encodedIndex))
       .filter((encoded) => encoded !== null)
   }
 
@@ -472,12 +472,12 @@ export function parseForeignCallDefinition(
   // Validate that the number of encoded indices matches the expected parameter count
   const expectedParamCount = parameterTypes.length
   const actualIndicesCount = encodedIndices.length
-  
+
   if (actualIndicesCount !== expectedParamCount) {
     throw new Error(
       `Parameter count mismatch for foreign call "${syntax.name}": ` +
-      `expected ${expectedParamCount} parameters but got ${actualIndicesCount} encoded indices. ` +
-      `This usually means some dependencies (FC: references) failed to be created.`
+        `expected ${expectedParamCount} parameters but got ${actualIndicesCount} encoded indices. ` +
+        `This usually means some dependencies (FC: references) failed to be created.`
     )
   }
 

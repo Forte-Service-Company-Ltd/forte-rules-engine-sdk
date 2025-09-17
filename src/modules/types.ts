@@ -456,18 +456,6 @@ export type TrackerMetadataStruct = {
 }
 
 /**
- * Maps tracker indices to names
- */
-export type trackerIndexNameMapping = {
-  /** ID of the tracker */
-  id: number
-  /** Name of the tracker */
-  name: string
-  /** Type of the tracker */
-  type: number
-}
-
-/**
  * Definition of a tracker
  */
 export type TrackerDefinition = {

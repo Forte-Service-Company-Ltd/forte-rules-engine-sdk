@@ -82,22 +82,19 @@ export const createForeignCall = async (
   confirmationCount: number
 ): Promise<number> => {
   var trackers: TrackerOnChain[] = await getAllTrackers(config, rulesEngineComponentContract, policyId)
-  var indexMap: FCNameToID[] = []
   var mappedArray: boolean[] = trackers.map((tracker) => tracker.mapped)
 
   const trackerMetadataCalls = trackers.map((tracker) =>
     getTrackerMetadata(config, rulesEngineComponentContract, policyId, tracker.trackerIndex)
   )
   const trackerMetadata = await Promise.all(trackerMetadataCalls)
-  const indexMapAdditions: FCNameToID[] = trackerMetadata.map((name: TrackerMetadataStruct, index: number) => {
+  const trackerMap: FCNameToID[] = trackerMetadata.map((name: TrackerMetadataStruct, index: number) => {
     return {
       name: name.trackerName,
       id: trackers[index].trackerIndex,
       type: mappedArray[index] ? 1 : 0,
     }
   })
-
-  indexMap = [...indexMap, ...indexMapAdditions]
 
   var foreignCalls: ForeignCallOnChain[] = await getAllForeignCalls(config, rulesEngineForeignCallContract, policyId)
   const foreignCallMetadataCalls = foreignCalls.map((fc) =>
@@ -137,7 +134,7 @@ export const createForeignCall = async (
   const fcJSON: ForeignCallJSON = unwrapEither(json)
   const { cfIndex, cfEncodedValues } = getCFIndexAndEncodedValues(callingFunctionMetadata, fcJSON)
 
-  const foreignCall = parseForeignCallDefinition(fcJSON, fcMap, indexMap, cfEncodedValues)
+  const foreignCall = parseForeignCallDefinition(fcJSON, fcMap, trackerMap, cfEncodedValues)
   var duplicate = await checkIfForeignCallExists(
     config,
     rulesEngineForeignCallContract,
@@ -236,19 +233,17 @@ export const updateForeignCall = async (
   confirmationCount: number
 ): Promise<number> => {
   var trackers: TrackerOnChain[] = await getAllTrackers(config, rulesEngineComponentContract, policyId)
-  var indexMap: FCNameToID[] = []
   const trackerMetadataCalls = trackers.map((tracker) =>
     getTrackerMetadata(config, rulesEngineComponentContract, policyId, tracker.trackerIndex)
   )
   const trackerMetadata = await Promise.all(trackerMetadataCalls)
-  const indexMapAdditions: FCNameToID[] = trackerMetadata.map((name: TrackerMetadataStruct, index: number) => {
+  const trackerMap: FCNameToID[] = trackerMetadata.map((name: TrackerMetadataStruct, index: number) => {
     return {
       name: name.trackerName,
       id: trackers[index].trackerIndex,
       type: 0,
     }
   })
-  indexMap = [...indexMap, ...indexMapAdditions]
 
   var foreignCalls: ForeignCallOnChain[] = await getAllForeignCalls(config, rulesEngineForeignCallContract, policyId)
   const foreignCallMetadataCalls = foreignCalls.map((fc) =>
@@ -283,7 +278,7 @@ export const updateForeignCall = async (
   }
   const fcJSON = unwrapEither(json)
   const { cfIndex, cfEncodedValues } = getCFIndexAndEncodedValues(callingFunctionMetadata, fcJSON)
-  const foreignCall = parseForeignCallDefinition(fcJSON, fcMap, indexMap, cfEncodedValues)
+  const foreignCall = parseForeignCallDefinition(fcJSON, fcMap, trackerMap, cfEncodedValues)
 
   var duplicate = await checkIfForeignCallExists(
     config,

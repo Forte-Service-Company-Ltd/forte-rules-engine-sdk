@@ -359,16 +359,15 @@ export const getTrackerMetadata = async (
   blockParams?: ContractBlockParameters
 ): Promise<TrackerMetadataStruct> => {
   try {
-    const getMeta = await readContract(config, {
+    const getMeta = (await readContract(config, {
       address: rulesEngineComponentContract.address,
       abi: rulesEngineComponentContract.abi,
       functionName: 'getTrackerMetadata',
       args: [policyId, trackerId],
       ...blockParams,
-    })
+    })) as TrackerMetadataStruct
 
-    let foreignCallResult = getMeta as TrackerMetadataStruct
-    return foreignCallResult
+    return getMeta
   } catch (error) {
     console.error(error)
     return {
