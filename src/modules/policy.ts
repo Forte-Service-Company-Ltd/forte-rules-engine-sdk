@@ -720,7 +720,7 @@ export const getPolicy = async (
         hex: fc.signature,
         functionString: name.functionSignature,
         encodedValues,
-        index: -1,
+        index: fc.foreignCallIndex,
         name: name.name, // Required for foreign calls to enable proper reverse interpretation
       }
       allFunctionMappings.push(newMapping)
