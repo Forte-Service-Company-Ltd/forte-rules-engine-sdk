@@ -10,7 +10,7 @@ import {
 } from 'viem'
 import {
   EffectDefinition,
-  FCNameToID,
+  NameToID,
   ForeignCallDefinition,
   ForeignCallEncodedIndex,
   MappedTrackerDefinition,
@@ -70,8 +70,8 @@ import tr from 'zod/v4/locales/tr.cjs'
 
 export function processSyntax(
   encodedValues: string,
-  foreignCallNameToID: FCNameToID[],
-  trackerNameToID: FCNameToID[],
+  foreignCallNameToID: NameToID[],
+  trackerNameToID: NameToID[],
   additionalForeignCalls: string[],
   syntax: string
 ): [string, RuleComponent[]] {
@@ -94,8 +94,8 @@ export function processSyntax(
 
 function getProcessedEffects(
   encodedValues: string,
-  foreignCallNameToID: FCNameToID[],
-  trackerNameToID: FCNameToID[],
+  foreignCallNameToID: NameToID[],
+  trackerNameToID: NameToID[],
   additionalEffectForeignCalls: string[],
   effects: string[]
 ): Maybe<[EffectDefinition[], PlaceholderStruct[]]> {
@@ -143,8 +143,8 @@ function getProcessedEffects(
 
 export function parseRuleSyntax(
   syntax: RuleJSON,
-  trackerNameToID: FCNameToID[],
-  foreignCallNameToID: FCNameToID[],
+  trackerNameToID: NameToID[],
+  foreignCallNameToID: NameToID[],
   encodedValues: string,
   additionalForeignCalls: string[],
   additionalEffectForeignCalls: string[]
@@ -379,8 +379,8 @@ export function parseTrackerSyntax(syntax: TrackerJSON): TrackerDefinition {
 }
 
 export function getFCEncodedIndex(
-  foreignCallNameToID: FCNameToID[],
-  trackerNameToID: FCNameToID[],
+  foreignCallNameToID: NameToID[],
+  trackerNameToID: NameToID[],
   functionArguments: string[],
   encodedIndex: string
 ): Maybe<ForeignCallEncodedIndex> {
@@ -415,8 +415,8 @@ export function getFCEncodedIndex(
  */
 export function parseForeignCallDefinition(
   syntax: ForeignCallJSON,
-  foreignCallNameToID: FCNameToID[],
-  trackerNameToID: FCNameToID[],
+  foreignCallNameToID: NameToID[],
+  trackerNameToID: NameToID[],
   functionArguments: string[]
 ): ForeignCallDefinition {
   // Validate that the foreign call doesn't reference itself

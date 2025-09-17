@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: BUSL-1.1
 import { isAddress } from 'viem'
 import {
-  FCNameToID,
+  NameToID,
   PlaceholderStruct,
   matchArray,
   truMatchArray,
@@ -62,7 +62,7 @@ var originalDelimiters: string[] = []
 export function convertHumanReadableToInstructionSet(
   syntax: string,
   names: any[],
-  trackerNameToID: FCNameToID[],
+  trackerNameToID: NameToID[],
   existingPlaceHolders: PlaceholderStruct[]
 ): InstructionSet {
   //Replace AND, OR and NOT with a placeholder value (PLA) so we can parse them simultaneously
@@ -147,7 +147,7 @@ function convertASTToInstructionSet(
   expression: any[],
   parameterNames: any[],
   placeHolders: PlaceholderStruct[],
-  trackerNameToID: FCNameToID[]
+  trackerNameToID: NameToID[]
 ): ASTAccumulator {
   if (typeof expression[0] == 'string') {
     var foundMatch = false

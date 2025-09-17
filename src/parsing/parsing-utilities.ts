@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: BUSL-1.1
 import { encodeAbiParameters, isAddress, keccak256, parseAbiParameters } from 'viem'
 import {
-  FCNameToID,
+  NameToID,
   EffectType,
   PlaceholderStruct,
   operandArray,
@@ -75,7 +75,7 @@ export function parseFunctionArguments(encodedValues: string, condition?: string
 export function parseTrackers(
   condition: string,
   names: any[],
-  trackerNameToID: FCNameToID[]
+  trackerNameToID: NameToID[]
 ): [string, TrackerArgument[]] {
   const trRegex = /TR:[a-zA-Z]+/g
   const truRegex = /TRU:[a-zA-Z]+/g
@@ -186,8 +186,8 @@ export function parseGlobalVariables(condition: string): RuleComponent[] {
 export function parseForeignCalls(
   condition: string,
   names: any[],
-  foreignCallNameToID: FCNameToID[],
-  trackerNameToID: FCNameToID[],
+  foreignCallNameToID: NameToID[],
+  trackerNameToID: NameToID[],
   additionalForeignCalls: string[]
 ): [string, RuleComponent[]] {
   // Use a regular expression to find all FC expressions
@@ -402,7 +402,7 @@ export function parseEffect(
   effect: string,
   names: any[],
   placeholders: PlaceholderStruct[],
-  trackerNameToID: FCNameToID[]
+  trackerNameToID: NameToID[]
 ): Maybe<EffectDefinition> {
   var effectType = EffectType.REVERT
   var effectText = ''

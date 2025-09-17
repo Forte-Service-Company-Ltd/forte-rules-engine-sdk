@@ -8,7 +8,7 @@ import {
   RulesEngineComponentContract,
   Maybe,
   TrackerOnChain,
-  FCNameToID,
+  NameToID,
   RulesEnginePolicyContract,
   RulesEngineForeignCallContract,
   TrackerMetadataStruct,
@@ -88,7 +88,7 @@ export const createForeignCall = async (
     getTrackerMetadata(config, rulesEngineComponentContract, policyId, tracker.trackerIndex)
   )
   const trackerMetadata = await Promise.all(trackerMetadataCalls)
-  const trackerMap: FCNameToID[] = trackerMetadata.map((name: TrackerMetadataStruct, index: number) => {
+  const trackerMap: NameToID[] = trackerMetadata.map((name: TrackerMetadataStruct, index: number) => {
     return {
       name: name.trackerName,
       id: trackers[index].trackerIndex,
@@ -100,9 +100,9 @@ export const createForeignCall = async (
   const foreignCallMetadataCalls = foreignCalls.map((fc) =>
     getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, fc.foreignCallIndex)
   )
-  var fcMap: FCNameToID[] = []
+  var fcMap: NameToID[] = []
   const foreignCallMetadata = await Promise.all(foreignCallMetadataCalls)
-  const fcMapAdditions: FCNameToID[] = foreignCallMetadata.map((nameData: ForeignCallMetadataStruct, index: number) => {
+  const fcMapAdditions: NameToID[] = foreignCallMetadata.map((nameData: ForeignCallMetadataStruct, index: number) => {
     const extractedName = nameData.name.split('(')[0] || `UnknownFC_${index}`
 
     return {
@@ -237,7 +237,7 @@ export const updateForeignCall = async (
     getTrackerMetadata(config, rulesEngineComponentContract, policyId, tracker.trackerIndex)
   )
   const trackerMetadata = await Promise.all(trackerMetadataCalls)
-  const trackerMap: FCNameToID[] = trackerMetadata.map((name: TrackerMetadataStruct, index: number) => {
+  const trackerMap: NameToID[] = trackerMetadata.map((name: TrackerMetadataStruct, index: number) => {
     return {
       name: name.trackerName,
       id: trackers[index].trackerIndex,
@@ -249,9 +249,9 @@ export const updateForeignCall = async (
   const foreignCallMetadataCalls = foreignCalls.map((fc) =>
     getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, fc.foreignCallIndex)
   )
-  var fcMap: FCNameToID[] = []
+  var fcMap: NameToID[] = []
   const foreignCallMetadata = await Promise.all(foreignCallMetadataCalls)
-  const fcMapAdditions: FCNameToID[] = foreignCallMetadata.map((nameData: ForeignCallMetadataStruct, index: number) => {
+  const fcMapAdditions: NameToID[] = foreignCallMetadata.map((nameData: ForeignCallMetadataStruct, index: number) => {
     // nameData is now always a string from getForeignCallMetadata
     const extractedName = nameData.name || `UnknownFC_${index}`
     return { name: extractedName, id: foreignCalls[index].foreignCallIndex, type: 0 }

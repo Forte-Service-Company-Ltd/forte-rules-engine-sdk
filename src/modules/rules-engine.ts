@@ -23,7 +23,7 @@
 
 import { Address, getContract } from 'viem'
 import {
-  FCNameToID,
+  NameToID,
   CallingFunctionHashMapping,
   RulesEngineComponentABI,
   RulesEngineComponentContract,
@@ -459,8 +459,8 @@ export class RulesEngine {
   createNewRule(
     policyId: number,
     ruleS: string,
-    foreignCallNameToID: FCNameToID[],
-    trackerNameToID: FCNameToID[]
+    foreignCallNameToID: NameToID[],
+    trackerNameToID: NameToID[]
   ): Promise<number> {
     return createRuleInternal(
       config,
@@ -491,8 +491,8 @@ export class RulesEngine {
     policyId: number,
     ruleId: number,
     ruleS: string,
-    foreignCallNameToID: FCNameToID[],
-    trackerNameToID: FCNameToID[]
+    foreignCallNameToID: NameToID[],
+    trackerNameToID: NameToID[]
   ): Promise<number> {
     return updateRuleInternal(
       config,

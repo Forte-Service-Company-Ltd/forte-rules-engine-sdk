@@ -39,7 +39,7 @@ export {
 export {
   RulesEnginePolicyContract,
   RulesEngineComponentContract,
-  FCNameToID,
+  NameToID,
   RuleStorageSet,
   hexToFunctionString,
   EffectType,

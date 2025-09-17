@@ -13,7 +13,7 @@ import {
 import {
   RulesEnginePolicyContract,
   RulesEngineComponentContract,
-  FCNameToID,
+  NameToID,
   ForeignCallOnChain,
   TrackerOnChain,
   hexToFunctionString,
@@ -95,8 +95,8 @@ export const createPolicy = async (
   confirmationCount: number,
   policySyntax?: string
 ): Promise<{ policyId: number }> => {
-  var fcIds: FCNameToID[] = []
-  var trackerIds: FCNameToID[] = []
+  var fcIds: NameToID[] = []
+  var trackerIds: NameToID[] = []
   let ruleIds = []
   let ruleToCallingFunction = new Map<string, number[]>()
   let callingFunctions: string[] = []
@@ -199,7 +199,7 @@ export const createPolicy = async (
           confirmationCount
         )
         if (trId != -1) {
-          var struc: FCNameToID = {
+          var struc: NameToID = {
             id: trId,
             name: parsedTracker.name,
             type: parsedTracker.type,
@@ -221,7 +221,7 @@ export const createPolicy = async (
           confirmationCount
         )
         if (trId != -1) {
-          var struc: FCNameToID = {
+          var struc: NameToID = {
             id: trId,
             name: parsedTracker.name,
             type: parsedTracker.valueType,
@@ -262,7 +262,7 @@ export const createPolicy = async (
 
           // Only add successfully created foreign calls to the mapping
           if (fcId !== -1) {
-            var struc: FCNameToID = {
+            var struc: NameToID = {
               id: fcId,
               name: fcStruct.name.split('(')[0],
               type: 0,

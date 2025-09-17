@@ -79,12 +79,12 @@ export function convertToVersionStruct(str: string): versionStruct {
 }
 
 /**
- * Maps foreign call or (mapped) tacker names to their IDs
+ * Maps foreign call or (mapped) tracker names to their IDs
  */
-export type FCNameToID = {
-  /** Unique identifier for the foreign call */
+export type NameToID = {
+  /** Unique identifier for the foreign call or tracker */
   id: number
-  /** Name of the foreign call */
+  /** Name of the foreign call or tracker */
   name: string
   /** Type identifier */
   type: number
