@@ -425,7 +425,7 @@ export const reverseParsePlaceholder = (
 ): string => {
   if (placeholder.flags == 0x01) {
     const call = foreignCalls.find((call) => call.foreignCallIndex === placeholder.typeSpecificIndex)
-    const map = mappings.find((map) => map.hex === call?.signature)
+    const map = mappings.find((map) => map.hex === call?.signature && map.index == call.foreignCallIndex)
     if (map) {
       // For foreign calls, the name field should always be provided since foreign call names are required
       // Fallback to extracting from functionString for backward compatibility
