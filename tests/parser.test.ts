@@ -2664,3 +2664,16 @@ test('Foreign call self-reference validation - should allow valid foreign call r
     parseForeignCallDefinition(validForeignCall, [{ id: 1, name: 'AnotherCall', type: 1 }], [], ['value'])
   }).not.toThrow()
 })
+
+test('Test Parsing Event Effect with Dynamic Parameter', () => {
+  var ruleStringA = `{
+    "condition": "lORe == GV:TX_ORIGIN",
+      "positiveEffects": ["revert"],
+        "negativeEffects": [" emit \\"Test Event\\", sAND"],
+          "callingFunction": "addValue"
+  } `
+
+  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'bytes value, uint256 sAND, address lORe', [], [])
+  console.log(retVal?.negativeEffects)
+  console.log(retVal?.negativeEffectPlaceHolders)
+})

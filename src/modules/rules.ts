@@ -197,6 +197,7 @@ export const createRule = async (
     fullFCList,
     fullFCListEff
   )
+  console.log('effects', effects)
   if (effects == null) {
     return -1
   }
@@ -209,6 +210,7 @@ export const createRule = async (
     fullFCList,
     fullFCListEff
   )
+  console.log('rule', rule)
   if (rule == null) {
     return -1
   }
@@ -223,6 +225,7 @@ export const createRule = async (
       })
       break
     } catch (err) {
+      console.log('Rule Err', err)
       // TODO: Look into replacing this loop/sleep with setTimeout
       await sleep(1000)
     }

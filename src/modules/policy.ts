@@ -143,6 +143,7 @@ export const createPolicy = async (
           rulesEngineComponentContract,
           policyId,
           callingFunction,
+          callingFunctionJSON.name,
           callingFunctionJSON.encodedValues,
           confirmationCount
         )
@@ -371,6 +372,7 @@ export const updatePolicy = async (
       })
       break
     } catch (error) {
+      console.log(error)
       // TODO: Look into replacing this loop/sleep with setTimeout
       await sleep(1000)
     }
@@ -642,7 +644,7 @@ export const getPolicy = async (
       }
       allFunctionMappings.push(newMapping)
       const callingFunctionJSON = {
-        name: mapp.callingFunction,
+        name: mapp.name,
         functionSignature: mapp.callingFunction,
         encodedValues: mapp.encodedValues,
       }
@@ -752,12 +754,13 @@ export const getPolicy = async (
       // Use the index to get rules from getAllRules result
       const rulesForThisFunction = allRulesFromContract?.[iter] || []
       for (let ruleIndex = 0; ruleIndex < rulesForThisFunction.length; ruleIndex++) {
-        const actualRuleId = ruleIndexIter + 1 // Rule IDs start from 1
+        const actualRuleId = rulesForThisFunction[ruleIndex].ruleIndex //ruleIndexIter + 1 // Rule IDs start from 1
         const ruleS = rulesForThisFunction[ruleIndex]
         ruleIndexIter++
 
         const ruleM = await getRuleMetadata(config, rulesEngineRulesContract, policyId, actualRuleId, blockParams)
-
+        console.log('ruleIndex', actualRuleId)
+        console.log('ruleM', ruleM)
         if (ruleS != null && ruleM != null) {
           ruleJSONObjs.push(
             convertRuleStructToString(

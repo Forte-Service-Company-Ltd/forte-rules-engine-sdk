@@ -1,11 +1,18 @@
 /// SPDX-License-Identifier: BUSL-1.1
 import { Address, BlockNumber, BlockTag, ByteArray, GetContractReturnType, Hex } from 'viem'
 
-import RulesEnginePolicyLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEnginePolicyFacet.sol/RulesEnginePolicyFacet.json'
-import RulesEngineComponentLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineComponentFacet.sol/RulesEngineComponentFacet.json'
-import RulesEngineRuleLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineRuleFacet.sol/RulesEngineRuleFacet.json'
-import RulesEngineAdminLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineAdminRolesFacet.sol/RulesEngineAdminRolesFacet.json'
-import RulesEngineForeignCallLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineForeignCallFacet.sol/RulesEngineForeignCallFacet.json'
+// import RulesEnginePolicyLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEnginePolicyFacet.sol/RulesEnginePolicyFacet.json'
+// import RulesEngineComponentLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineComponentFacet.sol/RulesEngineComponentFacet.json'
+// import RulesEngineRuleLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineRuleFacet.sol/RulesEngineRuleFacet.json'
+// import RulesEngineAdminLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineAdminRolesFacet.sol/RulesEngineAdminRolesFacet.json'
+// import RulesEngineForeignCallLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineForeignCallFacet.sol/RulesEngineForeignCallFacet.json'
+
+import RulesEnginePolicyLogicArtifact from '../../abis/RulesEnginePolicyFacet.json'
+import RulesEngineComponentLogicArtifact from '../../abis/RulesEngineComponentFacet.json'
+import RulesEngineRuleLogicArtifact from '../../abis/RulesEngineRuleFacet.json'
+import RulesEngineAdminLogicArtifact from '../../abis/RulesEngineAdminRolesFacet.json'
+import RulesEngineForeignCallLogicArtifact from '../../abis/RulesEngineForeignCallFacet.json'
+
 import {
   CallingFunctionJSON,
   ForeignCallJSON,
@@ -146,6 +153,8 @@ export type EffectDefinition = {
   pType: number
   /** Parameter value */
   parameterValue: any
+  dynamicParam: boolean
+  eventPlaceholderIndex: number
 }
 
 /**
@@ -168,6 +177,7 @@ export type EffectStruct = {
   errorMessage: string
   /** Instruction set for the effect */
   instructionSet: any[]
+  eventPlaceholderIndex: number
 }
 
 /**
@@ -195,6 +205,7 @@ export type CallingFunctionHashMapping = {
   signature: string
   /** Encoded values for the function */
   encodedValues: string
+  name: string
 }
 
 export interface CallingFunctionData extends CallingFunctionJSON {
@@ -222,6 +233,7 @@ export type RuleBase = {
   positiveEffectPlaceHolders: any[]
   /** Placeholders used in the rule's negative effects */
   negativeEffectPlaceHolders: any[]
+  ruleIndex: number
 }
 
 /**
