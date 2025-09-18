@@ -80,12 +80,12 @@ export function convertToVersionStruct(str: string): versionStruct {
 }
 
 /**
- * Maps foreign call names to their IDs
+ * Maps foreign call or (mapped) tracker names to their IDs
  */
-export type FCNameToID = {
-  /** Unique identifier for the foreign call */
+export type NameToID = {
+  /** Unique identifier for the foreign call or tracker */
   id: number
-  /** Name of the foreign call */
+  /** Name of the foreign call or tracker */
   name: string
   /** Type identifier */
   type: number
@@ -336,6 +336,18 @@ export type CallingFunctionOnChain = {
   parameterTypes: number[]
 }
 
+/**
+ * Function argument representation in rule components
+ */
+export type FunctionArgument = {
+  /** Name of the argument */
+  name: string
+  /** Type index */
+  tIndex: number
+  /** Raw type identifier */
+  rawType: string
+}
+
 // -----------------------------------------------------------------------------
 // Foreign Call Types
 // -----------------------------------------------------------------------------
@@ -395,33 +407,9 @@ export type ForeignCallEncodedIndex = {
 }
 
 /**
- * Mapping for individual function arguments
- */
-export type IndividualArgumentMapping = {
-  /** Type of the function call argument */
-  functionCallArgumentType: number
-  /** Argument from the calling function */
-  callingFunctionArg: PlaceholderStruct
-}
-
-/**
- * Mappings for foreign call arguments
- */
-export type ForeignCallArgumentMappings = {
-  /** Index of the foreign call */
-  foreignCallIndex: number
-  /** List of argument mappings */
-  mappings: IndividualArgumentMapping[]
-}
-
-/**
  * Foreign call representation in rule components
  */
-export type ForeignCall = {
-  /** Name of the foreign call */
-  name: string
-  /** Type index */
-  tIndex: number
+export type ForeignCallArgument = FunctionArgument & {
   /** Raw type identifier */
   rawType: 'foreign call'
   /** Placeholder for the foreign call */
@@ -476,18 +464,6 @@ export type TrackerMetadataStruct = {
 }
 
 /**
- * Maps tracker indices to names
- */
-export type trackerIndexNameMapping = {
-  /** ID of the tracker */
-  id: number
-  /** Name of the tracker */
-  name: string
-  /** Type of the tracker */
-  type: number
-}
-
-/**
  * Definition of a tracker
  */
 export type TrackerDefinition = {
@@ -522,11 +498,7 @@ export type MappedTrackerDefinition = {
 /**
  * Tracker representation in rule components
  */
-export type Tracker = {
-  /** Name of the tracker */
-  name: string
-  /** Type index */
-  tIndex: number
+export type TrackerArgument = FunctionArgument & {
   /** Raw type identifier */
   rawType: 'tracker'
   /** Secondary raw type information */
@@ -572,21 +544,9 @@ export type PlaceholderStruct = {
 }
 
 /**
- * Function argument representation in rule components
- */
-export type FunctionArgument = {
-  /** Name of the argument */
-  name: string
-  /** Type index */
-  tIndex: number
-  /** Raw type identifier */
-  rawType: string
-}
-
-/**
  * Union type for components in rules
  */
-export type RuleComponent = FunctionArgument | ForeignCall | Tracker
+export type RuleComponent = FunctionArgument | ForeignCallArgument | TrackerArgument
 
 /**
  * Represents a string replacement in an instruction set

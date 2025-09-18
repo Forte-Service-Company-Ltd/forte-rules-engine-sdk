@@ -6,7 +6,7 @@ import { parseRuleSyntax, cleanInstructionSet, buildForeignCallList, buildTracke
 import {
   EffectStruct,
   EffectStructs,
-  FCNameToID,
+  NameToID,
   Maybe,
   RulesEngineAdminABI,
   RulesEngineAdminContract,
@@ -114,9 +114,9 @@ export async function sleep(ms: number): Promise<void> {
  */
 export function buildARuleStruct(
   ruleSyntax: RuleJSON,
-  foreignCallNameToID: FCNameToID[],
+  foreignCallNameToID: NameToID[],
   effect: EffectStructs,
-  trackerNameToID: FCNameToID[],
+  trackerNameToID: NameToID[],
   encodedValues: string,
   additionalForeignCalls: string[],
   additionalEffectForeignCalls: string[]
@@ -175,8 +175,8 @@ export function buildARuleStruct(
  */
 export function buildAnEffectStruct(
   ruleSyntax: RuleJSON,
-  trackerNameToID: FCNameToID[],
-  foreignCallNameToID: FCNameToID[],
+  trackerNameToID: NameToID[],
+  foreignCallNameToID: NameToID[],
   encodedValues: string,
   additionalForeignCalls: string[],
   additionalEffectForeignCalls: string[]

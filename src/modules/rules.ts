@@ -4,7 +4,7 @@ import { simulateContract, waitForTransactionReceipt, writeContract, readContrac
 
 import { buildAnEffectStruct, buildARuleStruct, sleep } from './contract-interaction-utils'
 import {
-  FCNameToID,
+  NameToID,
   RuleStruct,
   RuleStorageSet,
   Maybe,
@@ -70,8 +70,8 @@ export const createRule = async (
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   policyId: number,
   ruleS: string,
-  foreignCallNameToID: FCNameToID[],
-  trackerNameToID: FCNameToID[],
+  foreignCallNameToID: NameToID[],
+  trackerNameToID: NameToID[],
   confirmationCount: number
 ): Promise<number> => {
   const validatedRuleSyntax = validateRuleJSON(ruleS)
@@ -117,7 +117,7 @@ export const createRule = async (
     }
     iter += 1
   }
-  var fcList = await buildForeignCallList(ruleSyntax.condition)
+  var fcList = buildForeignCallList(ruleSyntax.condition)
   var fullFCList = []
   for (var fc of fcList) {
     for (var id of foreignCallNameToID) {
@@ -264,8 +264,8 @@ export const updateRule = async (
   policyId: number,
   ruleId: number,
   ruleS: string,
-  foreignCallNameToID: FCNameToID[],
-  trackerNameToID: FCNameToID[],
+  foreignCallNameToID: NameToID[],
+  trackerNameToID: NameToID[],
   confirmationCount: number
 ): Promise<number> => {
   const validatedRuleSyntax = validateRuleJSON(ruleS)

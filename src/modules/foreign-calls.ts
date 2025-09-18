@@ -8,17 +8,18 @@ import {
   RulesEngineComponentContract,
   Maybe,
   TrackerOnChain,
-  FCNameToID,
+  NameToID,
   RulesEnginePolicyContract,
   RulesEngineForeignCallContract,
   TrackerMetadataStruct,
   ContractBlockParameters,
   ForeignCallMetadataStruct,
+  CallingFunctionHashMapping,
 } from './types'
 import { getAllTrackers, getTrackerMetadata } from './trackers'
 import { getCallingFunctionMetadata } from './calling-functions'
 import { isLeft, unwrapEither } from './utils'
-import { CallingFunctionJSON, ForeignCallJSON, getRulesErrorMessages, validateForeignCallJSON } from './validation'
+import { ForeignCallJSON, getRulesErrorMessages, validateForeignCallJSON } from './validation'
 
 /**
  * @file ForeignCalls.ts
@@ -41,6 +42,19 @@ import { CallingFunctionJSON, ForeignCallJSON, getRulesErrorMessages, validateFo
  * @note This file is a critical component of the Rules Engine SDK, enabling seamless integration with the Rules Engine smart contracts.
  */
 
+const getCFIndexAndEncodedValues = (
+  cfMetaData: CallingFunctionHashMapping[],
+  fcJSON: ForeignCallJSON
+): { cfIndex: number; cfEncodedValues: string[] } => {
+  const cfIndex = cfMetaData.findIndex((cf) => cf.callingFunction.trim() == fcJSON.callingFunction.trim())
+  const callingFunction = cfMetaData[cfIndex]
+  const cfEncodedValues = parseCallingFunction({
+    name: fcJSON.callingFunction,
+    functionSignature: fcJSON.callingFunction,
+    encodedValues: callingFunction ? callingFunction.encodedValues : '',
+  })
+  return { cfIndex, cfEncodedValues }
+}
 /**
  * Creates a foreign call in the rules engine component contract.
  *
@@ -68,14 +82,13 @@ export const createForeignCall = async (
   confirmationCount: number
 ): Promise<number> => {
   var trackers: TrackerOnChain[] = await getAllTrackers(config, rulesEngineComponentContract, policyId)
-  var indexMap: FCNameToID[] = []
   var mappedArray: boolean[] = trackers.map((tracker) => tracker.mapped)
 
   const trackerMetadataCalls = trackers.map((tracker) =>
     getTrackerMetadata(config, rulesEngineComponentContract, policyId, tracker.trackerIndex)
   )
   const trackerMetadata = await Promise.all(trackerMetadataCalls)
-  const indexMapAdditions: FCNameToID[] = trackerMetadata.map((name: TrackerMetadataStruct, index: number) => {
+  const trackerMap: NameToID[] = trackerMetadata.map((name: TrackerMetadataStruct, index: number) => {
     return {
       name: name.trackerName,
       id: trackers[index].trackerIndex,
@@ -83,15 +96,13 @@ export const createForeignCall = async (
     }
   })
 
-  indexMap = [...indexMap, ...indexMapAdditions]
-
   var foreignCalls: ForeignCallOnChain[] = await getAllForeignCalls(config, rulesEngineForeignCallContract, policyId)
   const foreignCallMetadataCalls = foreignCalls.map((fc) =>
     getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, fc.foreignCallIndex)
   )
-  var fcMap: FCNameToID[] = []
+  var fcMap: NameToID[] = []
   const foreignCallMetadata = await Promise.all(foreignCallMetadataCalls)
-  const fcMapAdditions: FCNameToID[] = foreignCallMetadata.map((nameData: ForeignCallMetadataStruct, index: number) => {
+  const fcMapAdditions: NameToID[] = foreignCallMetadata.map((nameData: ForeignCallMetadataStruct, index: number) => {
     const extractedName = nameData.name.split('(')[0] || `UnknownFC_${index}`
 
     return {
@@ -121,27 +132,15 @@ export const createForeignCall = async (
     throw new Error(getRulesErrorMessages(unwrapEither(json)))
   }
   const fcJSON: ForeignCallJSON = unwrapEither(json)
-  var iter = 0
-  var encodedValues: string[] = []
-  for (var mapp of callingFunctionMetadata) {
-    if (mapp.callingFunction.trim() == fcJSON.callingFunction) {
-      var builtJSON = {
-        name: fcJSON.callingFunction,
-        functionSignature: fcJSON.callingFunction,
-        encodedValues: mapp.encodedValues,
-      }
-      encodedValues = parseCallingFunction(builtJSON)
-      break
-    }
-    iter += 1
-  }
-  const foreignCall = parseForeignCallDefinition(fcJSON, fcMap, indexMap, encodedValues)
+  const { cfIndex, cfEncodedValues } = getCFIndexAndEncodedValues(callingFunctionMetadata, fcJSON)
+
+  const foreignCall = parseForeignCallDefinition(fcJSON, fcMap, trackerMap, cfEncodedValues)
   var duplicate = await checkIfForeignCallExists(
     config,
     rulesEngineForeignCallContract,
     policyId,
     foreignCall.name,
-    callingFunctionIds[iter]
+    callingFunctionIds[cfIndex]
   )
   if (!duplicate) {
     var fc = {
@@ -153,7 +152,7 @@ export const createForeignCall = async (
       parameterTypes: foreignCall.parameterTypes,
       encodedIndices: foreignCall.encodedIndices,
       mappedTrackerKeyIndices: foreignCall.mappedTrackerKeyIndices,
-      callingFunctionSelector: callingFunctionIds[iter],
+      callingFunctionSelector: callingFunctionIds[cfIndex],
     }
     var addFC
     while (true) {
@@ -234,27 +233,25 @@ export const updateForeignCall = async (
   confirmationCount: number
 ): Promise<number> => {
   var trackers: TrackerOnChain[] = await getAllTrackers(config, rulesEngineComponentContract, policyId)
-  var indexMap: FCNameToID[] = []
   const trackerMetadataCalls = trackers.map((tracker) =>
     getTrackerMetadata(config, rulesEngineComponentContract, policyId, tracker.trackerIndex)
   )
   const trackerMetadata = await Promise.all(trackerMetadataCalls)
-  const indexMapAdditions: FCNameToID[] = trackerMetadata.map((name: TrackerMetadataStruct, index: number) => {
+  const trackerMap: NameToID[] = trackerMetadata.map((name: TrackerMetadataStruct, index: number) => {
     return {
       name: name.trackerName,
       id: trackers[index].trackerIndex,
       type: 0,
     }
   })
-  indexMap = [...indexMap, ...indexMapAdditions]
 
   var foreignCalls: ForeignCallOnChain[] = await getAllForeignCalls(config, rulesEngineForeignCallContract, policyId)
   const foreignCallMetadataCalls = foreignCalls.map((fc) =>
     getForeignCallMetadata(config, rulesEngineForeignCallContract, policyId, fc.foreignCallIndex)
   )
-  var fcMap: FCNameToID[] = []
+  var fcMap: NameToID[] = []
   const foreignCallMetadata = await Promise.all(foreignCallMetadataCalls)
-  const fcMapAdditions: FCNameToID[] = foreignCallMetadata.map((nameData: ForeignCallMetadataStruct, index: number) => {
+  const fcMapAdditions: NameToID[] = foreignCallMetadata.map((nameData: ForeignCallMetadataStruct, index: number) => {
     // nameData is now always a string from getForeignCallMetadata
     const extractedName = nameData.name || `UnknownFC_${index}`
     return { name: extractedName, id: foreignCalls[index].foreignCallIndex, type: 0 }
@@ -280,28 +277,15 @@ export const updateForeignCall = async (
     throw new Error(getRulesErrorMessages(unwrapEither(json)))
   }
   const fcJSON = unwrapEither(json)
-  var iter = 0
-  var encodedValues: string[] = []
-  for (var mapp of callingFunctionMetadata) {
-    if (mapp.callingFunction.trim() == fcJSON.callingFunction.trim()) {
-      var builtJSON: CallingFunctionJSON = {
-        name: fcJSON.callingFunction,
-        functionSignature: fcJSON.callingFunction,
-        encodedValues: mapp.encodedValues,
-      }
-      encodedValues = parseCallingFunction(builtJSON)
-      break
-    }
-    iter += 1
-  }
-  const foreignCall = parseForeignCallDefinition(fcJSON, fcMap, indexMap, encodedValues)
+  const { cfIndex, cfEncodedValues } = getCFIndexAndEncodedValues(callingFunctionMetadata, fcJSON)
+  const foreignCall = parseForeignCallDefinition(fcJSON, fcMap, trackerMap, cfEncodedValues)
 
   var duplicate = await checkIfForeignCallExists(
     config,
     rulesEngineForeignCallContract,
     policyId,
     foreignCall.name,
-    callingFunctionIds[iter],
+    callingFunctionIds[cfIndex],
     foreignCallId
   )
   if (!duplicate) {
@@ -314,7 +298,7 @@ export const updateForeignCall = async (
       parameterTypes: foreignCall.parameterTypes,
       encodedIndices: foreignCall.encodedIndices,
       mappedTrackerKeyIndices: foreignCall.mappedTrackerKeyIndices,
-      callingFunctionSelector: callingFunctionIds[iter],
+      callingFunctionSelector: callingFunctionIds[cfIndex],
     }
     var addFC
 
