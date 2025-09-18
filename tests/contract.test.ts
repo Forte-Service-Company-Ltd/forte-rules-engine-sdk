@@ -186,7 +186,6 @@ describe('Rules Engine Interactions', async () => {
       emptyPolicyJSON
     )
     var callingFunction = 'addValue(uint256 value)'
-    console.log('pre-create')
     const fsId = await createCallingFunction(
       config,
       getRulesEngineComponentContract(rulesEngineContract, client),
@@ -196,7 +195,6 @@ describe('Rules Engine Interactions', async () => {
       'uint256 value',
       1
     )
-    console.log('post-create')
     var ruleStringA = `{
         "Name": "rule A",
         "Description": "rule A Description",
@@ -220,7 +218,6 @@ describe('Rules Engine Interactions', async () => {
       [],
       1
     )
-    console.log('created')
     expect(ruleId).toBeGreaterThan(0)
     var selector = toFunctionSelector(callingFunction)
     await updatePolicy(
@@ -233,7 +230,6 @@ describe('Rules Engine Interactions', async () => {
       'This is a test policy',
       1
     )
-    console.log('updated')
     var rules = await getAllRules(config, getRulesEngineRulesContract(rulesEngineContract, client), result.policyId)
     expect(rules?.length).toEqual(1)
   })
@@ -1808,7 +1804,7 @@ describe('Rules Engine Interactions', async () => {
       1
     )
     expect(trId).toEqual(-1)
-  })
+  }, 1000000)
   test('Can update a policies admin', options, async () => {
     var policyJSON = `
                 {

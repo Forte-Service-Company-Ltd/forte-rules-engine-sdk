@@ -372,7 +372,6 @@ export const updatePolicy = async (
       })
       break
     } catch (error) {
-      console.log(error)
       // TODO: Look into replacing this loop/sleep with setTimeout
       await sleep(1000)
     }
@@ -759,8 +758,6 @@ export const getPolicy = async (
         ruleIndexIter++
 
         const ruleM = await getRuleMetadata(config, rulesEngineRulesContract, policyId, actualRuleId, blockParams)
-        console.log('ruleIndex', actualRuleId)
-        console.log('ruleM', ruleM)
         if (ruleS != null && ruleM != null) {
           ruleJSONObjs.push(
             convertRuleStructToString(

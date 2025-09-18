@@ -195,8 +195,6 @@ export function buildAnEffectStruct(
   var pEffects: EffectStruct[] = []
   var nEffects: EffectStruct[] = []
 
-  console.log('PEFFECTS', output.positiveEffects)
-
   for (var pEffect of output.positiveEffects) {
     const instructionSet = cleanInstructionSet(pEffect.instructionSet)
     var param: any
@@ -244,7 +242,6 @@ export function buildAnEffectStruct(
       param = encodeAbiParameters(parseAbiParameters('uint256'), [BigInt(nEffect.parameterValue)])
     }
     const instructionSet = cleanInstructionSet(nEffect.instructionSet)
-    console.log(pEffect)
     const effect = {
       valid: true,
       dynamicParam: nEffect.dynamicParam,
