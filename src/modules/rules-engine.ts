@@ -1022,12 +1022,18 @@ export class RulesEngine {
    *
    * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
    */
-  updateCallingFunction(policyId: number, callingFunction: string, encodedValues: string): Promise<number> {
+  updateCallingFunction(
+    policyId: number,
+    callingFunction: string,
+    name: string,
+    encodedValues: string
+  ): Promise<number> {
     return updateCallingFunctionInternal(
       config,
       this.rulesEngineComponentContract,
       policyId,
       callingFunction,
+      name,
       encodedValues,
       this.confirmationCount
     )

@@ -112,6 +112,7 @@ export const updateCallingFunction = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
   callingFunction: string,
+  name: string,
   encodedValues: string,
   confirmationCount: number
 ): Promise<number> => {
@@ -124,7 +125,7 @@ export const updateCallingFunction = async (
         address: rulesEngineComponentContract.address,
         abi: rulesEngineComponentContract.abi,
         functionName: 'updateCallingFunction',
-        args: [policyId, toFunctionSelector(callingFunction), args],
+        args: [policyId, toFunctionSelector(callingFunction), args, callingFunction, encodedValues, name],
       })
       break
     } catch (err) {
@@ -238,6 +239,7 @@ export const getCallingFunctionMetadata = async (
       callingFunction: '',
       signature: '',
       encodedValues: '',
+      name: '',
     }
   }
 }
