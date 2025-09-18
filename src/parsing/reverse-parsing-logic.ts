@@ -482,7 +482,11 @@ export const reverseParseEffect = (effect: any, placeholders: string[]): string 
     return "revert('" + decodedText + "')"
   } else if (effect.effectType == 1) {
     const decodedText = decodeHexString(effect.text)
-    return 'emit ' + '"' + decodedText + '"'
+    var param = ''
+    if (effect.dynamicParam) {
+      param = ', ' + placeholders[effect.eventPlaceholderIndex]
+    }
+    return 'emit ' + '"' + decodedText + '"' + param
   } else {
     return reverseParseInstructionSet(effect.instructionSet, placeholders, [])
   }

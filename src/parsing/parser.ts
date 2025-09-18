@@ -221,6 +221,7 @@ export function parseRuleSyntax(
     placeHolders,
     positiveEffectPlaceHolders,
     negativeEffectPlaceHolders,
+    ruleIndex: 0,
   }
 }
 
@@ -422,15 +423,15 @@ export function parseForeignCallDefinition(
   // Validate that the foreign call doesn't reference itself
   const selfReferences = syntax.valuesToPass
     .split(',')
-    .map(val => val.trim())
-    .filter(val => val.startsWith('FC:'))
-    .map(val => val.substring(3).trim())
-    .filter(fcName => fcName === syntax.name)
-  
+    .map((val) => val.trim())
+    .filter((val) => val.startsWith('FC:'))
+    .map((val) => val.substring(3).trim())
+    .filter((fcName) => fcName === syntax.name)
+
   if (selfReferences.length > 0) {
     throw new Error(
       `Foreign call "${syntax.name}" cannot reference itself in valuesToPass. ` +
-      `Self-referential foreign calls are not allowed as they would create infinite loops.`
+        `Self-referential foreign calls are not allowed as they would create infinite loops.`
     )
   }
 
@@ -438,15 +439,15 @@ export function parseForeignCallDefinition(
   if (syntax.mappedTrackerKeyValues && syntax.mappedTrackerKeyValues.trim() !== '') {
     const mappedSelfReferences = syntax.mappedTrackerKeyValues
       .split(',')
-      .map(val => val.trim())
-      .filter(val => val.startsWith('FC:'))
-      .map(val => val.substring(3).trim())
-      .filter(fcName => fcName === syntax.name)
-    
+      .map((val) => val.trim())
+      .filter((val) => val.startsWith('FC:'))
+      .map((val) => val.substring(3).trim())
+      .filter((fcName) => fcName === syntax.name)
+
     if (mappedSelfReferences.length > 0) {
       throw new Error(
         `Foreign call "${syntax.name}" cannot reference itself in mappedTrackerKeyValues. ` +
-        `Self-referential foreign calls are not allowed as they would create infinite loops.`
+          `Self-referential foreign calls are not allowed as they would create infinite loops.`
       )
     }
   }
@@ -472,12 +473,12 @@ export function parseForeignCallDefinition(
   // Validate that the number of encoded indices matches the expected parameter count
   const expectedParamCount = parameterTypes.length
   const actualIndicesCount = encodedIndices.length
-  
+
   if (actualIndicesCount !== expectedParamCount) {
     throw new Error(
       `Parameter count mismatch for foreign call "${syntax.name}": ` +
-      `expected ${expectedParamCount} parameters but got ${actualIndicesCount} encoded indices. ` +
-      `This usually means some dependencies (FC: references) failed to be created.`
+        `expected ${expectedParamCount} parameters but got ${actualIndicesCount} encoded indices. ` +
+        `This usually means some dependencies (FC: references) failed to be created.`
     )
   }
 

@@ -410,12 +410,25 @@ export function parseEffect(
   const revertTextPattern = /(revert)\("([^"]*)"\)/
   var pType = 2
   var parameterValue: any = 0
+  var dynamic = false
+  var plhIndex = 0
+
   if (effect.includes('emit')) {
     effectType = EffectType.EVENT
     var placeHolder = effect.replace('emit ', '').trim()
     var spli = placeHolder.split(', ')
     if (spli.length > 1) {
       effectText = spli[0]
+
+      var iter = 0
+      for (var plh of names) {
+        if (plh.name == spli[1].trim()) {
+          dynamic = true
+          plhIndex = iter
+          break
+        }
+        iter += 1
+      }
       if (isAddress(spli[1].trim())) {
         pType = 0
         parameterValue = spli[1].trim()
@@ -453,6 +466,8 @@ export function parseEffect(
     instructionSet: effectInstructionSet,
     pType,
     parameterValue,
+    dynamicParam: dynamic,
+    eventPlaceholderIndex: plhIndex,
   }
 }
 

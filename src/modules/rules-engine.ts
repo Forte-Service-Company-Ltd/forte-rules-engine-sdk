@@ -42,6 +42,7 @@ import {
   TrackerMetadataStruct,
   ContractBlockParameters,
   PolicyResult,
+  CallingFunctionOnChain,
 } from './types'
 import {
   createPolicy as createPolicyInternal,
@@ -114,7 +115,10 @@ import {
 
 import {
   createCallingFunction as createCallingFunctionInternal,
+  deleteCallingFunction as deleteCallingFunctionInternal,
+  updateCallingFunction as updateCallingFunctionInternal,
   getCallingFunctionMetadata as getCallingFunctionMetadataInternal,
+  getCallingFunctions as getAllCallingFunctionsInternal,
 } from './calling-functions'
 import { Config } from '@wagmi/core'
 
@@ -250,14 +254,12 @@ export class RulesEngine {
    *
    * @param policyId - The ID of the policy to update.
    * @param callingFunctions - The calling functions associated with the policy.
-   * @param ids - The IDs of the rules associated with the policy.
    * @param ruleIds - The mapping of rules to calling functions.
    * @returns The result of the policy update.
    */
   updatePolicy(
     policyId: number,
     callingFunctions: any[],
-    ids: number[],
     ruleIds: any[],
     name: string,
     description: string
@@ -858,16 +860,18 @@ export class RulesEngine {
    * Asynchronously updates a mapped tracker in the rules engine component contract.
    *
    * @param policyId - The ID of the policy associated with the tracker.
+   * @param mappedTrackerId - The ID of the tracker to update.
    * @param mappedTrackerSyntax - A JSON string representing the tracker syntax.
    * @param confirmationCount - The number of confirmations to wait for after writing the contract.
    * @returns A promise that resolves to the new tracker ID
    */
-  updateMappedTracker(policyId: number, mappedTrackerSyntax: string): Promise<number> {
+  updateMappedTracker(policyId: number, mappedTrackerId: number, mappedTrackerSyntax: string): Promise<number> {
     return updateMappedTrackerInternal(
       config,
       this.rulesEngineComponentContract,
       policyId,
       mappedTrackerSyntax,
+      mappedTrackerId,
       this.confirmationCount
     )
   }
@@ -981,18 +985,75 @@ export class RulesEngine {
    *
    * @param policyId - The ID of the policy for which the calling contract is being created.
    * @param callingFunction - The calling function string to be parsed and added to the contract.
+   * @param name - Name of the Calling Function instance
    * @param encodedValues - the encoded values that will be sent along with the rules invocation.
    * @returns A promise that resolves to the result of the contract interaction, or -1 if unsuccessful.
    *
    * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
    */
-  createCallingFunction(policyId: number, callingFunction: string, encodedValues: string): Promise<number> {
+  createCallingFunction(
+    policyId: number,
+    callingFunction: string,
+    name: string,
+    encodedValues: string
+  ): Promise<number> {
     return createCallingFunctionInternal(
       config,
       this.rulesEngineComponentContract,
       policyId,
       callingFunction,
+      name,
       encodedValues,
+      this.confirmationCount
+    )
+  }
+
+  /**
+   * Updates a Calling Function in the rules engine component contract.
+   *
+   * @param config - The configuration object containing network and wallet information.
+   * @param rulesEngineComponentContract - The contract instance containing the address and ABI
+   * @param policyId - The ID of the policy for which the calling function is being created.
+   * @param callingFunction - The calling function string to be parsed and updated.
+   *                          of the rules engine component.
+   * @param name - Name of the Calling Function instance
+   * @param encodedValues - The encoded values string for the calling function.
+   * @returns A promise that resolves to the result of the contract interaction, or -1 if unsuccessful.
+   *
+   * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+   */
+  updateCallingFunction(
+    policyId: number,
+    callingFunction: string,
+    name: string,
+    encodedValues: string
+  ): Promise<number> {
+    return updateCallingFunctionInternal(
+      config,
+      this.rulesEngineComponentContract,
+      policyId,
+      callingFunction,
+      name,
+      encodedValues,
+      this.confirmationCount
+    )
+  }
+
+  /**
+   * Delete a calling function from the rules engine component contract.
+   *
+   * @param policyId - The ID of the policy for which the calling function is being deleted.
+   * @param callingFunctionId - The calling function ID to be deleted.
+   * @returns A promise that resolves to the result of the contract interaction, or -1 if unsuccessful.
+   *
+   * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+   */
+  deleteCallingFunction(policyId: number, callingFunctionId: number): Promise<number> {
+    return deleteCallingFunctionInternal(
+      config,
+      this.rulesEngineComponentContract,
+      policyId,
+      callingFunctionId,
       this.confirmationCount
     )
   }
@@ -1019,6 +1080,18 @@ export class RulesEngine {
       callingFunctionId,
       blockParams
     )
+  }
+
+  /**
+   * retrieves calling functions for a policy from the rules engine component contract.
+   *
+   * @param policyId - The ID of the policy which the calling function belongs to.
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
+   * @returns A promise that resolves to CallingFunctionHashMapping.
+   *
+   */
+  getCallingFunctions(policyId: number, blockParams?: ContractBlockParameters): Promise<CallingFunctionOnChain[]> {
+    return getAllCallingFunctionsInternal(config, this.rulesEngineComponentContract, policyId, blockParams)
   }
 
   /**

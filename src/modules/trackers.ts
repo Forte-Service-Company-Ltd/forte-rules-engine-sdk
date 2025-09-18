@@ -200,6 +200,7 @@ export const updateMappedTracker = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
   mappedTrackerSyntax: string,
+  mappedTrackerId: number,
   confirmationCount: number
 ): Promise<number> => {
   const json = validateMappedTrackerJSON(mappedTrackerSyntax)
@@ -207,7 +208,13 @@ export const updateMappedTracker = async (
     throw new Error(getRulesErrorMessages(unwrapEither(json)))
   }
   const parsedTracker = parseMappedTrackerSyntax(unwrapEither(json))
-  var duplicate = await checkIfTrackerExists(config, rulesEngineComponentContract, policyId, parsedTracker.name)
+  var duplicate = await checkIfTrackerExists(
+    config,
+    rulesEngineComponentContract,
+    policyId,
+    parsedTracker.name,
+    mappedTrackerId
+  )
   if (!duplicate) {
     var transactionTracker = {
       set: true,
@@ -226,6 +233,7 @@ export const updateMappedTracker = async (
           functionName: 'updateTracker',
           args: [
             policyId,
+            mappedTrackerId,
             transactionTracker,
             parsedTracker.name,
             parsedTracker.initialKeys,

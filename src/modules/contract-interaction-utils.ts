@@ -144,6 +144,7 @@ export function buildARuleStruct(
     placeHolders: output.placeHolders,
     positiveEffectPlaceHolders: output.positiveEffectPlaceHolders,
     negativeEffectPlaceHolders: output.negativeEffectPlaceHolders,
+    ruleIndex: 0,
     posEffects: effect.positiveEffects,
     negEffects: effect.negativeEffects,
   }
@@ -214,13 +215,14 @@ export function buildAnEffectStruct(
 
     const effect = {
       valid: true,
-      dynamicParam: false,
+      dynamicParam: pEffect.dynamicParam,
       effectType: pEffect.type,
       pType: pEffect.pType,
       param: param,
       text: toHex(stringToBytes(pEffect.text, { size: 32 })),
       errorMessage: pEffect.text,
       instructionSet,
+      eventPlaceholderIndex: pEffect.eventPlaceholderIndex,
     }
     pEffects.push(effect)
   }
@@ -242,13 +244,14 @@ export function buildAnEffectStruct(
     const instructionSet = cleanInstructionSet(nEffect.instructionSet)
     const effect = {
       valid: true,
-      dynamicParam: false,
+      dynamicParam: nEffect.dynamicParam,
       effectType: nEffect.type,
       pType: nEffect.pType,
       param: param,
       text: toHex(stringToBytes(nEffect.text, { size: 32 })),
       errorMessage: nEffect.text,
       instructionSet,
+      eventPlaceholderIndex: nEffect.eventPlaceholderIndex,
     }
     nEffects.push(effect)
   }

@@ -44,6 +44,7 @@ import {
  * @param policyId - The ID of the policy for which the calling function is being created.
  * @param callingFunction - The calling function string to be parsed and added to the contract.
  *                          of the rules engine component.
+ * @param name - Name of the Calling Function instance
  * @param encodedValues - The encoded values string for the calling function.
  * @returns A promise that resolves to the result of the contract interaction, or -1 if unsuccessful.
  *
@@ -54,6 +55,7 @@ export const createCallingFunction = async (
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
   callingFunction: string,
+  name: string,
   encodedValues: string,
   confirmationCount: number
 ): Promise<number> => {
@@ -67,7 +69,7 @@ export const createCallingFunction = async (
           address: rulesEngineComponentContract.address,
           abi: rulesEngineComponentContract.abi,
           functionName: 'createCallingFunction',
-          args: [policyId, toFunctionSelector(callingFunction), args, callingFunction, encodedValues],
+          args: [policyId, toFunctionSelector(callingFunction), args, callingFunction, encodedValues, name],
         })
         break
       } catch (err) {
@@ -87,6 +89,61 @@ export const createCallingFunction = async (
 
       return addRule.result
     }
+  }
+  return -1
+}
+
+/**
+ * Updates a Calling Function in the rules engine component contract.
+ *
+ * @param config - The configuration object containing network and wallet information.
+ * @param rulesEngineComponentContract - The contract instance containing the address and ABI
+ * @param policyId - The ID of the policy for which the calling function is being created.
+ * @param callingFunction - The calling function string to be parsed and updated.
+ *                          of the rules engine component.
+ * @param name - Name of the Calling Function instance
+ * @param encodedValues - The encoded values string for the calling function.
+ * @returns A promise that resolves to the result of the contract interaction, or -1 if unsuccessful.
+ *
+ * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+ */
+export const updateCallingFunction = async (
+  config: Config,
+  rulesEngineComponentContract: RulesEngineComponentContract,
+  policyId: number,
+  callingFunction: string,
+  name: string,
+  encodedValues: string,
+  confirmationCount: number
+): Promise<number> => {
+  const args: number[] = encodedValues.split(',').map((val) => determinePTEnumeration(val.trim().split(' ')[0]))
+  var addRule
+
+  while (true) {
+    try {
+      addRule = await simulateContract(config, {
+        address: rulesEngineComponentContract.address,
+        abi: rulesEngineComponentContract.abi,
+        functionName: 'updateCallingFunction',
+        args: [policyId, toFunctionSelector(callingFunction), args, callingFunction, encodedValues, name],
+      })
+      break
+    } catch (err) {
+      // TODO: Look into replacing this loop/sleep with setTimeout
+      await sleep(1000)
+    }
+  }
+  if (addRule != null) {
+    const returnHash = await writeContract(config, {
+      ...addRule.request,
+      account: config.getClient().account,
+    })
+    await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
+      hash: returnHash,
+    })
+
+    return addRule.result
   }
   return -1
 }
@@ -182,6 +239,7 @@ export const getCallingFunctionMetadata = async (
       callingFunction: '',
       signature: '',
       encodedValues: '',
+      name: '',
     }
   }
 }

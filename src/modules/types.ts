@@ -6,6 +6,7 @@ import RulesEngineComponentLogicArtifact from '@fortefoundation/forte-rules-engi
 import RulesEngineRuleLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineRuleFacet.sol/RulesEngineRuleFacet.json'
 import RulesEngineAdminLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineAdminRolesFacet.sol/RulesEngineAdminRolesFacet.json'
 import RulesEngineForeignCallLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineForeignCallFacet.sol/RulesEngineForeignCallFacet.json'
+
 import {
   CallingFunctionJSON,
   ForeignCallJSON,
@@ -146,6 +147,8 @@ export type EffectDefinition = {
   pType: number
   /** Parameter value */
   parameterValue: any
+  dynamicParam: boolean
+  eventPlaceholderIndex: number
 }
 
 /**
@@ -168,6 +171,7 @@ export type EffectStruct = {
   errorMessage: string
   /** Instruction set for the effect */
   instructionSet: any[]
+  eventPlaceholderIndex: number
 }
 
 /**
@@ -195,6 +199,7 @@ export type CallingFunctionHashMapping = {
   signature: string
   /** Encoded values for the function */
   encodedValues: string
+  name: string
 }
 
 export interface CallingFunctionData extends CallingFunctionJSON {
@@ -222,6 +227,7 @@ export type RuleBase = {
   positiveEffectPlaceHolders: any[]
   /** Placeholders used in the rule's negative effects */
   negativeEffectPlaceHolders: any[]
+  ruleIndex: number
 }
 
 /**
@@ -717,7 +723,7 @@ export const PTTrackerKey = PTTracker.filter((pt) => !pt.name.includes('[]'))
 export const PTNamesTrackerKey = PTTrackerKey.map((pt) => pt.name)
 export type PTNameTrackerKey = (typeof PTNamesTrackerKey)[number]
 
-export const SUPPORTEDVERSION: versionStruct = { major: 0, minor: '7', tertiary: '0' }
+export const SUPPORTEDVERSION: versionStruct = { major: 0, minor: '8', tertiary: '0' }
 
 // -----------------------------------------------------------------------------
 // Error Types
