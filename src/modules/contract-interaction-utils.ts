@@ -4,10 +4,12 @@ import { getContract, Address, toHex, encodeAbiParameters, parseAbiParameters, s
 import { parseRuleSyntax, cleanInstructionSet, buildForeignCallList, buildTrackerList } from '../parsing/parser'
 
 import {
-  EffectStruct,
-  EffectStructs,
   NameToID,
+  EffectOnChain,
+  EffectDefinition,
+  EffectsOnChain,
   Maybe,
+  RuleOnChain,
   RulesEngineAdminABI,
   RulesEngineAdminContract,
   RulesEngineComponentABI,
@@ -18,7 +20,6 @@ import {
   RulesEnginePolicyContract,
   RulesEngineRulesABI,
   RulesEngineRulesContract,
-  RuleStruct,
 } from './types'
 import { RuleJSON } from './validation'
 
@@ -112,15 +113,15 @@ export async function sleep(ms: number): Promise<void> {
  * @returns A structured representation of the rule, including its instruction set, placeholders,
  *          effect placeholders, and associated effects.
  */
-export function buildARuleStruct(
+export function buildAnOnChainRule(
   ruleSyntax: RuleJSON,
   foreignCallNameToID: NameToID[],
-  effect: EffectStructs,
+  effect: EffectsOnChain,
   trackerNameToID: NameToID[],
   encodedValues: string,
   additionalForeignCalls: string[],
   additionalEffectForeignCalls: string[]
-): Maybe<RuleStruct> {
+): Maybe<RuleOnChain> {
   var output = parseRuleSyntax(
     ruleSyntax,
     trackerNameToID,
@@ -145,8 +146,8 @@ export function buildARuleStruct(
     positiveEffectPlaceHolders: output.positiveEffectPlaceHolders,
     negativeEffectPlaceHolders: output.negativeEffectPlaceHolders,
     ruleIndex: 0,
-    posEffects: effect.positiveEffects,
-    negEffects: effect.negativeEffects,
+    posEffects: effect.posEffects,
+    negEffects: effect.negEffects,
   }
   return rule
 }
@@ -173,14 +174,14 @@ export function buildARuleStruct(
  * - `errorMessage`: The error message associated with the effect.
  * - `instructionSet`: The cleaned instruction set for the effect.
  */
-export function buildAnEffectStruct(
+export function buildOnChainEffects(
   ruleSyntax: RuleJSON,
   trackerNameToID: NameToID[],
   foreignCallNameToID: NameToID[],
   encodedValues: string,
   additionalForeignCalls: string[],
   additionalEffectForeignCalls: string[]
-): Maybe<EffectStructs> {
+): Maybe<EffectsOnChain> {
   var output = parseRuleSyntax(
     ruleSyntax,
     trackerNameToID,
@@ -192,8 +193,8 @@ export function buildAnEffectStruct(
   if (output == null) {
     return null
   }
-  var pEffects: EffectStruct[] = []
-  var nEffects: EffectStruct[] = []
+  var pEffects: EffectOnChain[] = []
+  var nEffects: EffectOnChain[] = []
 
   for (var pEffect of output.positiveEffects) {
     const instructionSet = cleanInstructionSet(pEffect.instructionSet)
@@ -213,7 +214,7 @@ export function buildAnEffectStruct(
       param = encodeAbiParameters(parseAbiParameters('uint256'), [BigInt(pEffect.parameterValue)])
     }
 
-    const effect = {
+    const effect: EffectOnChain = {
       valid: true,
       dynamicParam: pEffect.dynamicParam,
       effectType: pEffect.type,
@@ -242,7 +243,7 @@ export function buildAnEffectStruct(
       param = encodeAbiParameters(parseAbiParameters('uint256'), [BigInt(nEffect.parameterValue)])
     }
     const instructionSet = cleanInstructionSet(nEffect.instructionSet)
-    const effect = {
+    const effect: EffectOnChain = {
       valid: true,
       dynamicParam: nEffect.dynamicParam,
       effectType: nEffect.type,
@@ -256,5 +257,5 @@ export function buildAnEffectStruct(
     nEffects.push(effect)
   }
 
-  return { positiveEffects: pEffects, negativeEffects: nEffects }
+  return { posEffects: pEffects, negEffects: nEffects }
 }

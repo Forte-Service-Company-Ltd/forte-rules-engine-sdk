@@ -40,7 +40,7 @@ import { createCallingFunction, getCallingFunctionMetadata } from './calling-fun
 import { getRule } from './rules'
 import { createTracker } from './trackers'
 import {
-  convertRuleStructToString,
+  convertOnChainRuleStructToString,
   convertForeignCallStructsToStrings,
   convertTrackerStructsToStrings,
 } from '../parsing/reverse-parsing-logic'
@@ -760,7 +760,7 @@ export const getPolicy = async (
         const ruleM = await getRuleMetadata(config, rulesEngineRulesContract, policyId, actualRuleId, blockParams)
         if (ruleS != null && ruleM != null) {
           ruleJSONObjs.push(
-            convertRuleStructToString(
+            convertOnChainRuleStructToString(
               functionString,
               encodedValues,
               ruleS,
