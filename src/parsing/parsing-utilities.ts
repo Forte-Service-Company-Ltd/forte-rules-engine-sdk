@@ -1,14 +1,13 @@
 /// SPDX-License-Identifier: BUSL-1.1
 import { encodeAbiParameters, isAddress, keccak256, parseAbiParameters } from 'viem'
 import {
-  trackerIndexNameMapping,
-  FCNameToID,
+  NameToID,
   EffectType,
   PlaceholderStruct,
   operandArray,
   EffectDefinition,
   FunctionArgument,
-  Tracker,
+  TrackerArgument,
   RuleComponent,
   PTNamesTracker,
   Maybe,
@@ -69,15 +68,15 @@ export function parseFunctionArguments(encodedValues: string, condition?: string
  *
  * @param condition - The rule condition string.
  * @param names - An array of argument placeholders.
- * @param indexMap - A mapping of tracker IDs to their names and types.
+ * @param trackerNameToID - A mapping of tracker IDs to their names and types.
  *
  * @returns an array of created Tracker objects.
  */
 export function parseTrackers(
   condition: string,
   names: any[],
-  indexMap: trackerIndexNameMapping[]
-): [string, Tracker[]] {
+  trackerNameToID: NameToID[]
+): [string, TrackerArgument[]] {
   const trRegex = /TR:[a-zA-Z]+/g
   const truRegex = /TRU:[a-zA-Z]+/g
 
@@ -98,10 +97,10 @@ export function parseTrackers(
     return acc.replace(match, initialSplit + ' | ' + match.split('(')[0])
   }, condition)
 
-  const trackers: Tracker[] = matches.map((name) => {
+  const trackers: TrackerArgument[] = matches.map((name) => {
     let rawTypeTwo = 'address'
     let tIndex = 0
-    const tracker = indexMap.find((index) => 'TR:' + index.name == name)
+    const tracker = trackerNameToID.find((tr) => 'TR:' + tr.name == name)
     if (tracker) {
       tIndex = tracker.id
       if (tracker.type == 0) {
@@ -126,11 +125,11 @@ export function parseTrackers(
 
   const updateMatchesSet = [...new Set([...(condition.match(truRegex) || [])])]
 
-  const updatedTrackers: Tracker[] = updateMatchesSet
-    .map((name: string): Maybe<Tracker> => {
+  const updatedTrackers: TrackerArgument[] = updateMatchesSet
+    .map((name: string): Maybe<TrackerArgument> => {
       let tIndex = 0
       name = name.replace('TRU:', 'TR:')
-      const tracker = indexMap.find((index) => 'TR:' + index.name == name)
+      const tracker = trackerNameToID.find((tr) => 'TR:' + tr.name == name)
       if (tracker) {
         tIndex = tracker.id
       }
@@ -174,6 +173,7 @@ export function parseGlobalVariables(condition: string): RuleComponent[] {
  * @param names - An array to store metadata about the processed FC expressions, including
  *                their placeholders, indices, and types.
  * @param foreignCallNameToID - An array mapping foreign call names to their corresponding IDs.
+ * @param trackerNameToID - An array mapping tracker names to their corresponding IDs.
  * @returns The updated condition string with FC expressions replaced by placeholders
  *          and an array of created ForeignCall
  *
@@ -186,8 +186,8 @@ export function parseGlobalVariables(condition: string): RuleComponent[] {
 export function parseForeignCalls(
   condition: string,
   names: any[],
-  foreignCallNameToID: FCNameToID[],
-  indexMap: FCNameToID[],
+  foreignCallNameToID: NameToID[],
+  trackerNameToID: NameToID[],
   additionalForeignCalls: string[]
 ): [string, RuleComponent[]] {
   // Use a regular expression to find all FC expressions
@@ -234,7 +234,7 @@ export function parseForeignCalls(
             index = fcMap.id
           }
           if (additional.includes('TR:')) {
-            const [updatedSyntax, trackers] = parseTrackers(' ' + additional + ' ', names, indexMap)
+            const [updatedSyntax, trackers] = parseTrackers(' ' + additional + ' ', names, trackerNameToID)
             acc.components.push(...trackers)
           } else {
             acc.components.push({
@@ -389,7 +389,7 @@ export function buildPlaceholderList(names: any[]): PlaceholderStruct[] {
  * @param effect - The effect string to parse.
  * @param names - An array of names used for interpreting expressions.
  * @param placeholders - An array to store placeholder structures extracted during parsing.
- * @param indexMap - A mapping of tracker index names used for interpreting expressions.
+ * @param trackerNameToID - A mapping of tracker index names used for interpreting expressions.
  *
  * @returns An object containing:
  * - `type`: The type of the effect (e.g., `EffectType.REVERT`, `EffectType.EVENT`, or `EffectType.EXPRESSION`).
@@ -402,7 +402,7 @@ export function parseEffect(
   effect: string,
   names: any[],
   placeholders: PlaceholderStruct[],
-  indexMap: trackerIndexNameMapping[]
+  trackerNameToID: NameToID[]
 ): Maybe<EffectDefinition> {
   var effectType = EffectType.REVERT
   var effectText = ''
@@ -456,7 +456,7 @@ export function parseEffect(
     effectText = match ? match[2] : ''
   } else {
     effectType = EffectType.EXPRESSION
-    var instructionSet = convertHumanReadableToInstructionSet(effect, names, indexMap, placeholders)
+    var instructionSet = convertHumanReadableToInstructionSet(effect, names, trackerNameToID, placeholders)
     effectInstructionSet = instructionSet
   }
 

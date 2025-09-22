@@ -10,7 +10,7 @@ import {
 } from 'viem'
 import {
   EffectDefinition,
-  FCNameToID,
+  NameToID,
   ForeignCallDefinition,
   ForeignCallEncodedIndex,
   MappedTrackerDefinition,
@@ -23,7 +23,6 @@ import {
   RuleDefinition,
   trackerArrayType,
   TrackerDefinition,
-  trackerIndexNameMapping,
 } from '../modules/types'
 import { convertHumanReadableToInstructionSet } from './internal-parsing-logic'
 import {
@@ -47,6 +46,7 @@ import {
   splitFunctionInput,
   TrackerJSON,
 } from '../modules/validation'
+import tr from 'zod/v4/locales/tr.cjs'
 
 /**
  * @file parser.ts
@@ -70,8 +70,8 @@ import {
 
 export function processSyntax(
   encodedValues: string,
-  foreignCallNameToID: FCNameToID[],
-  indexMap: trackerIndexNameMapping[],
+  foreignCallNameToID: NameToID[],
+  trackerNameToID: NameToID[],
   additionalForeignCalls: string[],
   syntax: string
 ): [string, RuleComponent[]] {
@@ -80,12 +80,12 @@ export function processSyntax(
     syntax,
     components,
     foreignCallNameToID,
-    indexMap,
+    trackerNameToID,
     additionalForeignCalls
   )
   components = [...components, ...effectCalls]
 
-  const [finalSyntax, effectTrackers] = parseTrackers(updatedSyntax, components, indexMap)
+  const [finalSyntax, effectTrackers] = parseTrackers(updatedSyntax, components, trackerNameToID)
 
   const gvEComponents = parseGlobalVariables(finalSyntax)
 
@@ -94,8 +94,8 @@ export function processSyntax(
 
 function getProcessedEffects(
   encodedValues: string,
-  foreignCallNameToID: FCNameToID[],
-  indexMap: trackerIndexNameMapping[],
+  foreignCallNameToID: NameToID[],
+  trackerNameToID: NameToID[],
   additionalEffectForeignCalls: string[],
   effects: string[]
 ): Maybe<[EffectDefinition[], PlaceholderStruct[]]> {
@@ -104,7 +104,7 @@ function getProcessedEffects(
       const [updatedEffect, effectCalls] = processSyntax(
         encodedValues,
         foreignCallNameToID,
-        indexMap,
+        trackerNameToID,
         additionalEffectForeignCalls,
         effect
       )
@@ -120,7 +120,7 @@ function getProcessedEffects(
 
   var positiveEffects = []
   for (var effect of retVal[0]) {
-    var parsed = parseEffect(effect, efectNames, effectPlaceHolders, indexMap)
+    var parsed = parseEffect(effect, efectNames, effectPlaceHolders, trackerNameToID)
     if (parsed == null) {
       return null
     } else {
@@ -135,7 +135,7 @@ function getProcessedEffects(
  * Parses the rule syntax and converts it into a raw instruction set.
  *
  * @param syntax - The JSON representation of the rule syntax.
- * @param indexMap - A mapping of tracker IDs to their names and types.
+ * @param trackerNameToID - A mapping of tracker IDs to their names and types.
  * @param foreignCallNameToID - A mapping of foreign call names to their IDs.
  * @returns An object containing the instruction set, raw data, positive effects, negative effects,
  *          placeholders, and effect placeholders.
@@ -143,8 +143,8 @@ function getProcessedEffects(
 
 export function parseRuleSyntax(
   syntax: RuleJSON,
-  indexMap: trackerIndexNameMapping[],
-  foreignCallNameToID: FCNameToID[],
+  trackerNameToID: NameToID[],
+  foreignCallNameToID: NameToID[],
   encodedValues: string,
   additionalForeignCalls: string[],
   additionalEffectForeignCalls: string[]
@@ -152,7 +152,7 @@ export function parseRuleSyntax(
   const [condition, ruleComponents] = processSyntax(
     encodedValues,
     foreignCallNameToID,
-    indexMap,
+    trackerNameToID,
     additionalForeignCalls,
     removeExtraParenthesis(syntax.condition)
   )
@@ -162,7 +162,7 @@ export function parseRuleSyntax(
   const processedEffect = getProcessedEffects(
     encodedValues,
     foreignCallNameToID,
-    indexMap,
+    trackerNameToID,
     additionalEffectForeignCalls,
     syntax.positiveEffects
   )
@@ -174,7 +174,7 @@ export function parseRuleSyntax(
   var retE = getProcessedEffects(
     encodedValues,
     foreignCallNameToID,
-    indexMap,
+    trackerNameToID,
     additionalEffectForeignCalls,
     syntax.negativeEffects
   )
@@ -186,7 +186,7 @@ export function parseRuleSyntax(
   const conditionInstructionSet = convertHumanReadableToInstructionSet(
     condition,
     ruleComponents,
-    indexMap,
+    trackerNameToID,
     placeHolders
   )
 
@@ -380,8 +380,8 @@ export function parseTrackerSyntax(syntax: TrackerJSON): TrackerDefinition {
 }
 
 export function getFCEncodedIndex(
-  foreignCallNameToID: FCNameToID[],
-  indexMap: FCNameToID[],
+  foreignCallNameToID: NameToID[],
+  trackerNameToID: NameToID[],
   functionArguments: string[],
   encodedIndex: string
 ): Maybe<ForeignCallEncodedIndex> {
@@ -391,7 +391,7 @@ export function getFCEncodedIndex(
       return { eType: 1, index: fcMap.id }
     }
   } else if (encodedIndex.includes('TR:')) {
-    const trMap = indexMap.find((tr) => 'TR:' + tr.name.trim() === encodedIndex.trim())
+    const trMap = trackerNameToID.find((tr) => 'TR:' + tr.name.trim() === encodedIndex.trim())
     if (trMap) {
       if (trMap.type == 1) {
         return { eType: 4, index: trMap.id }
@@ -416,8 +416,8 @@ export function getFCEncodedIndex(
  */
 export function parseForeignCallDefinition(
   syntax: ForeignCallJSON,
-  foreignCallNameToID: FCNameToID[],
-  indexMap: FCNameToID[],
+  foreignCallNameToID: NameToID[],
+  trackerNameToID: NameToID[],
   functionArguments: string[]
 ): ForeignCallDefinition {
   // Validate that the foreign call doesn't reference itself
@@ -454,7 +454,7 @@ export function parseForeignCallDefinition(
 
   const encodedIndices = syntax.valuesToPass
     .split(',')
-    .map((encodedIndex) => getFCEncodedIndex(foreignCallNameToID, indexMap, functionArguments, encodedIndex))
+    .map((encodedIndex) => getFCEncodedIndex(foreignCallNameToID, trackerNameToID, functionArguments, encodedIndex))
     .filter((encoded) => encoded !== null)
 
   var mappedTrackerKeyIndices: ForeignCallEncodedIndex[] = []
@@ -462,7 +462,7 @@ export function parseForeignCallDefinition(
   } else {
     mappedTrackerKeyIndices = syntax.mappedTrackerKeyValues
       .split(',')
-      .map((encodedIndex) => getFCEncodedIndex(foreignCallNameToID, indexMap, functionArguments, encodedIndex))
+      .map((encodedIndex) => getFCEncodedIndex(foreignCallNameToID, trackerNameToID, functionArguments, encodedIndex))
       .filter((encoded) => encoded !== null)
   }
 
