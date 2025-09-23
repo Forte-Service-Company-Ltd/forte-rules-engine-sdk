@@ -13,6 +13,21 @@ export { policyModifierGeneration } from './codeGeneration/code-modification-scr
 export { createCallingFunctionLookupMaps, resolveCallingFunction } from './modules/validation.js'
 
 export {
+  proposeNewPolicyAdmin,
+  confirmNewPolicyAdmin,
+  renouncePolicyAdminRole,
+  renounceCallingContractAdminRole,
+  renounceForeignCallAdminRole,
+  isPolicyAdmin,
+  proposeNewCallingContractAdmin,
+  confirmNewCallingContractAdmin,
+  isCallingContractAdmin,
+  isForeignCallAdmin,
+  proposeNewForeignCallAdmin,
+  confirmNewForeignCallAdmin,
+} from './modules/admin.js'
+
+export {
   createPolicy,
   updatePolicy,
   setPolicies,

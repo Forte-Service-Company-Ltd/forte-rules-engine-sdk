@@ -48,7 +48,7 @@ describe('Permissioned Foreign Call Interactions', async () => {
   const rulesEngineContract: `0x${string}` = DiamondAddress
 
   let snapshotId: `0x${string}`
-  config = await createTestConfig()
+  config = await createTestConfig(false)
   client = config.getClient({ chainId: config.chains[0].id })
   secondUserConfig = await createTestConfig(false)
   secondUserClient = secondUserConfig.getClient({
