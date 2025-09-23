@@ -15,9 +15,9 @@ import {
   addMultipleAdminsToPermissionList,
   removeMultipleAdminsFromPermissionList,
   removeAllFromPermissionList,
-  getAllForeignCalls,
+  isPermissionedAdmin,
   removeForeignCallPermissions,
-  getPermissionedForeignCallsForAdmin,
+  getPermissionedForeignCallsForPolicy,
 } from '../src/modules/foreign-calls'
 import { createPolicy } from '../src/modules/policy'
 
@@ -48,7 +48,7 @@ describe('Permissioned Foreign Call Interactions', async () => {
   const rulesEngineContract: `0x${string}` = DiamondAddress
 
   let snapshotId: `0x${string}`
-  config = await createTestConfig(false)
+  config = await createTestConfig()
   client = config.getClient({ chainId: config.chains[0].id })
   secondUserConfig = await createTestConfig(false)
   secondUserClient = secondUserConfig.getClient({
@@ -135,7 +135,7 @@ describe('Permissioned Foreign Call Interactions', async () => {
   })
 
   test('Can get permissioned foreign calls for policy', async () => {
-    const permissionedFCs = await getAllForeignCalls(
+    const permissionedFCs = await getPermissionedForeignCallsForPolicy(
       config,
       getRulesEngineForeignCallContract(rulesEngineContract, client),
       policyId
@@ -362,15 +362,16 @@ describe('Permissioned Foreign Call Interactions', async () => {
     expect(permissionList.length).toEqual(1)
   })
 
-  test('Can get permissioned foreign calls for admin', async () => {
-    let permissionList = await getPermissionedForeignCallsForAdmin(
+  test('Can determine permissioned admin status for address', async () => {
+    let isAdmin = await isPermissionedAdmin(
       config,
       getRulesEngineForeignCallContract(rulesEngineContract, client),
-      policyId,
+      fcAddress,
+      functionSignature,
       secondUserClient.account.address
     )
 
-    expect(permissionList.length, 'Permission list should contain 0 entries after initialization').toEqual(0)
+    expect(isAdmin, 'User should not be an admin initially').toBe(false)
 
     await addAdminToPermissionList(
       config,
@@ -381,14 +382,15 @@ describe('Permissioned Foreign Call Interactions', async () => {
       1
     )
 
-    permissionList = await getPermissionedForeignCallsForAdmin(
+    isAdmin = await isPermissionedAdmin(
       config,
       getRulesEngineForeignCallContract(rulesEngineContract, client),
-      policyId,
+      fcAddress,
+      functionSignature,
       secondUserClient.account.address
     )
 
-    expect(permissionList.length, 'Permission list should contain 1 entry after adding admin').toEqual(1)
+    expect(isAdmin, 'User should be an admin after addition').toBe(true)
 
     await removeFromPermissionList(
       config,
@@ -399,13 +401,14 @@ describe('Permissioned Foreign Call Interactions', async () => {
       1
     )
 
-    permissionList = await getPermissionedForeignCallsForAdmin(
+    isAdmin = await isPermissionedAdmin(
       config,
       getRulesEngineForeignCallContract(rulesEngineContract, client),
-      policyId,
+      fcAddress,
+      functionSignature,
       secondUserClient.account.address
     )
 
-    expect(permissionList.length, 'Permission list should contain 0 entries after removal').toEqual(0)
+    expect(isAdmin, 'User should not be an admin after removal').toBe(false)
   })
 })

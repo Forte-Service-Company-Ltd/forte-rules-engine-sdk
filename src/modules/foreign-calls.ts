@@ -484,11 +484,51 @@ export const getAllForeignCalls = async (
 }
 
 /**
- * Retrieves all permissioned foreign calls the provided admin is on the permission list for.
+ * Retrieves all permissioned foreign calls associated with a specific policy ID from the Rules Engine Component Contract.
  *
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEngineForeignCallContract - An object representing the Rules Engine Component Contract,
  * @param policyId - The ID of the policy for which foreign calls are to be retrieved.
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
+ * containing its address and ABI.
+ * @returns A promise that resolves to an array of foreign calls if successful, or `null` if an error occurs.
+ *
+ * @throws Will log an error to the console if the operation fails.
+ */
+export const getPermissionedForeignCallsForPolicy = async (
+  config: Config,
+  rulesEngineForeignCallContract: RulesEngineForeignCallContract,
+  policyId: number,
+  blockParams?: ContractBlockParameters
+): Promise<ForeignCallOnChain[]> => {
+  try {
+    const foreignCalls = await getAllForeignCalls(config, rulesEngineForeignCallContract, policyId, blockParams)
+    const permissionLists = await Promise.all(
+      foreignCalls.map((fc) =>
+        getForeignCallPermissionListWithSelector(
+          config,
+          rulesEngineForeignCallContract,
+          fc.foreignCallAddress as Address,
+          fc.signature,
+          blockParams
+        )
+      )
+    )
+    let foreignCallResult = foreignCalls.filter((_, idx) => permissionLists[idx].length > 0)
+    return foreignCallResult as ForeignCallOnChain[]
+  } catch (error) {
+    console.error(error)
+    return []
+  }
+}
+
+/**
+ * Returns whether a .
+ *
+ * @param config - The configuration object containing network and wallet information.
+ * @param rulesEngineForeignCallContract - An object representing the Rules Engine Component Contract,
+ * @param foreignCallAddress - The address of the foreign call to check permissions for.
+ * @param signature - The signature of the foreign call to check permissions for.
  * @param admin - The address of the admin to check permissions for.
  * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * containing its address and ABI.
@@ -496,27 +536,23 @@ export const getAllForeignCalls = async (
  *
  * @throws Will log an error to the console if the operation fails.
  */
-export const getPermissionedForeignCallsForAdmin = async (
+export const isPermissionedAdmin = async (
   config: Config,
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
-  policyId: number,
+  foreignCallAddress: Address,
+  signature: string,
   admin: Address,
   blockParams?: ContractBlockParameters
-): Promise<ForeignCallOnChain[]> => {
-  const allFCs = await getAllForeignCalls(config, rulesEngineForeignCallContract, policyId, blockParams)
-  const permissionLists = await Promise.all(
-    allFCs.map((fc) =>
-      getForeignCallPermissionListWithSelector(
-        config,
-        rulesEngineForeignCallContract,
-        fc.foreignCallAddress as Address,
-        fc.signature,
-        blockParams
-      )
-    )
+): Promise<boolean> => {
+  const permissionList = await getForeignCallPermissionList(
+    config,
+    rulesEngineForeignCallContract,
+    foreignCallAddress,
+    signature,
+    blockParams
   )
 
-  return allFCs.filter((_, idx) => permissionLists[idx].includes(admin))
+  return permissionList.includes(admin)
 }
 
 /**

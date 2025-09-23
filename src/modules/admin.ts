@@ -215,7 +215,7 @@ export const renounceCallingContractAdminRole = async (
  * This function renounces an admin for a specific policy.
  *
  * @param rulesEngineAdminContract - The contract instance containing the address and ABI
- * @param callingContract - The address of the calling contract to renounce admin for.
+ * @param foreignCallContract - The address of the foreign call to renounce admin for.
  * @param functionSelector - The selector for the specific foreign call
  * @param renounceAddress - The address to renounce as the admin
  * @returns A promise
@@ -225,7 +225,7 @@ export const renounceCallingContractAdminRole = async (
 export const renounceForeignCallAdminRole = async (
   config: Config,
   rulesEngineAdminContract: RulesEngineAdminContract,
-  callingContract: Address,
+  foreignCallContract: Address,
   functionSignature: string,
   renounceAddress: Address,
   confirmationCount: number
@@ -237,7 +237,7 @@ export const renounceForeignCallAdminRole = async (
         address: rulesEngineAdminContract.address,
         abi: rulesEngineAdminContract.abi,
         functionName: 'renounceForeignCallAdminRole',
-        args: [callingContract, toFunctionSelector(functionSignature), renounceAddress],
+        args: [foreignCallContract, toFunctionSelector(functionSignature), renounceAddress],
       })
       break
     } catch (err) {
