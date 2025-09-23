@@ -10,16 +10,16 @@ export { injectModifier } from './codeGeneration/inject-modifier.js'
 
 export { policyModifierGeneration } from './codeGeneration/code-modification-script.js'
 
-export { getTrackerToRuleIds } from './modules/trackers.js'
-
 export { createCallingFunctionLookupMaps, resolveCallingFunction } from './modules/validation.js'
 
 export {
   createPolicy,
   updatePolicy,
   setPolicies,
+  unsetPolicies,
   appendPolicy,
   deletePolicy,
+  disablePolicy,
   getRulesEngineVersion,
   getVersionCompatible,
   getPolicy,
@@ -27,6 +27,7 @@ export {
   policyExists,
   getAppliedPolicyIds,
   isClosedPolicy,
+  isDisabledPolicy,
   closePolicy,
   openPolicy,
   isClosedPolicySubscriber,
@@ -35,6 +36,37 @@ export {
   cementPolicy,
   isCementedPolicy,
 } from './modules/policy.js'
+
+export { createRule, updateRule, deleteRule, getRule, getRuleMetadata, getAllRules } from './modules/rules.js'
+
+export {
+  createTracker,
+  updateTracker,
+  createMappedTracker,
+  updateMappedTracker,
+  deleteTracker,
+  getTracker,
+  getTrackerMetadata,
+  getAllTrackers,
+  getTrackerToRuleIds,
+  getMappedTrackerValue,
+} from './modules/trackers.js'
+
+export {
+  createForeignCall,
+  updateForeignCall,
+  deleteForeignCall,
+  getForeignCall,
+  getForeignCallMetadata,
+  getAllForeignCalls,
+  getForeignCallPermissionList,
+  addAdminToPermissionList,
+  addMultipleAdminsToPermissionList,
+  removeMultipleAdminsFromPermissionList,
+  removeAllFromPermissionList,
+  removeFromPermissionList,
+  removeForeignCallPermissions,
+} from './modules/foreign-calls.js'
 
 export {
   RulesEnginePolicyContract,

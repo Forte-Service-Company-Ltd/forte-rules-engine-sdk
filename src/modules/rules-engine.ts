@@ -102,6 +102,7 @@ import {
 } from './trackers'
 
 import {
+  renouncePolicyAdminRole as renouncePolicyAdminRoleInternal,
   proposeNewPolicyAdmin as proposeNewPolicyAdminInternal,
   confirmNewPolicyAdmin as confirmNewPolicyAdminInternal,
   isPolicyAdmin as isPolicyAdminInternal,
