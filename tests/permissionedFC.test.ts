@@ -24,7 +24,6 @@ import { createPolicy } from '../src/modules/policy'
 import { Config } from '@wagmi/core'
 
 import { deployPermissionedForeignCallContract, initPermissionedForeignCall } from './deployUtils'
-import { getAllBalances } from 'viem/zksync'
 
 // Hardcoded address of the diamond in diamondDeployedAnvilState.json
 var config: Config
