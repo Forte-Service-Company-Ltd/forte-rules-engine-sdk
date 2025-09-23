@@ -142,7 +142,7 @@ export type EffectDefinition = {
   /** Text representation of the effect */
   text: string
   /** Instruction set for the effect */
-  instructionSet: any[]
+  instructionSet: InstructionSet
   /** Parameter type */
   pType: number
   /** Parameter value */
@@ -154,7 +154,7 @@ export type EffectDefinition = {
 /**
  * Structure of an effect as represented in the system
  */
-export type EffectStruct = {
+export type EffectOnChain = {
   /** Whether the effect is valid */
   valid: boolean
   /** Whether the effect has dynamic parameters */
@@ -178,11 +178,18 @@ export type EffectStruct = {
  * Collection of positive and negative effects
  * TODO: Add more specific types for positiveEffects and negativeEffects
  */
-export type EffectStructs = {
+export type EffectsOnChain = {
   /** Effects applied when a rule passes */
-  positiveEffects: any[]
+  posEffects: EffectOnChain[]
   /** Effects applied when a rule fails */
-  negativeEffects: any[]
+  negEffects: EffectOnChain[]
+}
+
+export type EffectDefinitions = {
+  /** Effects applied when a rule passes */
+  positiveEffects: EffectDefinition[]
+  /** Effects applied when a rule fails */
+  negativeEffects: EffectDefinition[]
 }
 
 // -----------------------------------------------------------------------------
@@ -219,31 +226,32 @@ export type CallingFunctionDataAndJSON = {
  * Base structure for rule types
  */
 export type RuleBase = {
-  /** Set of instructions that make up the rule */
-  instructionSet: any[]
   /** Placeholders used in the rule */
-  placeHolders: any[]
+  placeHolders: PlaceholderStruct[]
   /** Placeholders used in the rule's positive effects */
-  positiveEffectPlaceHolders: any[]
+  positiveEffectPlaceHolders: PlaceholderStruct[]
   /** Placeholders used in the rule's negative effects */
-  negativeEffectPlaceHolders: any[]
+  negativeEffectPlaceHolders: PlaceholderStruct[]
   ruleIndex: number
 }
 
 /**
  * Complete definition of a rule including effects
  */
-export type RuleDefinition = RuleBase & EffectStructs
+export type RuleDefinition = {
+  /** Set of instructions that make up the rule */
+  instructionSet: InstructionSet
+} & RuleBase &
+  EffectDefinitions
 
 /**
  * Structure of a rule as stored in the system
  */
-export type RuleStruct = RuleBase & {
-  /** Positive effects applied when rule passes */
-  posEffects: any[]
-  /** Negative effects applied when rule fails */
-  negEffects: any[]
-}
+export type RuleOnChain = {
+  /** Set of instructions that make up the rule */
+  instructionSet: number[]
+} & RuleBase &
+  EffectsOnChain
 
 /**
  * Metadata about a rule

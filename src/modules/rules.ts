@@ -2,10 +2,10 @@
 import { hexToString } from 'viem'
 import { simulateContract, waitForTransactionReceipt, writeContract, readContract, Config } from '@wagmi/core'
 
-import { buildAnEffectStruct, buildARuleStruct, sleep } from './contract-interaction-utils'
+import { buildOnChainEffects, buildAnOnChainRule, sleep } from './contract-interaction-utils'
 import {
   NameToID,
-  RuleStruct,
+  RuleOnChain,
   RuleStorageSet,
   Maybe,
   RulesEngineRulesContract,
@@ -189,7 +189,7 @@ export const createRule = async (
       }
     }
   }
-  var effects = buildAnEffectStruct(
+  var effects = buildOnChainEffects(
     effectSyntax,
     trackerNameToID,
     foreignCallNameToID,
@@ -200,7 +200,7 @@ export const createRule = async (
   if (effects == null) {
     return -1
   }
-  var rule = buildARuleStruct(
+  var rule = buildAnOnChainRule(
     ruleSyntax,
     foreignCallNameToID,
     effects,
@@ -363,7 +363,7 @@ export const updateRule = async (
     }
   }
 
-  var effects = buildAnEffectStruct(
+  var effects = buildOnChainEffects(
     ruleSyntax,
     trackerNameToID,
     foreignCallNameToID,
@@ -374,7 +374,7 @@ export const updateRule = async (
   if (effects == null) {
     return -1
   }
-  var rule = buildARuleStruct(
+  var rule = buildAnOnChainRule(
     ruleSyntax,
     foreignCallNameToID,
     effects,
@@ -477,7 +477,7 @@ export const getRule = async (
   policyId: number,
   ruleId: number,
   blockParams?: ContractBlockParameters
-): Promise<Maybe<RuleStruct>> => {
+): Promise<Maybe<RuleOnChain>> => {
   try {
     const result = await readContract(config, {
       address: rulesEngineRulesContract.address,
@@ -488,14 +488,14 @@ export const getRule = async (
     })
 
     let ruleResult = result as RuleStorageSet
-    let ruleS = ruleResult.rule as RuleStruct
+    let ruleS = ruleResult.rule as RuleOnChain
 
     for (var posEffect of ruleS.posEffects) {
-      posEffect.text = hexToString(posEffect.text).replace(/\u0000/g, '')
+      posEffect.text = hexToString(posEffect.text).replace(/\u0000/g, '') as `0x${string}`
     }
 
     for (var negEffect of ruleS.negEffects) {
-      negEffect.text = hexToString(negEffect.text).replace(/\u0000/g, '')
+      negEffect.text = hexToString(negEffect.text).replace(/\u0000/g, '') as `0x${string}`
     }
 
     return ruleS

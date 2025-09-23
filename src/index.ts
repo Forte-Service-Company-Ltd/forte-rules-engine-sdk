@@ -43,7 +43,7 @@ export {
   RuleStorageSet,
   hexToFunctionString,
   EffectType,
-  RuleStruct,
+  RuleOnChain,
   ForeignCallDefinition,
   PlaceholderStruct,
   FunctionArgument,

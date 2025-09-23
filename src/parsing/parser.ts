@@ -13,6 +13,7 @@ import {
   NameToID,
   ForeignCallDefinition,
   ForeignCallEncodedIndex,
+  InstructionSet,
   MappedTrackerDefinition,
   matchArray,
   Maybe,
@@ -199,19 +200,19 @@ export function parseRuleSyntax(
     return null
   }
   positiveEffects.forEach((effect) => {
-    var instrucitonSet = buildRawData(effect.instructionSet, excludeArray)
+    var instructionSet = buildRawData(effect.instructionSet, excludeArray)
     if (instructionSet == null) {
       return null
     }
-    effect.instructionSet = instrucitonSet as any[]
+    effect.instructionSet = instructionSet
   })
 
   negativeEffects.forEach((effect) => {
-    var instrucitonSet = buildRawData(effect.instructionSet, excludeArray)
+    var instructionSet = buildRawData(effect.instructionSet, excludeArray)
     if (instructionSet == null) {
       return null
     }
-    effect.instructionSet = instrucitonSet as any[]
+    effect.instructionSet = instructionSet
   })
 
   return {
@@ -534,7 +535,7 @@ export function buildTrackerList(condition: string): string[] {
  *
  * @param instructionSet - The instruction set to clean.
  */
-export function cleanInstructionSet(instructionSet: any[]): any[] {
+export function cleanInstructionSet(instructionSet: InstructionSet): number[] {
   return instructionSet.map((instruction) => {
     if (instruction == 'N') {
       return 0
@@ -576,7 +577,7 @@ export function cleanInstructionSet(instructionSet: any[]): any[] {
       return 18
     }
     return instruction
-  })
+  }) as number[]
 }
 
 export { parseFunctionArguments }

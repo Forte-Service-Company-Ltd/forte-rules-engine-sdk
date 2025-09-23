@@ -29,7 +29,7 @@ import {
   RulesEngineComponentContract,
   RulesEnginePolicyABI,
   RulesEnginePolicyContract,
-  RuleStruct,
+  RuleOnChain,
   Maybe,
   RulesEngineRulesContract,
   RulesEngineRulesABI,
@@ -534,9 +534,9 @@ export class RulesEngine {
    * @param policyId - The ID of the policy containing the rule.
    * @param ruleId - The ID of the rule to retrieve.
    * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
-   * @returns The retrieved rule as a `RuleStruct`, or `null` if retrieval fails.
+   * @returns The retrieved rule as a `RuleOnChain`, or `null` if retrieval fails.
    */
-  getRule(policyId: number, ruleId: number, blockParams?: ContractBlockParameters): Promise<Maybe<RuleStruct>> {
+  getRule(policyId: number, ruleId: number, blockParams?: ContractBlockParameters): Promise<Maybe<RuleOnChain>> {
     return getRuleInternal(config, this.rulesEngineRulesContract, policyId, ruleId, blockParams)
   }
 

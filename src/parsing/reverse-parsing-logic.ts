@@ -3,7 +3,7 @@
 import { Address, decodeAbiParameters, parseAbiParameters } from 'viem'
 import {
   stringReplacement,
-  RuleStruct,
+  RuleOnChain,
   PT,
   TrackerOnChain,
   hexToFunctionString,
@@ -20,6 +20,7 @@ import {
   MappedTrackerDataAndJSON,
   TrackerData,
   MappedTrackerData,
+  EffectOnChain,
 } from '../modules/types'
 import {
   CallingFunctionJSON,
@@ -476,7 +477,7 @@ function decodeHexString(hexString: string): string {
   }
 }
 
-export const reverseParseEffect = (effect: any, placeholders: string[]): string => {
+export const reverseParseEffect = (effect: EffectOnChain, placeholders: string[]): string => {
   if (effect.effectType == 0) {
     const decodedText = decodeHexString(effect.text)
     return "revert('" + decodedText + "')"
@@ -493,14 +494,14 @@ export const reverseParseEffect = (effect: any, placeholders: string[]): string 
 }
 
 /**
- * Convert on-chain RuleStruct + metadata into a { data, json } pair.
+ * Convert RuleOnChain + metadata into a { data, json } pair.
  *
  * Builds a human-readable `RuleJSON` and a `RuleData` that includes the id,
  * by reverse-parsing the condition and effects and resolving placeholders.
  *
  * @param functionString - Calling function signature for the rule JSON.
  * @param encodedValues - Encoded calling-function args used to derive names.
- * @param ruleS - On-chain RuleStruct (instructionSet, placeholders, effects).
+ * @param ruleS - RuleOnChain (instructionSet, placeholders, effects).
  * @param ruleM - Rule metadata (name, description).
  * @param foreignCalls - Foreign calls referenced by placeholders.
  * @param trackers - Trackers referenced by placeholders.
@@ -508,16 +509,16 @@ export const reverseParseEffect = (effect: any, placeholders: string[]): string 
  * @param ruleId - Optional id to include in the returned RuleData.
  * @returns RuleDataAndJSON: { data: RuleData, json: RuleJSON }.
  *
- * The function processes the `RuleStruct` object to:
+ * The function processes the `RuleOnChain` object to:
  * - Extract placeholder names and append them to `plhArray`.
  * - Parse and format positive and negative effects into strings.
  * - Reverse parse the rule's instruction set to generate a condition string.
  * - Populate the `ruleJSON` object with the processed data.
  */
-export function convertRuleStructToString(
+export function convertOnChainRuleStructToString(
   functionString: string,
   encodedValues: string,
-  ruleS: RuleStruct,
+  ruleS: RuleOnChain,
   ruleM: RuleMetadataStruct,
   foreignCalls: ForeignCallOnChain[],
   trackers: TrackerOnChain[],
