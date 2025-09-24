@@ -523,7 +523,7 @@ export const getPermissionedForeignCallsForPolicy = async (
 }
 
 /**
- * Returns whether a .
+ * Returns whether a an admin address is on the permission list for a specific foreign call.
  *
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEngineForeignCallContract - An object representing the Rules Engine Component Contract,
@@ -532,7 +532,7 @@ export const getPermissionedForeignCallsForPolicy = async (
  * @param admin - The address of the admin to check permissions for.
  * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
  * containing its address and ABI.
- * @returns A promise that resolves to an array of foreign calls the provided admin address is on the permission list for.
+ * @returns A promise that resolves to a boolean.
  *
  * @throws Will log an error to the console if the operation fails.
  */
