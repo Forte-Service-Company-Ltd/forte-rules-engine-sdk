@@ -526,3 +526,38 @@ export const getTrackerToRuleIds = async (
     return []
   }
 }
+
+/**
+ * Retrieves the values of a mapped tracker.
+ *
+ * @param config - The configuration object containing network and wallet information.
+ * @param rulesEngineComponentContract - The contract instance containing the address and ABI for interaction.
+ * @param policyId - The ID of the policy associated with the tracker.
+ * @param index - The index of the tracker for which the values should be retrieved.
+ * @param trackerKey - The key for the value to be retrieved.
+ * @returns A promise that resolves to an array of rule IDs if successful, or an empty array if an error occurs.
+ *
+ * @throws Will log an error to the console if the contract interaction fails.
+ */
+export const getMappedTrackerValue = async (
+  config: Config,
+  rulesEngineComponentContract: RulesEngineComponentContract,
+  policyId: number,
+  index: number,
+  trackerKey: string,
+  blockParams?: ContractBlockParameters
+): Promise<number[]> => {
+  try {
+    const retrieveRuleIds = await readContract(config, {
+      address: rulesEngineComponentContract.address,
+      abi: rulesEngineComponentContract.abi,
+      functionName: 'getMappedTrackerValue',
+      args: [policyId, index, trackerKey],
+      ...blockParams,
+    })
+    return retrieveRuleIds as number[]
+  } catch (error) {
+    console.error(error)
+    return []
+  }
+}

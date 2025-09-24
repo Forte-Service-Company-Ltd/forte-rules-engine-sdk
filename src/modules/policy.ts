@@ -47,7 +47,6 @@ import {
 
 import {
   CallingFunctionJSON,
-  ForeignCallJSON,
   getRulesErrorMessages,
   PolicyJSON,
   validatePolicyJSON,
@@ -393,7 +392,7 @@ export const updatePolicy = async (
 }
 
 /**
- * Sets the policies appled to a specific contract address.
+ * Sets the policies applied to a specific contract address.
  *
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEnginePolicyContract - The contract instance for interacting with the Rules Engine Policy.
@@ -414,6 +413,49 @@ export const setPolicies = async (
         address: rulesEnginePolicyContract.address,
         abi: rulesEnginePolicyContract.abi,
         functionName: 'applyPolicy',
+        args: [contractAddressForPolicy, policyIds],
+      })
+      break
+    } catch (error) {
+      // TODO: Look into replacing this loop/sleep with setTimeout
+      await sleep(1000)
+    }
+  }
+
+  if (applyPolicy != null) {
+    const returnHash = await writeContract(config, {
+      ...applyPolicy.request,
+      account: config.getClient().account,
+    })
+    await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
+      hash: returnHash,
+    })
+  }
+}
+
+/**
+ * Unsets the policies applied to a specific contract address.
+ *
+ * @param config - The configuration object containing network and wallet information.
+ * @param rulesEnginePolicyContract - The contract instance for interacting with the Rules Engine Policy.
+ * @param policyIds - The list of IDs of all of the policies that will be applied to the contract
+ * @param contractAddressForPolicy - The address of the contract to which the policy will be applied.
+ */
+export const unsetPolicies = async (
+  config: Config,
+  rulesEnginePolicyContract: RulesEnginePolicyContract,
+  policyIds: [number],
+  contractAddressForPolicy: Address,
+  confirmationCount: number
+): Promise<void> => {
+  var applyPolicy
+  while (true) {
+    try {
+      applyPolicy = await simulateContract(config, {
+        address: rulesEnginePolicyContract.address,
+        abi: rulesEnginePolicyContract.abi,
+        functionName: 'unapplyPolicy',
         args: [contractAddressForPolicy, policyIds],
       })
       break
@@ -930,6 +972,34 @@ export async function isClosedPolicy(
 }
 
 /**
+ * Retrieves whether a policy is disabled.
+ * @param config - The configuration object containing network and wallet information.
+ * @param rulesEnginePolicyContract - The contract instance for interacting with the Rules Engine Policy.
+ * @param policyId - The ID of the policy to check.
+ * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
+ * @returns True if the policy is disabled, false otherwise
+ */
+export async function isDisabledPolicy(
+  config: Config,
+  rulesEnginePolicyContract: RulesEnginePolicyContract,
+  policyId: number,
+  blockParams?: ContractBlockParameters
+): Promise<boolean> {
+  try {
+    let isClosed = await readContract(config, {
+      address: rulesEnginePolicyContract.address,
+      abi: rulesEnginePolicyContract.abi,
+      functionName: 'isDisabledPolicy',
+      args: [policyId],
+      ...blockParams,
+    })
+    return isClosed as boolean
+  } catch (error) {
+    return false
+  }
+}
+
+/**
  * Closes a policy on the Rules Engine.
  *
  * @param config - The configuration object containing network and wallet information.
@@ -1142,6 +1212,46 @@ export const cementPolicy = async (
       address: rulesEnginePolicyContract.address,
       abi: rulesEnginePolicyContract.abi,
       functionName: 'cementPolicy',
+      args: [policyId],
+    })
+  } catch (err) {
+    return -1
+  }
+
+  if (addFC != null) {
+    const returnHash = await writeContract(config, {
+      ...addFC.request,
+      account: config.getClient().account,
+    })
+    await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
+      hash: returnHash,
+    })
+  }
+
+  return 0
+}
+
+/**
+ * Disables a policy on the Rules Engine.
+ *
+ * @param config - The configuration object containing network and wallet information.
+ * @param rulesEnginePolicyContract - The contract instance for interacting with the Rules Engine Policy.
+ * @param policyId - The ID of the policy to disable.
+ * @returns `0` if successful, `-1` if an error occurs.
+ */
+export const disablePolicy = async (
+  config: Config,
+  rulesEnginePolicyContract: RulesEnginePolicyContract,
+  policyId: number,
+  confirmationCount: number
+): Promise<number> => {
+  var addFC
+  try {
+    addFC = await simulateContract(config, {
+      address: rulesEnginePolicyContract.address,
+      abi: rulesEnginePolicyContract.abi,
+      functionName: 'disablePolicy',
       args: [policyId],
     })
   } catch (err) {

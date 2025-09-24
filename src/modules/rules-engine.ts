@@ -43,11 +43,13 @@ import {
   ContractBlockParameters,
   PolicyResult,
   CallingFunctionOnChain,
+  ForeignCallOnChain,
 } from './types'
 import {
   createPolicy as createPolicyInternal,
   updatePolicy as updatePolicyInternal,
   setPolicies as setPoliciesInternal,
+  unsetPolicies as unsetPoliciesInternal,
   appendPolicy as appendPolicyInternal,
   deletePolicy as deletePolicyInternal,
   getRulesEngineVersion as getRulesEngineVersionInternal,
@@ -55,8 +57,10 @@ import {
   policyExists as policyExistsInternal,
   getAppliedPolicyIds as getAppliedPolicyIdsInternal,
   isClosedPolicy as isClosedPolicyInternal,
+  isDisabledPolicy as isDisabledPolicyInternal,
   closePolicy as closePolicyInternal,
   openPolicy as openPolicyInternal,
+  disablePolicy as disablePolicyInternal,
   isClosedPolicySubscriber as isClosedPolicySubscriberInternal,
   addClosedPolicySubscriber as addClosedPolicySubscriberInternal,
   removeClosedPolicySubscriber as removeClosedPolicySubscriberInternal,
@@ -87,6 +91,10 @@ import {
   addMultipleAdminsToPermissionList as addMultipleAdminsToPermissionListInternal,
   removeMultipleAdminsFromPermissionList as removeMultipleAdminsFromPermissionListInternal,
   removeAllFromPermissionList as removeAllFromPermissionListInternal,
+  getPermissionedForeignCallsForPolicy as getPermissionedForeignCallsForPolicyInternal,
+  isPermissionedAdmin as isPermissionedAdminInternal,
+  removeFromPermissionList as removeFromPermissionListInternal,
+  removeForeignCallPermissions as removeForeignCallPermissionsInternal,
 } from './foreign-calls'
 
 import {
@@ -99,17 +107,21 @@ import {
   getAllTrackers as getAllTrackersInternal,
   getTrackerMetadata as getTrackerMetadataInternal,
   getTrackerToRuleIds as getTrackerToRuleIdsInternal,
+  getMappedTrackerValue as getMappedTrackerValueInternal,
 } from './trackers'
 
 import {
   proposeNewPolicyAdmin as proposeNewPolicyAdminInternal,
   confirmNewPolicyAdmin as confirmNewPolicyAdminInternal,
+  renouncePolicyAdminRole as renouncePolicyAdminRoleInternal,
   isPolicyAdmin as isPolicyAdminInternal,
   proposeNewCallingContractAdmin as proposeCallingContractAdminInternal,
   confirmNewCallingContractAdmin as confirmNewCallingContractAdminInternal,
+  renounceCallingContractAdminRole as renounceCallingContractAdminRoleInternal,
   isCallingContractAdmin as isCallingContractAdminInternal,
   proposeNewForeignCallAdmin as proposeNewForeignCallAdminInternal,
   confirmNewForeignCallAdmin as confirmNewForeignCallAdminInternal,
+  renounceForeignCallAdminRole as renounceForeignCallAdminRoleInternal,
   isForeignCallAdmin as isForeignCallAdminInternal,
 } from './admin'
 
@@ -293,6 +305,22 @@ export class RulesEngine {
   }
 
   /**
+   * Unsets the policies appled to a specific contract address.
+   *
+   * @param policyIds - The list of IDs of all of the policies that will be unapplied to the contract
+   * @param contractAddressForPolicy - The address of the contract to which the policy will be unapplied.
+   */
+  unsetPolicies(policyIds: [number], contractAddressForPolicy: Address) {
+    unsetPoliciesInternal(
+      config,
+      this.rulesEnginePolicyContract,
+      policyIds,
+      contractAddressForPolicy,
+      this.confirmationCount
+    )
+  }
+
+  /**
    * Appends a policy to the list of policies applied to a specific contract address.
    *
    * @param policyId - The ID of the policy to apply.
@@ -371,6 +399,26 @@ export class RulesEngine {
    */
   isClosedPolicy(policyId: number, blockParams?: ContractBlockParameters): Promise<boolean> {
     return isClosedPolicyInternal(config, this.rulesEnginePolicyContract, policyId, blockParams)
+  }
+
+  /**
+   * Retrieves whether a policy is disabled.
+   * @param policyId - The ID of the policy to check.
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
+   * @returns True if the policy is disabled, false otherwise
+   */
+  isDisabledPolicy(policyId: number, blockParams?: ContractBlockParameters): Promise<boolean> {
+    return isDisabledPolicyInternal(config, this.rulesEnginePolicyContract, policyId, blockParams)
+  }
+
+  /**
+   * Disable a policy on the Rules Engine.
+   *
+   * @param policyId - The ID of the policy to open.
+   * @returns `0` if successful, `-1` if an error occurs.
+   */
+  disablePolicy(policyId: number): Promise<number> {
+    return disablePolicyInternal(config, this.rulesEnginePolicyContract, policyId, this.confirmationCount)
   }
 
   /**
@@ -825,6 +873,100 @@ export class RulesEngine {
   }
 
   /**
+   * Gets permissioned foreign calls for a specific policy ID.
+   *
+   * @param policyId - the ID of the policy the foreign call belongs to.
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
+   * @returns A promise that resolves to ForeignCallOnChain[]:
+   *
+   * @throws Will log an error to the console if the operation fails.
+   */
+  getPermissionedForeignCallsForPolicy(
+    policyId: number,
+    blockParams?: ContractBlockParameters
+  ): Promise<ForeignCallOnChain[]> {
+    return getPermissionedForeignCallsForPolicyInternal(
+      config,
+      this.rulesEngineForeignCallContract,
+      policyId,
+      blockParams
+    )
+  }
+
+  /**
+   * Determines if a user is a permissioned admin for a specific policy ID.
+   *
+   * @param foreignCallAddress - the address of the foreign call.
+   * @param signature - the signature of the function being called.
+   * @param adminAddress - the address of the admin to check.
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
+   * @returns A promise that resolves to a boolean indicating if the user is a permissioned admin.
+   *
+   * @throws Will log an error to the console if the operation fails.
+   */
+  isPermissionedAdmin(
+    foreignCallAddress: Address,
+    signature: string,
+    adminAddress: Address,
+    blockParams?: ContractBlockParameters
+  ): Promise<boolean> {
+    return isPermissionedAdminInternal(
+      config,
+      this.rulesEngineForeignCallContract,
+      foreignCallAddress,
+      signature,
+      adminAddress,
+      blockParams
+    )
+  }
+
+  /**
+   * Removes admin from the permission list for a specific foreign call.
+   *
+   * @param foreignCallAddress - The address of the foreign call contract.
+   * @param signature - The function signature.
+   * @param adminAddress - The address of the admin to remove.
+   * @returns A promise that resolves to a number:
+   *          - `0` if the operation is successful.
+   *          - `-1` if an error occurs during the simulation of the contract interaction.
+   *
+   * @throws Will retry indefinitely with a 1-second delay between attempts if an error occurs during the contract simulation.
+   *         Ensure proper error handling or timeout mechanisms are implemented to avoid infinite loops.
+   */
+  removeFromPermissionList(foreignCallAddress: Address, signature: string, adminAddress: Address): Promise<number> {
+    return removeFromPermissionListInternal(
+      config,
+      this.rulesEngineComponentContract,
+      foreignCallAddress,
+      signature,
+      adminAddress,
+      this.confirmationCount
+    )
+  }
+
+  /**
+   * Removes all permissions for a specific foreign call.
+   *
+   * @param foreignCallAddress - The address of the foreign call contract.
+   * @param signature - The function signature.
+   * @returns A promise that resolves to a number:
+   *          - `0` if the operation is successful.
+   *          - `-1` if an error occurs during the simulation of the contract interaction.
+   *
+   * @throws Will retry indefinitely with a 1-second delay between attempts if an error occurs during the contract simulation.
+   *         Ensure proper error handling or timeout mechanisms are implemented to avoid infinite loops.
+   */
+  removeForeignCallPermissions(foreignCallAddress: Address, signature: string): Promise<number> {
+    return removeForeignCallPermissionsInternal(
+      config,
+      this.rulesEngineComponentContract,
+      foreignCallAddress,
+      signature,
+      this.confirmationCount
+    )
+  }
+
+  /**
    * Asynchronously creates a tracker in the rules engine component contract.
    *
    * @param policyId - The ID of the policy associated with the tracker.
@@ -925,6 +1067,26 @@ export class RulesEngine {
    */
   getTracker(policyId: number, trackerId: number, blockParams?: ContractBlockParameters): Promise<Maybe<any>> {
     return getTrackerInternal(config, this.rulesEngineComponentContract, policyId, trackerId, blockParams)
+  }
+
+  /**
+   * Retrieves a mapped tracker value from the Rules Engine Component Contract based on the provided policy ID, tracker ID, and key.
+   *
+   * @param policyId - The ID of the policy associated with the tracker.
+   * @param index - The index of the tracker to retrieve.
+   * @param key - The key of the mapped tracker value to retrieve.
+   * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
+   * @returns A promise that resolves to the tracker result if successful, or `null` if an error occurs.
+   *
+   * @throws Will log an error to the console if the contract interaction fails.
+   */
+  getMappedTrackerValue(
+    policyId: number,
+    index: number,
+    key: string,
+    blockParams?: ContractBlockParameters
+  ): Promise<Maybe<any>> {
+    return getMappedTrackerValueInternal(config, this.rulesEngineComponentContract, policyId, index, key, blockParams)
   }
 
   /**
@@ -1130,6 +1292,27 @@ export class RulesEngine {
   }
 
   /**
+   * Renounce an admin role in the rules engine admin contract.
+   *
+   * This function confirms a new admin for a specific policy.
+   *
+   * @param policyId - The ID of the policy to set the admin for.
+   * @returns A promise that resolves to the result of the contract interaction, or -1 if unsuccessful.
+   *
+   * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+   */
+  renouncePolicyAdminRole(role: string, renounceAddress: Address, policyId: number) {
+    renouncePolicyAdminRoleInternal(
+      config,
+      this.rulesEngineAdminContract,
+      role,
+      renounceAddress,
+      policyId,
+      this.confirmationCount
+    )
+  }
+
+  /**
    * Determine if address is policy admin.
    *
    * This function determines whether or not an address is the admin for a specific policy.
@@ -1180,6 +1363,27 @@ export class RulesEngine {
       config,
       this.rulesEngineAdminContract,
       callingContractAddress,
+      this.confirmationCount
+    )
+  }
+
+  /**
+   * Renounce a calling contract admin in the rules engine admin contract.
+   *
+   * This function renounces the admin role for a specific calling contract.
+   *
+   * @param callingContractAddress - The address of the calling contract to renounce the admin for.
+   * @param renounceAddress - The address of the calling contract to renounce the admin for.
+   * @returns A promise that resolves to the result of the contract interaction, or -1 if unsuccessful.
+   *
+   * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+   */
+  renounceCallingContractAdminRoleInternal(renounceAddress: Address, callingContractAddress: Address) {
+    return renounceCallingContractAdminRoleInternal(
+      config,
+      this.rulesEngineAdminContract,
+      callingContractAddress,
+      renounceAddress,
       this.confirmationCount
     )
   }
@@ -1243,6 +1447,28 @@ export class RulesEngine {
       this.rulesEngineAdminContract,
       foreignCallAddress,
       foreignCallSelector,
+      this.confirmationCount
+    )
+  }
+
+  /**
+   * Renounce foreign call admin in the rules engine admin contract.
+   *
+   * This function confirms a new admin for a specific foreign call.
+   *
+   * @param foreignCallAddress - The address of the foreign call to set the admin for.
+   * @param functionSelector - The selector for the specific foreign call
+   * @returns A promise.
+   *
+   * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+   */
+  renounceForeignCallAdmin(foreignCallAddress: Address, functionSignature: string, renounceAddress: Address) {
+    renounceForeignCallAdminRoleInternal(
+      config,
+      this.rulesEngineAdminContract,
+      foreignCallAddress,
+      functionSignature,
+      renounceAddress,
       this.confirmationCount
     )
   }

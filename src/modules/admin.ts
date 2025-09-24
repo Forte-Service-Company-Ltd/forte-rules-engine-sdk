@@ -26,7 +26,7 @@ import { sleep } from './contract-interaction-utils'
  */
 
 /**
- * Propose a new admin in the rules engine admin contract.
+ * Propose a new policy admin in the rules engine admin contract.
  *
  * This function proposes a new admin for a specific policy.
  *
@@ -96,6 +96,148 @@ export const confirmNewPolicyAdmin = async (
         abi: rulesEngineAdminContract.abi,
         functionName: 'confirmNewPolicyAdmin',
         args: [policyId],
+      })
+      break
+    } catch (err) {
+      console.log(err)
+      await sleep(1000)
+    }
+  }
+  if (confirmAdmin != null) {
+    const returnHash = await writeContract(config, {
+      ...confirmAdmin.request,
+      account: config.getClient().account,
+    })
+    await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
+      hash: returnHash,
+    })
+  }
+}
+
+/**
+ * Renounce an admin in the rules engine admin contract.
+ *
+ * This function renounces an admin for a specific policy.
+ *
+ * @param rulesEngineAdminContract - The contract instance containing the address and ABI
+ * @param role - The role to renounce
+ * @param renounceAddress - The address to renounce as the admin
+ * @param policyId - The ID of the policy to set the admin for.
+ * @returns A promise
+ *
+ * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+ */
+export const renouncePolicyAdminRole = async (
+  config: Config,
+  rulesEngineAdminContract: RulesEngineAdminContract,
+  role: string,
+  renounceAddress: Address,
+  policyId: number,
+  confirmationCount: number
+): Promise<void> => {
+  let confirmAdmin
+  while (true) {
+    try {
+      confirmAdmin = await simulateContract(config, {
+        address: rulesEngineAdminContract.address,
+        abi: rulesEngineAdminContract.abi,
+        functionName: 'renouncePolicyAdminRole',
+        args: [role, renounceAddress, policyId],
+      })
+      break
+    } catch (err) {
+      console.log(err)
+      await sleep(1000)
+    }
+  }
+  if (confirmAdmin != null) {
+    const returnHash = await writeContract(config, {
+      ...confirmAdmin.request,
+      account: config.getClient().account,
+    })
+    await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
+      hash: returnHash,
+    })
+  }
+}
+
+/**
+ * Renounce a calling contract admin in the rules engine admin contract.
+ *
+ * This function renounces an admin for a specific policy.
+ *
+ * @param rulesEngineAdminContract - The contract instance containing the address and ABI
+ * @param callingContract - The address of the calling contract to renounce admin for.
+ * @param renounceAddress - The address to renounce as the admin
+ * @returns A promise
+ *
+ * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+ */
+export const renounceCallingContractAdminRole = async (
+  config: Config,
+  rulesEngineAdminContract: RulesEngineAdminContract,
+  callingContract: Address,
+  renounceAddress: Address,
+  confirmationCount: number
+): Promise<void> => {
+  var confirmAdmin
+  while (true) {
+    try {
+      confirmAdmin = await simulateContract(config, {
+        address: rulesEngineAdminContract.address,
+        abi: rulesEngineAdminContract.abi,
+        functionName: 'renounceCallingContractAdminRole',
+        args: [callingContract, renounceAddress],
+      })
+      break
+    } catch (err) {
+      console.log(err)
+      await sleep(1000)
+    }
+  }
+  if (confirmAdmin != null) {
+    const returnHash = await writeContract(config, {
+      ...confirmAdmin.request,
+      account: config.getClient().account,
+    })
+    await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
+      hash: returnHash,
+    })
+  }
+}
+
+/**
+ * Renounce a foreign call admin in the rules engine admin contract.
+ *
+ * This function renounces an admin for a specific policy.
+ *
+ * @param rulesEngineAdminContract - The contract instance containing the address and ABI
+ * @param foreignCallContract - The address of the foreign call to renounce admin for.
+ * @param functionSelector - The selector for the specific foreign call
+ * @param renounceAddress - The address to renounce as the admin
+ * @returns A promise
+ *
+ * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+ */
+export const renounceForeignCallAdminRole = async (
+  config: Config,
+  rulesEngineAdminContract: RulesEngineAdminContract,
+  foreignCallContract: Address,
+  functionSignature: string,
+  renounceAddress: Address,
+  confirmationCount: number
+): Promise<void> => {
+  var confirmAdmin
+  while (true) {
+    try {
+      confirmAdmin = await simulateContract(config, {
+        address: rulesEngineAdminContract.address,
+        abi: rulesEngineAdminContract.abi,
+        functionName: 'renounceForeignCallAdminRole',
+        args: [foreignCallContract, toFunctionSelector(functionSignature), renounceAddress],
       })
       break
     } catch (err) {
