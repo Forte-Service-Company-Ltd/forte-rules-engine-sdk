@@ -344,7 +344,7 @@ test('Reverse Interpretation for the: "Evaluates a simple syntax string (using o
   var expectedString = '3 + 4 > 5 AND ( 1 == 1 AND 2 == 2 )'
   const cleanedInstructionSet = cleanInstructionSet(instructionSet)
   var placeholderArray = ['value', 'info', 'addr']
-  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [])
+  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
   expect(retVal).toEqual(expectedString)
 })
 
@@ -353,7 +353,7 @@ test('Reverse Interpretation for the: "Evaluates a simple syntax string involvin
   var expectedString = 'TR:trackerOne(to) == 1'
   const cleanedInstructionSet = cleanInstructionSet(instructionSet)
   var placeholderArray = ['to', 'TR:trackerOne']
-  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [])
+  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
   expect(retVal).toEqual(expectedString)
 })
 
@@ -362,7 +362,7 @@ test('Reverse Interpretation for the: "Evaluates a simple effect involving a map
   var expectedString = 'TRU:testOne(to) -= 1'
   const cleanedInstructionSet = cleanInstructionSet(instructionSet)
   var placeholderArray = ['to', 'TR:testOne']
-  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [])
+  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
   expect(retVal).toEqual(expectedString)
 })
 
@@ -412,7 +412,7 @@ test('Evaluates a complex effect involving a mapped tracker update (TRUM))', () 
 
   const cleanedInstructionSet = cleanInstructionSet(instructionSet)
   var placeholderArray = ['to', 'TR:testOne', 'TR:testTwo']
-  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [])
+  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
   expect(retVal).toEqual('TRU:testOne(to) -= 1 AND TRU:testTwo(to) -= 1')
 })
 
@@ -421,7 +421,7 @@ test('Reverse Interpretation for the: "Evaluates a simple effect involving a tra
   var expectedString = 'TRU:testOne -= 1'
   const cleanedInstructionSet = cleanInstructionSet(instructionSet)
   var placeholderArray = ['value', 'TR:testOne']
-  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [])
+  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
   expect(retVal).toEqual(expectedString)
 })
 
@@ -430,7 +430,7 @@ test('Reverse Interpretation for the: "Evaluates a second effect involving a tra
   var expectedString = 'TRU:testOne = value'
   const cleanedInstructionSet = cleanInstructionSet(instructionSet)
   var placeholderArray = ['value', 'TR:testOne']
-  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [])
+  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
   expect(retVal).toEqual(expectedString)
 })
 
@@ -589,7 +589,7 @@ test('Reverse Interpretation for the: "Evaluates a complex syntax string (using 
   var expectedString = '1 + 1 == 2 AND ( ( 3 + 4 > 5 AND ( 1 == 1 AND 2 == 2 ) ) AND 4 == 4 )'
   const cleanedInstructionSet = cleanInstructionSet(instructionSet)
   var placeholderArray: any[] = []
-  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [])
+  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
   expect(retVal).toEqual(expectedString)
 })
 
@@ -723,7 +723,7 @@ test('Reverse Interpretation for the: "Evaluates a simple syntax string (using A
   var expectedString = '( 3 + 4 > 5 AND 5 == 5 ) OR ( 1 == 1 OR 2 == 3 )'
   const cleanedInstructionSet = cleanInstructionSet(instructionSet)
   var placeholderArray: any[] = []
-  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [])
+  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
   expect(retVal).toEqual(expectedString)
 })
 
@@ -925,12 +925,15 @@ test('Reverse Interpretation for the: "Evaluates a simple syntax string (using A
     15,
   ]
   var expectedString =
-    '( value + 4 > 5 AND 5 == 5 ) OR ( info == test OR addr == 0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC )'
+    '( value + 4 > 5 AND 5 == 5 ) OR ( info == "test" OR addr == 0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC )'
   const cleanedInstructionSet = cleanInstructionSet(instructionSet)
   var placeholderArray = ['value', 'info', 'addr']
-  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [
-    { instructionSetIndex: 25, originalData: 'test' },
-  ])
+  var retVal = reverseParseInstructionSet(
+    cleanedInstructionSet as number[],
+    placeholderArray,
+    [{ instructionSetIndex: 25, originalData: 'test', type: 0 }],
+    0
+  )
   expect(retVal).toEqual(expectedString)
 })
 
@@ -1084,7 +1087,7 @@ test('Reverse Interpretation for the: "Evaluates a simple syntax string with a F
   var expectedString = 'FC:leaderboard > 100 AND value == 100'
   const cleanedInstructionSet = cleanInstructionSet(instructionSet)
   var placeholderArray = ['FC:leaderboard', 'value']
-  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [])
+  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
   expect(retVal).toEqual(expectedString)
 })
 
@@ -1242,7 +1245,7 @@ test('Reverse Interpretation for the: "Evaluates a simple syntax string with a F
     '( FC:isAllowed == 1 AND to == 16045690984833335000 ) OR ( ( FC:isSuperCoolGuy AND FC:isRich == 1 ) AND FC:creditRisk < 500 )'
   const cleanedInstructionSet = cleanInstructionSet(instructionSet)
   var placeholderArray = ['FC:isAllowed', 'to', 'FC:isSuperCoolGuy', 'FC:isRich', 'FC:creditRisk']
-  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [])
+  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
   expect(retVal).toEqual(expectedString)
 })
 
@@ -1395,7 +1398,7 @@ test('Reverse Interpretation for the: "Evaluate complex expression with placehol
   var expectedString = '( to == 1 AND sender == 0xdeadbeefdeadbeef ) OR ( ( value == 1 AND to == 1 ) AND value < 500 )'
   const cleanedInstructionSet = cleanInstructionSet(instructionSet)
   var placeholderArray = ['to', 'sender', 'value', 'to', 'value']
-  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [])
+  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
   expect(retVal).toEqual(expectedString)
 })
 
@@ -1544,7 +1547,7 @@ test('Reverse Interpretation for the: "Evaluates a simple syntax string (using A
     '( FC:isAllowed + 4 > 5 AND TR:testOne == 5 ) OR ( info == TR:testTwo OR TR:testOne == 0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC )'
   const cleanedInstructionSet = cleanInstructionSet(instructionSet)
   var placeholderArray = ['FC:isAllowed', 'TR:testOne', 'info', 'TR:testTwo', 'TR:testOne']
-  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [])
+  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
   expect(retVal).toEqual(expectedString)
 })
 
@@ -1703,7 +1706,7 @@ test('Evaluate a simple syntax string for an event effect with an instruction se
 test('Simple Reverse Interpretation', () => {
   var numbers = [0, 1, 0, 2, 5, 0, 1, 0, 3, 11, 2, 3, 0, 1, 2, 0, 11, 5, 6, 12, 4, 7]
   var placeholderArray = ['value']
-  var retVal = reverseParseInstructionSet(numbers, placeholderArray, [])
+  var retVal = reverseParseInstructionSet(numbers, placeholderArray, [], 0)
   expect(retVal).not.toBeNull()
   expect(retVal).toEqual('1 + 2 == 3 AND 1 == value')
 })

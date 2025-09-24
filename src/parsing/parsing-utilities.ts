@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: BUSL-1.1
-import { encodeAbiParameters, isAddress, keccak256, parseAbiParameters } from 'viem'
+import { encodeAbiParameters, hexToString, isAddress, keccak256, parseAbiParameters, stringToHex, toBytes } from 'viem'
 import {
   NameToID,
   EffectType,
@@ -11,6 +11,7 @@ import {
   RuleComponent,
   PTNamesTracker,
   Maybe,
+  RawData,
 } from '../modules/types'
 import { convertHumanReadableToInstructionSet } from './internal-parsing-logic'
 import { getRandom } from '../modules/utils'
@@ -482,9 +483,14 @@ export function parseEffect(
  *          - `argumentTypes`: An array of argument types (e.g., 1 for strings).
  *          - `dataValues`: An array of byte arrays representing the processed data values.
  */
-export function buildRawData(instructionSet: any[], excludeArray: string[]): Maybe<number[]> {
+export function buildRawData(
+  instructionSet: any[],
+  excludeArray: string[],
+  rawData: RawData,
+  type: number
+): Maybe<number[]> {
   try {
-    var retVal = instructionSet.map((instruction) => {
+    var retVal = instructionSet.map((instruction, index) => {
       // Only capture values that aren't naturally numbers
       if (!isNaN(Number(instruction))) {
         return BigInt(instruction)
@@ -503,6 +509,9 @@ export function buildRawData(instructionSet: any[], excludeArray: string[]): May
           } else {
             instruction = str.slice(1, -1)
           }
+          rawData.instructionSetIndex.push(index)
+          rawData.argumentTypes.push(type)
+          rawData.dataValues.push(stringToHex(instruction))
 
           // Convert the string or bytes to a keccak256 hash then to a uint256
           return BigInt(

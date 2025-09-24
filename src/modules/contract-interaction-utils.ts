@@ -133,15 +133,11 @@ export function buildAnOnChainRule(
   if (output == null) {
     return null
   }
-  var rawData = {
-    instructionSetIndex: [],
-    argumentTypes: [],
-    dataValues: [],
-  }
+
   const instructionSet = cleanInstructionSet(output.instructionSet)
   const rule = {
     instructionSet,
-    rawData: rawData,
+    rawData: output.rawData,
     placeHolders: output.placeHolders,
     positiveEffectPlaceHolders: output.positiveEffectPlaceHolders,
     negativeEffectPlaceHolders: output.negativeEffectPlaceHolders,

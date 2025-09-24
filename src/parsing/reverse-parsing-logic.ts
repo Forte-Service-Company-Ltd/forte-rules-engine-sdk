@@ -1,6 +1,6 @@
 /// SPDX-License-Identifier: BUSL-1.1
 
-import { Address, decodeAbiParameters, parseAbiParameters } from 'viem'
+import { Address, decodeAbiParameters, hexToString, parseAbiParameters } from 'viem'
 import {
   stringReplacement,
   RuleOnChain,
@@ -64,7 +64,8 @@ import { isRight, unwrapEither } from '../modules/utils'
 export function reverseParseInstructionSet(
   instructionSet: number[],
   placeHolderArray: string[],
-  stringReplacements: stringReplacement[]
+  stringReplacements: stringReplacement[],
+  rawDataIndex: number
 ): string {
   var currentAction = -1
   var currentActionIndex = 0
@@ -135,10 +136,10 @@ export function reverseParseInstructionSet(
         case 0:
           var found = false
           for (var raw of stringReplacements) {
-            if (raw.instructionSetIndex == instructionNumber) {
+            if (raw.instructionSetIndex == instructionNumber && raw.type == rawDataIndex) {
               memAddressesMap.push({
                 memAddr: currentMemAddress,
-                value: raw.originalData,
+                value: '"' + raw.originalData + '"',
               })
               found = true
               break
@@ -477,7 +478,12 @@ function decodeHexString(hexString: string): string {
   }
 }
 
-export const reverseParseEffect = (effect: EffectOnChain, placeholders: string[]): string => {
+export const reverseParseEffect = (
+  effect: EffectOnChain,
+  placeholders: string[],
+  rawDataIndex: number,
+  ruleS: RuleOnChain
+): string => {
   if (effect.effectType == 0) {
     const decodedText = decodeHexString(effect.text)
     return "revert('" + decodedText + "')"
@@ -489,7 +495,16 @@ export const reverseParseEffect = (effect: EffectOnChain, placeholders: string[]
     }
     return 'emit ' + '"' + decodedText + '"' + param
   } else {
-    return reverseParseInstructionSet(effect.instructionSet, placeholders, [])
+    var strs = []
+    for (var ind in ruleS.rawData.instructionSetIndex) {
+      var strRep: stringReplacement = {
+        instructionSetIndex: ruleS.rawData.instructionSetIndex[ind],
+        originalData: hexToString(ruleS.rawData.dataValues[ind]),
+        type: ruleS.rawData.argumentTypes[ind],
+      }
+      strs.push(strRep)
+    }
+    return reverseParseInstructionSet(effect.instructionSet, placeholders, strs, rawDataIndex)
   }
 }
 
@@ -539,8 +554,16 @@ export function convertOnChainRuleStructToString(
   const plhArray = ruleS.placeHolders.map((placeholder) =>
     reverseParsePlaceholder(placeholder, names, foreignCalls, trackers, mappings)
   )
-
-  rJSON.condition = reverseParseInstructionSet(ruleS!.instructionSet, plhArray, [])
+  var stringReplacements = []
+  for (var ind in ruleS.rawData.instructionSetIndex) {
+    var strRep: stringReplacement = {
+      instructionSetIndex: ruleS.rawData.instructionSetIndex[ind],
+      originalData: hexToString(ruleS.rawData.dataValues[ind]),
+      type: ruleS.rawData.argumentTypes[ind],
+    }
+    stringReplacements.push(strRep)
+  }
+  rJSON.condition = reverseParseInstructionSet(ruleS!.instructionSet, plhArray, stringReplacements, 0)
   rJSON.callingFunction = functionString
 
   const posEffectPlhArray = ruleS.positiveEffectPlaceHolders.map((placeholder) =>
@@ -550,8 +573,15 @@ export function convertOnChainRuleStructToString(
   const negEffectPlhArray = ruleS.negativeEffectPlaceHolders.map((placeholder) =>
     reverseParsePlaceholder(placeholder, names, foreignCalls, trackers, mappings)
   )
-  rJSON.positiveEffects = ruleS.posEffects.map((effect) => reverseParseEffect(effect, posEffectPlhArray))
-  rJSON.negativeEffects = ruleS.negEffects.map((effect) => reverseParseEffect(effect, negEffectPlhArray))
+  var rawDataIndex = 1
+  for (var effect of ruleS.posEffects) {
+    rJSON.positiveEffects.push(reverseParseEffect(effect, posEffectPlhArray, rawDataIndex, ruleS))
+    rawDataIndex += 1
+  }
+  for (var effect of ruleS.negEffects) {
+    rJSON.negativeEffects.push(reverseParseEffect(effect, negEffectPlhArray, rawDataIndex, ruleS))
+    rawDataIndex += 1
+  }
 
   const ruleData: RuleData = {
     id: Number(ruleId),
