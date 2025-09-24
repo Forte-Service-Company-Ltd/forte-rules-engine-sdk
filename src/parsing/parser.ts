@@ -24,6 +24,7 @@ import {
   RuleDefinition,
   trackerArrayType,
   TrackerDefinition,
+  RawData,
 } from '../modules/types'
 import { convertHumanReadableToInstructionSet } from './internal-parsing-logic'
 import {
@@ -194,21 +195,27 @@ export function parseRuleSyntax(
   const excludeArray: string[] = ruleComponents.map((name) => name.name)
   excludeArray.push(...matchArray)
   excludeArray.push(...operandArray)
-
-  const instructionSet = buildRawData(conditionInstructionSet, excludeArray)
+  var rawData: RawData = {
+    instructionSetIndex: [],
+    dataValues: [],
+    argumentTypes: [],
+  }
+  const instructionSet = buildRawData(conditionInstructionSet, excludeArray, rawData, 0)
   if (instructionSet == null) {
     return null
   }
+  var typeCount = 1
   positiveEffects.forEach((effect) => {
-    var instructionSet = buildRawData(effect.instructionSet, excludeArray)
+    var instructionSet = buildRawData(effect.instructionSet, excludeArray, rawData, typeCount)
+    typeCount += 1
     if (instructionSet == null) {
       return null
     }
     effect.instructionSet = instructionSet
   })
-
   negativeEffects.forEach((effect) => {
-    var instructionSet = buildRawData(effect.instructionSet, excludeArray)
+    var instructionSet = buildRawData(effect.instructionSet, excludeArray, rawData, typeCount)
+    typeCount += 1
     if (instructionSet == null) {
       return null
     }
@@ -217,6 +224,7 @@ export function parseRuleSyntax(
 
   return {
     instructionSet,
+    rawData,
     positiveEffects,
     negativeEffects,
     placeHolders,

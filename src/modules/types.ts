@@ -241,6 +241,7 @@ export type RuleBase = {
 export type RuleDefinition = {
   /** Set of instructions that make up the rule */
   instructionSet: InstructionSet
+  rawData: RawData
 } & RuleBase &
   EffectDefinitions
 
@@ -250,6 +251,7 @@ export type RuleDefinition = {
 export type RuleOnChain = {
   /** Set of instructions that make up the rule */
   instructionSet: number[]
+  rawData: RawData
 } & RuleBase &
   EffectsOnChain
 
@@ -564,6 +566,7 @@ export type stringReplacement = {
   instructionSetIndex: number
   /** Original data to replace */
   originalData: string
+  type: number
 }
 
 // -----------------------------------------------------------------------------
@@ -584,7 +587,7 @@ export type RawData = {
   /** Types of arguments */
   argumentTypes: number[]
   /** Values of the data */
-  dataValues: ByteArray[]
+  dataValues: any[]
 }
 
 /**
