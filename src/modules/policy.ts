@@ -23,21 +23,15 @@ import {
   Maybe,
   ForeignCallEncodedIndex,
   TrackerMetadataStruct,
-  PolicyResult,
   ContractBlockParameters,
-  CallingFunctionData,
-  CallingFunctionDataAndJSON,
-  ForeignCallDataAndJSON,
-  PolicyData,
   convertToVersionStruct,
   SUPPORTEDVERSION,
 } from './types'
-import { createForeignCall, getAllForeignCalls, getForeignCallMetadata } from './foreign-calls'
-import { createRule, getRuleMetadata, getAllRules } from './rules'
-import { createMappedTracker, getAllTrackers, getTrackerMetadata } from './trackers'
+import { createForeignCall, getAllForeignCalls, getForeignCallMetadata, updateForeignCall } from './foreign-calls'
+import { createRule, getRuleMetadata, getAllRules, updateRule } from './rules'
+import { createMappedTracker, getAllTrackers, getTrackerMetadata, updateMappedTracker, updateTracker } from './trackers'
 import { sleep } from './contract-interaction-utils'
-import { createCallingFunction, getCallingFunctionMetadata } from './calling-functions'
-import { getRule } from './rules'
+import { createCallingFunction, getCallingFunctionMetadata, updateCallingFunction } from './calling-functions'
 import { createTracker } from './trackers'
 import {
   convertOnChainRuleStructToString,
@@ -52,8 +46,10 @@ import {
   validatePolicyJSON,
   createCallingFunctionLookupMaps,
   resolveCallingFunction,
+  ForeignCallJSON,
 } from './validation'
 import { isLeft, unwrapEither } from './utils'
+import { ru } from 'zod/v4/locales/index.cjs'
 
 /**
  * @file policy.ts
@@ -96,14 +92,11 @@ export const createPolicy = async (
 ): Promise<{ policyId: number }> => {
   var fcIds: NameToID[] = []
   var trackerIds: NameToID[] = []
-  let ruleIds = []
-  let ruleToCallingFunction = new Map<string, number[]>()
-  let callingFunctions: string[] = []
-  let callingFunctionParamSets = []
-  let rulesDoubleMapping = []
-  let callingFunctionSelectors = []
-  let allFunctionMappings: hexToFunctionString[] = []
 
+  let callingFunctions: string[] = []
+  let callingFunctionParamSets: any[] = []
+  let allFunctionMappings: hexToFunctionString[] = []
+  var nonDuplicatedCallingFunctions: CallingFunctionJSON[] = []
   var policyId = -1
 
   if (policySyntax !== undefined) {
@@ -112,8 +105,6 @@ export const createPolicy = async (
       throw new Error(getRulesErrorMessages(unwrapEither(validatedPolicyJSON)))
     }
     const policyJSON = unwrapEither(validatedPolicyJSON)
-
-    var nonDuplicatedCallingFunctions: CallingFunctionJSON[] = []
 
     const addPolicy = await simulateContract(config, {
       address: rulesEnginePolicyContract.address,
@@ -131,40 +122,19 @@ export const createPolicy = async (
     })
 
     policyId = addPolicy.result
-    var fsSelectors = []
-    var fsIds = []
-    var emptyRules = []
-    for (var callingFunctionJSON of policyJSON.CallingFunctions) {
-      var callingFunction = callingFunctionJSON.functionSignature
-      if (!callingFunctions.includes(callingFunction)) {
-        const fsId = await createCallingFunction(
-          config,
-          rulesEngineComponentContract,
-          policyId,
-          callingFunction,
-          callingFunctionJSON.name,
-          callingFunctionJSON.encodedValues,
-          confirmationCount
-        )
-        if (fsId != -1) {
-          nonDuplicatedCallingFunctions.push(callingFunctionJSON)
-          callingFunctions.push(callingFunction)
-          callingFunctionParamSets.push(parseCallingFunction(callingFunctionJSON))
-          allFunctionMappings.push({
-            hex: toFunctionSelector(callingFunction),
-            functionString: callingFunction,
-            encodedValues: callingFunctionJSON.encodedValues,
-            index: -1,
-          })
-          var selector = toFunctionSelector(callingFunction)
-          fsSelectors.push(selector)
-          fsIds.push(fsId)
-          emptyRules.push([])
-        }
-      } else {
-        console.log('Policy JSON contained a duplicate calling function, the duplicate was not created')
-      }
-    }
+
+    await buildCallingFunctions(
+      config,
+      rulesEnginePolicyContract,
+      rulesEngineComponentContract,
+      callingFunctions,
+      policyJSON,
+      policyId,
+      callingFunctionParamSets,
+      allFunctionMappings,
+      nonDuplicatedCallingFunctions,
+      confirmationCount
+    )
 
     // Create lookup maps for O(1) resolution instead of O(n) find operations
     const lookupMaps = createCallingFunctionLookupMaps(nonDuplicatedCallingFunctions)
@@ -177,80 +147,236 @@ export const createPolicy = async (
       return resolveCallingFunction(callingFunctionRef, lookupMaps)
     }
 
-    await updatePolicy(
+    await buildTrackers(config, rulesEngineComponentContract, trackerIds, policyJSON, policyId, confirmationCount)
+
+    await buildForeignCalls(
       config,
       rulesEnginePolicyContract,
+      rulesEngineComponentContract,
+      rulesEngineForeignCallContract,
+      callingFunctions,
+      policyJSON,
       policyId,
-      fsSelectors,
-      emptyRules,
-      policyJSON.Policy,
-      policyJSON.Description,
+      callingFunctionParamSets,
+      fcIds,
+      trackerIds,
+      resolveFunction,
       confirmationCount
     )
-    if (policyJSON.Trackers != null) {
-      for (var tracker of policyJSON.Trackers) {
-        const parsedTracker = parseTrackerSyntax(tracker)
 
-        const trId = await createTracker(
+    await buildRules(
+      config,
+      rulesEnginePolicyContract,
+      rulesEngineComponentContract,
+      rulesEngineForeignCallContract,
+      rulesEngineRulesContract,
+      callingFunctions,
+      policyJSON,
+      policyId,
+      fcIds,
+      trackerIds,
+      resolveFunction,
+      confirmationCount
+    )
+  }
+  return { policyId }
+}
+
+const buildCallingFunctions = async (
+  config: Config,
+  rulesEnginePolicyContract: RulesEnginePolicyContract,
+  rulesEngineComponentContract: RulesEngineComponentContract,
+  callingFunctions: string[],
+  policyJSON: PolicyJSON,
+  policyId: number,
+  callingFunctionParamSets: string[][],
+  allFunctionMappings: any[],
+  nonDuplicatedCallingFunctions: CallingFunctionJSON[],
+  confirmationCount: number
+) => {
+  var fsSelectors = []
+  var fsIds = []
+  var emptyRules = []
+  for (var callingFunctionJSON of policyJSON.CallingFunctions) {
+    var callingFunction = callingFunctionJSON.functionSignature
+    if (!callingFunctions.includes(callingFunction)) {
+      let fsId = -1
+      if (callingFunctionJSON.Id !== undefined) {
+        fsId = await updateCallingFunction(
+          config,
+          rulesEngineComponentContract,
+          policyId,
+          callingFunction,
+          callingFunctionJSON.name,
+          callingFunctionJSON.encodedValues,
+          confirmationCount
+        )
+      } else {
+        fsId = await createCallingFunction(
+          config,
+          rulesEngineComponentContract,
+          policyId,
+          callingFunction,
+          callingFunctionJSON.name,
+          callingFunctionJSON.encodedValues,
+          confirmationCount
+        )
+      }
+      if (fsId != -1) {
+        nonDuplicatedCallingFunctions.push(callingFunctionJSON)
+        callingFunctions.push(callingFunction)
+        callingFunctionParamSets.push(parseCallingFunction(callingFunctionJSON))
+        allFunctionMappings.push({
+          hex: toFunctionSelector(callingFunction),
+          functionString: callingFunction,
+          encodedValues: callingFunctionJSON.encodedValues,
+          index: -1,
+        })
+        var selector = toFunctionSelector(callingFunction)
+        fsSelectors.push(selector)
+        fsIds.push(fsId)
+        emptyRules.push([])
+      }
+    } else {
+      console.log('Policy JSON contained a duplicate calling function, the duplicate was not created')
+    }
+  }
+
+  await updatePolicyInternal(
+    config,
+    rulesEnginePolicyContract,
+    policyId,
+    fsSelectors,
+    emptyRules,
+    policyJSON.Policy,
+    policyJSON.Description,
+    confirmationCount
+  )
+}
+
+const buildTrackers = async (
+  config: Config,
+  rulesEngineComponentContract: RulesEngineComponentContract,
+  trackerIds: NameToID[],
+  policyJSON: PolicyJSON,
+  policyId: number,
+  confirmationCount: number
+) => {
+  if (policyJSON.Trackers != null) {
+    for (var tracker of policyJSON.Trackers) {
+      const parsedTracker = parseTrackerSyntax(tracker)
+      let trId = -1
+      if (tracker.Id !== undefined) {
+        trId = await updateTracker(
+          config,
+          rulesEngineComponentContract,
+          policyId,
+          tracker.Id,
+          JSON.stringify(tracker),
+          confirmationCount
+        )
+      } else {
+        trId = await createTracker(
           config,
           rulesEngineComponentContract,
           policyId,
           JSON.stringify(tracker),
           confirmationCount
         )
-        if (trId != -1) {
-          var struc: NameToID = {
-            id: trId,
-            name: parsedTracker.name,
-            type: parsedTracker.type,
-          }
-          trackerIds.push(struc)
+      }
+      if (trId != -1) {
+        var struc: NameToID = {
+          id: trId,
+          name: parsedTracker.name,
+          type: parsedTracker.type,
         }
+        trackerIds.push(struc)
       }
     }
+  }
 
-    if (policyJSON.MappedTrackers != null) {
-      for (var mTracker of policyJSON.MappedTrackers) {
-        const parsedTracker = parseMappedTrackerSyntax(mTracker)
-
-        const trId = await createMappedTracker(
+  if (policyJSON.MappedTrackers != null) {
+    for (var mTracker of policyJSON.MappedTrackers) {
+      const parsedTracker = parseMappedTrackerSyntax(mTracker)
+      let trId = -1
+      if (mTracker.Id !== undefined) {
+        trId = await updateMappedTracker(
+          config,
+          rulesEngineComponentContract,
+          policyId,
+          JSON.stringify(mTracker),
+          mTracker.Id,
+          confirmationCount
+        )
+      } else {
+        trId = await createMappedTracker(
           config,
           rulesEngineComponentContract,
           policyId,
           JSON.stringify(mTracker),
           confirmationCount
         )
-        if (trId != -1) {
-          var struc: NameToID = {
-            id: trId,
-            name: parsedTracker.name,
-            type: parsedTracker.valueType,
-          }
-          trackerIds.push(struc)
+      }
+      if (trId != -1) {
+        var struc: NameToID = {
+          id: trId,
+          name: parsedTracker.name,
+          type: parsedTracker.valueType,
         }
+        trackerIds.push(struc)
       }
     }
-    if (policyJSON.ForeignCalls != null) {
-      for (var foreignCall of policyJSON.ForeignCalls) {
-        const resolvedForeignCallFunction = resolveFunction(foreignCall.callingFunction)
-        try {
-          // Find the calling function and its encoded values using the resolved function name
-          const callingFunctionIndex = callingFunctions.findIndex(
-            (cf) => cf.trim() === resolvedForeignCallFunction.trim()
+  }
+}
+
+const buildForeignCalls = async (
+  config: Config,
+  rulesEnginePolicyContract: RulesEnginePolicyContract,
+  rulesEngineComponentContract: RulesEngineComponentContract,
+  rulesEngineForeignCallContract: RulesEngineForeignCallContract,
+  callingFunctions: string[],
+  policyJSON: PolicyJSON,
+  policyId: number,
+  callingFunctionParamSets: string[][],
+  fcIds: NameToID[],
+  trackerIds: NameToID[],
+  resolveFunction: any,
+  confirmationCount: number
+) => {
+  if (policyJSON.ForeignCalls != null) {
+    for (var foreignCall of policyJSON.ForeignCalls) {
+      const resolvedForeignCallFunction = resolveFunction(foreignCall.callingFunction)
+      try {
+        // Find the calling function and its encoded values using the resolved function name
+        const callingFunctionIndex = callingFunctions.findIndex(
+          (cf) => cf.trim() === resolvedForeignCallFunction.trim()
+        )
+        if (callingFunctionIndex === -1) {
+          throw new Error(`Calling function not found: ${resolvedForeignCallFunction}`)
+        }
+        const encodedValues = callingFunctionParamSets[callingFunctionIndex]
+
+        // Create a copy of the foreign call with the resolved calling function name
+        const resolvedForeignCall = {
+          ...foreignCall,
+          callingFunction: foreignCall.callingFunction,
+        }
+
+        const fcStruct = parseForeignCallDefinition(resolvedForeignCall, fcIds, trackerIds, encodedValues)
+        let fcId = -1
+        if (foreignCall.Id !== undefined) {
+          fcId = await updateForeignCall(
+            config,
+            rulesEnginePolicyContract,
+            rulesEngineComponentContract,
+            rulesEngineForeignCallContract,
+            policyId,
+            foreignCall.Id,
+            JSON.stringify(resolvedForeignCall),
+            confirmationCount
           )
-          if (callingFunctionIndex === -1) {
-            throw new Error(`Calling function not found: ${resolvedForeignCallFunction}`)
-          }
-          const encodedValues = callingFunctionParamSets[callingFunctionIndex]
-
-          // Create a copy of the foreign call with the resolved calling function name
-          const resolvedForeignCall = {
-            ...foreignCall,
-            callingFunction: resolvedForeignCallFunction,
-          }
-
-          const fcStruct = parseForeignCallDefinition(resolvedForeignCall, fcIds, trackerIds, encodedValues)
-          const fcId = await createForeignCall(
+        } else {
+          fcId = await createForeignCall(
             config,
             rulesEngineForeignCallContract,
             rulesEngineComponentContract,
@@ -259,41 +385,77 @@ export const createPolicy = async (
             JSON.stringify(resolvedForeignCall),
             confirmationCount
           )
-
-          // Only add successfully created foreign calls to the mapping
-          if (fcId !== -1) {
-            var struc: NameToID = {
-              id: fcId,
-              name: fcStruct.name.split('(')[0],
-              type: 0,
-            }
-            fcIds.push(struc)
-          } else {
-            console.error(`Failed to create foreign call: ${fcStruct.name}`)
-          }
-        } catch (error) {
-          const errorMessage = error instanceof Error ? error.message : String(error)
-
-          // Re-throw self-reference validation errors to fail the policy creation
-          if (errorMessage.includes('cannot reference itself')) {
-            throw error
-          }
-
-          // For other errors, log and continue (existing behavior)
-          console.error(`Skipping foreign call ${foreignCall.name}: ${errorMessage}`)
         }
+
+        // Only add successfully created foreign calls to the mapping
+        if (fcId !== -1) {
+          var struc: NameToID = {
+            id: fcId,
+            name: fcStruct.name.split('(')[0],
+            type: 0,
+          }
+          fcIds.push(struc)
+        } else {
+          console.error(`Failed to create foreign call: ${fcStruct.name}`)
+        }
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error)
+
+        // Re-throw self-reference validation errors to fail the policy creation
+        if (errorMessage.includes('cannot reference itself')) {
+          throw error
+        }
+
+        // For other errors, log and continue (existing behavior)
+        console.error(`Skipping foreign call ${foreignCall.name}: ${errorMessage}`)
       }
     }
+  }
+}
 
-    // Sort rules by order field if provided, otherwise maintain original order
-    const sortedRules = [...policyJSON.Rules].sort((a, b) => {
-      const orderA = a.order !== undefined ? a.order : Number.MAX_SAFE_INTEGER
-      const orderB = b.order !== undefined ? b.order : Number.MAX_SAFE_INTEGER
-      return orderA - orderB
-    })
+const buildRules = async (
+  config: Config,
+  rulesEnginePolicyContract: RulesEnginePolicyContract,
+  rulesEngineComponentContract: RulesEngineComponentContract,
+  rulesEngineForeignCallContract: RulesEngineForeignCallContract,
+  rulesEngineRulesContract: RulesEngineRulesContract,
+  callingFunctions: string[],
+  policyJSON: PolicyJSON,
+  policyId: number,
+  fcIds: NameToID[],
+  trackerIds: NameToID[],
+  resolveFunction: any,
+  confirmationCount: number
+) => {
+  let ruleIds = []
+  let ruleToCallingFunction = new Map<string, number[]>()
+  let rulesDoubleMapping = []
+  let callingFunctionSelectors = []
+  // Sort rules by order field if provided, otherwise maintain original order
+  const sortedRules = [...policyJSON.Rules].sort((a, b) => {
+    const orderA = a.order !== undefined ? a.order : Number.MAX_SAFE_INTEGER
+    const orderB = b.order !== undefined ? b.order : Number.MAX_SAFE_INTEGER
+    return orderA - orderB
+  })
 
-    for (var rule of sortedRules) {
-      const ruleId = await createRule(
+  for (var rule of sortedRules) {
+    let ruleId = -1
+    if (rule.Id !== undefined) {
+      ruleId = await updateRule(
+        config,
+        rulesEnginePolicyContract,
+        rulesEngineRulesContract,
+        rulesEngineComponentContract,
+        rulesEngineForeignCallContract,
+        policyId,
+        rule.Id,
+        JSON.stringify(rule),
+        fcIds,
+        trackerIds,
+        confirmationCount
+      )
+    } else {
+      ruleId = await createRule(
         config,
         rulesEnginePolicyContract,
         rulesEngineRulesContract,
@@ -305,38 +467,120 @@ export const createPolicy = async (
         trackerIds,
         confirmationCount
       )
-      if (ruleId == -1) {
-        return { policyId: -1 }
-      }
-      ruleIds.push(ruleId)
-      const resolvedCallingFunction = resolveFunction(rule.callingFunction)
-      if (ruleToCallingFunction.has(resolvedCallingFunction)) {
-        ruleToCallingFunction.get(resolvedCallingFunction)?.push(ruleId)
-      } else {
-        ruleToCallingFunction.set(resolvedCallingFunction, [ruleId])
-      }
     }
-    for (var cf of callingFunctions) {
-      if (ruleToCallingFunction.has(cf)) {
-        rulesDoubleMapping.push(ruleToCallingFunction.get(cf))
-      } else {
-        rulesDoubleMapping.push([])
-      }
-      callingFunctionSelectors.push(toFunctionSelector(cf))
+    if (ruleId == -1) {
+      return { policyId: -1 }
     }
+    ruleIds.push(ruleId)
+    const resolvedCallingFunction = resolveFunction(rule.callingFunction)
+    if (ruleToCallingFunction.has(resolvedCallingFunction)) {
+      ruleToCallingFunction.get(resolvedCallingFunction)?.push(ruleId)
+    } else {
+      ruleToCallingFunction.set(resolvedCallingFunction, [ruleId])
+    }
+  }
+  for (var cf of callingFunctions) {
+    if (ruleToCallingFunction.has(cf)) {
+      rulesDoubleMapping.push(ruleToCallingFunction.get(cf))
+    } else {
+      rulesDoubleMapping.push([])
+    }
+    callingFunctionSelectors.push(toFunctionSelector(cf))
+  }
 
-    policyId = await updatePolicy(
+  policyId = await updatePolicyInternal(
+    config,
+    rulesEnginePolicyContract,
+    policyId,
+    callingFunctionSelectors,
+    rulesDoubleMapping,
+    policyJSON.Policy,
+    policyJSON.Description,
+    confirmationCount
+  )
+}
+
+export const updatePolicy = async (
+  config: Config,
+  rulesEnginePolicyContract: RulesEnginePolicyContract,
+  rulesEngineRulesContract: RulesEngineRulesContract,
+  rulesEngineComponentContract: RulesEngineComponentContract,
+  rulesEngineForeignCallContract: RulesEngineForeignCallContract,
+  confirmationCount: number,
+  policySyntax: string,
+  policyId: number
+): Promise<number> => {
+  var fcIds: NameToID[] = []
+  var trackerIds: NameToID[] = []
+  let callingFunctions: string[] = []
+  let callingFunctionParamSets: any[] = []
+  let allFunctionMappings: hexToFunctionString[] = []
+  var nonDuplicatedCallingFunctions: CallingFunctionJSON[] = []
+  if (policySyntax !== undefined) {
+    const validatedPolicyJSON = validatePolicyJSON(policySyntax)
+    if (isLeft(validatedPolicyJSON)) {
+      throw new Error(getRulesErrorMessages(unwrapEither(validatedPolicyJSON)))
+    }
+    const policyJSON = unwrapEither(validatedPolicyJSON)
+    await buildCallingFunctions(
       config,
       rulesEnginePolicyContract,
+      rulesEngineComponentContract,
+      callingFunctions,
+      policyJSON,
       policyId,
-      callingFunctionSelectors,
-      rulesDoubleMapping,
-      policyJSON.Policy,
-      policyJSON.Description,
+      callingFunctionParamSets,
+      allFunctionMappings,
+      nonDuplicatedCallingFunctions,
       confirmationCount
     )
+
+    // Create lookup maps for O(1) resolution instead of O(n) find operations
+    const lookupMaps = createCallingFunctionLookupMaps(nonDuplicatedCallingFunctions)
+
+    /**
+     * Helper function to resolve calling function name to full signature.
+     * Uses the lookup maps for O(1) performance.
+     */
+    const resolveFunction = (callingFunctionRef: string): string => {
+      return resolveCallingFunction(callingFunctionRef, lookupMaps)
+    }
+    console.log('built calling functions')
+    await buildTrackers(config, rulesEngineComponentContract, trackerIds, policyJSON, policyId, confirmationCount)
+
+    await buildForeignCalls(
+      config,
+      rulesEnginePolicyContract,
+      rulesEngineComponentContract,
+      rulesEngineForeignCallContract,
+      callingFunctions,
+      policyJSON,
+      policyId,
+      callingFunctionParamSets,
+      fcIds,
+      trackerIds,
+      resolveFunction,
+      confirmationCount
+    )
+
+    await buildRules(
+      config,
+      rulesEnginePolicyContract,
+      rulesEngineComponentContract,
+      rulesEngineForeignCallContract,
+      rulesEngineRulesContract,
+      callingFunctions,
+      policyJSON,
+      policyId,
+      fcIds,
+      trackerIds,
+      resolveFunction,
+      confirmationCount
+    )
+
+    return policyId
   }
-  return { policyId }
+  return -1
 }
 
 /**
@@ -350,7 +594,7 @@ export const createPolicy = async (
  * @param ruleIds - The mapping of rules to calling functions.
  * @returns The result of the policy update if successful, or -1 if an error occurs.
  */
-export const updatePolicy = async (
+const updatePolicyInternal = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyId: number,
@@ -652,9 +896,9 @@ export const getPolicy = async (
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   policyId: number,
   blockParams?: ContractBlockParameters
-): Promise<Maybe<PolicyResult>> => {
+): Promise<Maybe<PolicyJSON>> => {
   var allFunctionMappings: hexToFunctionString[] = []
-  const callingFunctionsDataAndJSON: CallingFunctionDataAndJSON[] = []
+  const callingFunctionsJSON: CallingFunctionJSON[] = []
   try {
     const retrievePolicy = await readContract(config, {
       address: rulesEnginePolicyContract.address,
@@ -682,21 +926,17 @@ export const getPolicy = async (
         functionString: mapp.callingFunction,
         encodedValues: mapp.encodedValues,
         index: iter,
+        name: mapp.name,
       }
       allFunctionMappings.push(newMapping)
-      const callingFunctionJSON = {
+      var callingFunctionJSON: CallingFunctionJSON = {
+        Id: _cfId,
         name: mapp.name,
         functionSignature: mapp.callingFunction,
         encodedValues: mapp.encodedValues,
       }
-      const callingFunctionData: CallingFunctionData = {
-        id: _cfId,
-        ...callingFunctionJSON,
-      }
-      callingFunctionsDataAndJSON.push({
-        data: callingFunctionData,
-        json: callingFunctionJSON,
-      })
+
+      callingFunctionsJSON.push(callingFunctionJSON)
       iter++
     }
 
@@ -768,7 +1008,7 @@ export const getPolicy = async (
       }
       allFunctionMappings.push(newMapping)
     }
-    const callStrings: ForeignCallDataAndJSON[] = convertForeignCallStructsToStrings(
+    const callStrings: ForeignCallJSON[] = convertForeignCallStructsToStrings(
       foreignCalls,
       allFunctionMappings,
       foreignCallNames
@@ -786,7 +1026,7 @@ export const getPolicy = async (
       var fs = callingFunctions[iter]
       for (var mapping of allFunctionMappings) {
         if (mapping.hex == fs) {
-          functionString = mapping.functionString
+          functionString = mapping.name || ''
           encodedValues = mapping.encodedValues
           break
         }
@@ -819,31 +1059,33 @@ export const getPolicy = async (
     }
 
     var policyJSON: PolicyJSON = {
+      Id: policyId,
       Policy: policyMeta.policyName,
       Description: policyMeta.policyDescription,
       PolicyType: PolicyType ? 'closed' : 'open',
-      CallingFunctions: callingFunctionsDataAndJSON.map((cf) => cf.json),
-      ForeignCalls: callStrings.map((fc) => fc.json),
-      Trackers: trackerJSONs.Trackers.map((tracker) => tracker.json),
-      MappedTrackers: trackerJSONs.MappedTrackers.map((tracker) => tracker.json),
-      Rules: ruleJSONObjs.map((rule) => rule.json),
+      CallingFunctions: callingFunctionsJSON,
+      ForeignCalls: callStrings,
+      Trackers: trackerJSONs.Trackers,
+      MappedTrackers: trackerJSONs.MappedTrackers,
+      Rules: ruleJSONObjs,
     }
 
-    const policyData: PolicyData = {
-      id: Number(policyId),
-      name: policyMeta.policyName,
-      description: policyMeta.policyDescription,
-      policyType: PolicyType ? 'closed' : 'open',
-      rules: ruleJSONObjs.map((rule) => rule.data),
-      foreignCalls: callStrings.map((fc) => fc.data),
-      trackers: trackerJSONs.Trackers.map((tracker) => tracker.data),
-      mappedTrackers: trackerJSONs.MappedTrackers.map((tracker) => tracker.data),
-      callingFunctions: callingFunctionsDataAndJSON.map((cf) => cf.data),
-    }
+    // const policyData: PolicyData = {
+    //   id: Number(policyId),
+    //   name: policyMeta.policyName,
+    //   description: policyMeta.policyDescription,
+    //   policyType: PolicyType ? 'closed' : 'open',
+    //   rules: ruleJSONObjs.map((rule) => rule.data),
+    //   foreignCalls: callStrings.map((fc) => fc.data),
+    //   trackers: trackerJSONs.Trackers.map((tracker) => tracker.data),
+    //   mappedTrackers: trackerJSONs.MappedTrackers.map((tracker) => tracker.data),
+    //   callingFunctions: callingFunctionsDataAndJSON.map((cf) => cf.data),
+    // }
 
-    const jsonString = JSON.stringify(policyJSON, null, 2)
+    // const jsonString = JSON.stringify(policyJSON, null, 2)
 
-    return { Policy: policyData, JSON: jsonString }
+    // return { Policy: policyData, JSON: jsonString }
+    return policyJSON
   } catch (error) {
     console.error(error)
     return null

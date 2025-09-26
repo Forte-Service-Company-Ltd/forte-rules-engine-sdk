@@ -13,7 +13,7 @@ export interface CallingFunctionJSON {
 /**
  * Creates lookup maps for efficient calling function resolution.
  * This utility function creates the necessary Map structures for O(1) lookups.
- * 
+ *
  * @param callingFunctions - Array of calling function definitions
  * @returns Object containing the three lookup maps
  */
@@ -21,20 +21,23 @@ export const createCallingFunctionLookupMaps = (callingFunctions: CallingFunctio
   const callingFunctionByName: Record<string, CallingFunctionJSON> = {}
   const callingFunctionBySignature: Record<string, CallingFunctionJSON> = {}
   const callingFunctionByNameLower: Record<string, CallingFunctionJSON> = {}
-  
+
   // Pre-populate lookup maps for efficient resolution using reduce
-  callingFunctions.reduce((maps, cf) => {
-    maps.byName[cf.name] = cf
-    maps.byNameLower[cf.name.toLowerCase()] = cf
-    if (cf.functionSignature && cf.functionSignature !== cf.name) {
-      maps.bySignature[cf.functionSignature] = cf
+  callingFunctions.reduce(
+    (maps, cf) => {
+      maps.byName[cf.name] = cf
+      maps.byNameLower[cf.name.toLowerCase()] = cf
+      if (cf.functionSignature && cf.functionSignature !== cf.name) {
+        maps.bySignature[cf.functionSignature] = cf
+      }
+      return maps
+    },
+    {
+      byName: callingFunctionByName,
+      byNameLower: callingFunctionByNameLower,
+      bySignature: callingFunctionBySignature,
     }
-    return maps
-  }, {
-    byName: callingFunctionByName,
-    byNameLower: callingFunctionByNameLower,
-    bySignature: callingFunctionBySignature
-  })
+  )
 
   return { callingFunctionByName, callingFunctionBySignature, callingFunctionByNameLower }
 }
@@ -43,7 +46,7 @@ export const createCallingFunctionLookupMaps = (callingFunctions: CallingFunctio
  * Resolves calling function name to full signature using lookup maps.
  * Supports backward compatibility by accepting both name-only references and full signatures.
  * Uses O(1) Map lookups for optimal performance.
- * 
+ *
  * @param callingFunctionRef - Either a short name or full function signature
  * @param lookupMaps - The pre-built lookup maps for efficient resolution
  * @returns The resolved function signature or the original reference if not found
@@ -57,30 +60,30 @@ export const resolveCallingFunction = (
   }
 ): string => {
   const { callingFunctionByName, callingFunctionBySignature, callingFunctionByNameLower } = lookupMaps
-  
+
   // First check if it's already a full signature (contains parentheses)
   if (callingFunctionRef.includes('(')) {
     return callingFunctionRef
   }
-  
+
   // Try to find by name field (exact match) - O(1)
   const foundByName = callingFunctionByName[callingFunctionRef]
   if (foundByName) {
     return foundByName.functionSignature || foundByName.name
   }
-  
+
   // Try case-insensitive name match - O(1)
   const foundByNameIgnoreCase = callingFunctionByNameLower[callingFunctionRef.toLowerCase()]
   if (foundByNameIgnoreCase) {
     return foundByNameIgnoreCase.functionSignature || foundByNameIgnoreCase.name
   }
-  
+
   // Try to find by functionSignature field - O(1)
   const foundBySignature = callingFunctionBySignature[callingFunctionRef]
   if (foundBySignature) {
     return foundBySignature.functionSignature || foundBySignature.name
   }
-  
+
   // Return as-is if not found (will be validated elsewhere)
   return callingFunctionRef
 }
@@ -306,13 +309,17 @@ const validateReferencedCalls = (input: any): boolean => {
   }
 
   const callingFunctionNames = input.CallingFunctions.map((call: CallingFunctionJSON) => call.name)
-  const callingFunctionSignatures = input.CallingFunctions.map((call: CallingFunctionJSON) => call.functionSignature || call.name)
+  const callingFunctionSignatures = input.CallingFunctions.map(
+    (call: CallingFunctionJSON) => call.functionSignature || call.name
+  )
   const fcCallingFunctions: string[] = input.ForeignCalls?.map((fc: any) => fc.callingFunction) ?? []
 
   // Allow foreign calls to reference either the name or the full signature
-  if (!fcCallingFunctions.every((fcName) => 
-    callingFunctionNames.includes(fcName) || callingFunctionSignatures.includes(fcName)
-  )) {
+  if (
+    !fcCallingFunctions.every(
+      (fcName) => callingFunctionNames.includes(fcName) || callingFunctionSignatures.includes(fcName)
+    )
+  ) {
     return false
   }
 
@@ -408,6 +415,7 @@ export const validateCondition = (condition: string): boolean => {
 }
 
 export const ruleValidator = z.object({
+  Id: z.number().optional(),
   Name: z.string().default(EMPTY_STRING),
   Description: z.string().default(EMPTY_STRING),
   condition: z.string().refine((val) => validateCondition(val), {
@@ -471,6 +479,7 @@ export const validateFCFunctionInput = (input: string): boolean => {
 }
 
 export const foreignCallValidator = z.object({
+  Id: z.number().optional(),
   name: z.string(),
   function: z.string().trim().refine(validateFCFunctionInput, { message: 'Unsupported argument type' }),
   address: z
@@ -603,6 +612,7 @@ const validateMappedTrackerUniqueKeys = (data: any): boolean => {
 
 export const trackerValidator = z
   .object({
+    Id: z.number().optional(),
     name: z.string().trim(),
     type: z.preprocess(trimPossibleString, z.literal(supportedTrackerTypes, 'Unsupported type')),
     initialValue: z.union([z.string().trim(), z.array(z.string().trim())]),
@@ -617,6 +627,7 @@ export interface MappedTrackerJSON extends z.infer<typeof mappedTrackerValidator
 
 export const mappedTrackerValidator = z
   .object({
+    Id: z.number().optional(),
     name: z.string().trim(),
     keyType: z.preprocess(trimPossibleString, z.literal(supportedTrackerKeyTypes, 'Unsupported key type')),
     valueType: z.preprocess(trimPossibleString, z.literal(supportedTrackerTypes, 'Unsupported type')),
@@ -644,11 +655,12 @@ export const mappedTrackerValidator = z
  */
 export const validateTrackerJSON = (tracker: string): Either<RulesError[], TrackerJSON> => {
   const parsedJson = safeParseJson(tracker)
-
+  console.log('tracker', tracker)
+  console.log('parsed', parsedJson)
   if (isLeft(parsedJson)) return parsedJson
-
+  console.log('pre parse')
   const parsed = trackerValidator.safeParse(unwrapEither(parsedJson))
-
+  console.log('parsed', parsed)
   if (parsed.success) {
     return makeRight(parsed.data)
   } else {
@@ -687,6 +699,7 @@ export const validateMappedTrackerJSON = (tracker: string): Either<RulesError[],
 }
 
 export const callingFunctionValidator = z.object({
+  Id: z.number().optional(),
   name: z.string().trim(),
   functionSignature: z.string().trim(),
   encodedValues: z.string().trim(),
@@ -740,6 +753,7 @@ const validateUniqueNames = (input: any): boolean => {
 
 export const policyJSONValidator = z
   .object({
+    Id: z.number().optional(),
     Policy: z.string().default(EMPTY_STRING),
     Description: z.string().default(EMPTY_STRING),
     PolicyType: z.string(),

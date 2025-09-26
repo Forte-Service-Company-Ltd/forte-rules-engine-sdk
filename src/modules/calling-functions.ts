@@ -175,7 +175,7 @@ export const deleteCallingFunction = async (
   config: Config,
   rulesEngineComponentContract: RulesEngineComponentContract,
   policyId: number,
-  callingFunctionId: number,
+  callingFunctionId: string,
   confirmationCount: number
 ): Promise<number> => {
   var addRule

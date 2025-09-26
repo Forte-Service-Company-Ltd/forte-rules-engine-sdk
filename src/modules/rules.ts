@@ -111,7 +111,7 @@ export const createRule = async (
   var iter = 1
   var encodedValues: string = ''
   for (var mapp of callingFunctionMetadata) {
-    if (mapp.callingFunction.trim() == ruleSyntax.callingFunction.trim()) {
+    if (mapp.name.trim() == ruleSyntax.callingFunction.trim()) {
       encodedValues = mapp.encodedValues
       break
     }
@@ -223,6 +223,7 @@ export const createRule = async (
       })
       break
     } catch (err) {
+      console.log('Rule Err', err)
       // TODO: Look into replacing this loop/sleep with setTimeout
       await sleep(1000)
     }
