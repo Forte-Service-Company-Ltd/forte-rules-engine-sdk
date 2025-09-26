@@ -2376,9 +2376,8 @@ describe('Rules Engine Interactions', async () => {
     )
 
     expect(retVal).toBeDefined()
-    expect(retVal!.Policy).toBeDefined()
 
-    const parsed = retVal?.JSON ? JSON.parse(retVal?.JSON) : null
+    const parsed = retVal!
     const input = JSON.parse(policyJSON)
 
     expect(parsed).toBeDefined()
@@ -2387,26 +2386,24 @@ describe('Rules Engine Interactions', async () => {
     // Verify empty parameter foreign call
     const emptyParamFC = parsed.ForeignCalls.find((fc: any) => fc.name === "EmptyParamCall")
     expect(emptyParamFC).toBeDefined()
-    expect(emptyParamFC.function).toEqual("checkStatus()")
-    expect(emptyParamFC.returnType).toEqual("bool")
-    expect(emptyParamFC.valuesToPass).toEqual("")
+    expect(emptyParamFC!.function).toEqual("checkStatus()")
+    expect(emptyParamFC!.returnType).toEqual("bool")
+    expect(emptyParamFC!.valuesToPass).toEqual("")
 
     // Verify void return foreign call
     const voidReturnFC = parsed.ForeignCalls.find((fc: any) => fc.name === "VoidReturnCall")
     expect(voidReturnFC).toBeDefined()
-    expect(voidReturnFC.function).toEqual("updateCounter(uint256)")
-    expect(voidReturnFC.returnType).toEqual("void")
-    expect(voidReturnFC.valuesToPass).toEqual("value")
+    expect(voidReturnFC!.function).toEqual("updateCounter(uint256)")
+    expect(voidReturnFC!.returnType).toEqual("void")
+    expect(voidReturnFC!.valuesToPass).toEqual("value")
 
     // Verify Policy data mirrors input fields (excluding exact effects matching due to encoding)
     const inputJson = JSON.parse(policyJSON)
-    expect(retVal?.Policy).toBeDefined()
+    expect(retVal).toBeDefined()
     expect(parsed.Rules.length).toEqual(inputJson.Rules.length)
     expect(parsed.Rules[0].Name).toEqual(inputJson.Rules[0].Name)
     expect(parsed.Rules[0].Description).toEqual(inputJson.Rules[0].Description)
     expect(parsed.Rules[0].condition).toEqual(inputJson.Rules[0].condition)
     expect(parsed.Rules[0].callingFunction).toEqual(inputJson.Rules[0].callingFunction)
-    
-    console.log("Test completed successfully - foreign calls with empty parameters and void returns work correctly")
   })
 })
