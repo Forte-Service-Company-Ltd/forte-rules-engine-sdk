@@ -12,14 +12,6 @@ import {
   RuleMetadataStruct,
   ForeignCallOnChain,
   TrackerMetadataStruct,
-  RuleDataAndJSON,
-  RuleData,
-  ForeignCallDataAndJSON,
-  ForeignCallData,
-  TrackerDataAndJSON,
-  MappedTrackerDataAndJSON,
-  TrackerData,
-  MappedTrackerData,
   EffectOnChain,
 } from '../modules/types'
 import {
@@ -538,15 +530,28 @@ export function convertOnChainRuleStructToString(
   foreignCalls: ForeignCallOnChain[],
   trackers: TrackerOnChain[],
   mappings: hexToFunctionString[],
-  ruleId?: number
-): RuleDataAndJSON {
-  var rJSON: RuleJSON = {
-    Name: ruleM.ruleName,
-    Description: ruleM.ruleDescription,
-    condition: '',
-    positiveEffects: [],
-    negativeEffects: [],
-    callingFunction: '',
+  ruleId: number
+): RuleJSON {
+  var rJSON: RuleJSON
+  if (ruleId > 0) {
+    rJSON = {
+      Id: ruleId,
+      Name: ruleM.ruleName,
+      Description: ruleM.ruleDescription,
+      condition: '',
+      positiveEffects: [],
+      negativeEffects: [],
+      callingFunction: '',
+    }
+  } else {
+    rJSON = {
+      Name: ruleM.ruleName,
+      Description: ruleM.ruleDescription,
+      condition: '',
+      positiveEffects: [],
+      negativeEffects: [],
+      callingFunction: '',
+    }
   }
 
   var names = parseFunctionArguments(encodedValues)
@@ -583,12 +588,7 @@ export function convertOnChainRuleStructToString(
     rawDataIndex += 1
   }
 
-  const ruleData: RuleData = {
-    id: Number(ruleId),
-    ...rJSON,
-  }
-
-  return { data: ruleData, json: rJSON }
+  return rJSON
 }
 
 /**
@@ -613,32 +613,37 @@ export function convertForeignCallStructsToStrings(
   foreignCallsOnChain: ForeignCallOnChain[],
   callingFunctionMappings: hexToFunctionString[],
   names: string[]
-): ForeignCallDataAndJSON[] {
-  const foreignCalls: ForeignCallDataAndJSON[] = foreignCallsOnChain.map((call, iter) => {
+): ForeignCallJSON[] {
+  const foreignCalls: ForeignCallJSON[] = foreignCallsOnChain.map((call, iter) => {
     const functionMeta = callingFunctionMappings.find((mapping) => mapping.hex === call.signature)
 
     const returnTypeString = PT.find((pType) => pType.enumeration == call.returnType)?.name
 
     const callingFunction = callingFunctionMappings.find((mapping) => mapping.hex == call.callingFunctionSelector)
-    const inputs: ForeignCallJSON = {
-      name: names[iter],
-      address: call.foreignCallAddress as Address,
-      function: functionMeta?.functionString || '',
-      returnType: returnTypeString || 'string',
-      valuesToPass: functionMeta?.encodedValues || '',
-      mappedTrackerKeyValues: '',
-      callingFunction: callingFunction?.functionString || '',
+    var inputs: ForeignCallJSON
+    if (call.foreignCallIndex > 0) {
+      inputs = {
+        Id: call.foreignCallIndex,
+        name: names[iter],
+        address: call.foreignCallAddress as Address,
+        function: functionMeta?.functionString || '',
+        returnType: returnTypeString || 'string',
+        valuesToPass: functionMeta?.encodedValues || '',
+        mappedTrackerKeyValues: '',
+        callingFunction: callingFunction?.name || '',
+      }
+    } else {
+      inputs = {
+        name: names[iter],
+        address: call.foreignCallAddress as Address,
+        function: functionMeta?.functionString || '',
+        returnType: returnTypeString || 'string',
+        valuesToPass: functionMeta?.encodedValues || '',
+        mappedTrackerKeyValues: '',
+        callingFunction: callingFunction?.name || '',
+      }
     }
-
-    const foreignCallData: ForeignCallData = {
-      id: Number(call.foreignCallIndex),
-      ...inputs,
-    }
-
-    return {
-      data: foreignCallData,
-      json: inputs,
-    }
+    return inputs
   })
 
   return foreignCalls
@@ -675,35 +680,34 @@ export function convertTrackerStructsToStrings(
   trackerNames: TrackerMetadataStruct[],
   mappedTrackerNames: TrackerMetadataStruct[]
 ): {
-  Trackers: TrackerDataAndJSON[]
-  MappedTrackers: MappedTrackerDataAndJSON[]
+  Trackers: TrackerJSON[]
+  MappedTrackers: MappedTrackerJSON[]
 } {
-  const Trackers: TrackerDataAndJSON[] = trackers
+  const Trackers: TrackerJSON[] = trackers
     .filter((tracker) => !tracker.mapped)
     .map((tracker, iter) => {
       const trackerType = PT.find((pt) => pt.enumeration === tracker.pType)?.name || 'string'
 
       var initialValue = retrieveDecoded(tracker.pType, trackerNames[iter].initialValue)
 
-      const inputs: TrackerJSON = {
-        name: trackerNames[iter].trackerName,
-        type: trackerType,
-        initialValue: initialValue,
-      }
-      const validatedInputs = validateTrackerJSON(JSON.stringify(inputs))
-      if (isRight(validatedInputs)) {
-        const trackerJSON = unwrapEither(validatedInputs)
-        const trackerData: TrackerData = {
-          id: Number(tracker.trackerIndex),
-          ...trackerJSON,
+      var inputs: TrackerJSON
+      if (tracker.trackerIndex > 0) {
+        inputs = {
+          Id: tracker.trackerIndex,
+          name: trackerNames[iter].trackerName,
+          type: trackerType,
+          initialValue: initialValue,
         }
-
-        return { data: trackerData, json: trackerJSON }
       } else {
-        throw new Error(`Invalid tracker input: ${JSON.stringify(validatedInputs.left)}`)
+        inputs = {
+          name: trackerNames[iter].trackerName,
+          type: trackerType,
+          initialValue: initialValue,
+        }
       }
+      return inputs
     })
-  const MappedTrackers: MappedTrackerDataAndJSON[] = trackers
+  const MappedTrackers: MappedTrackerJSON[] = trackers
     .filter((tracker) => tracker.mapped)
     .map((tracker, iter) => {
       const valueType = PT.find((pt) => pt.enumeration === tracker.pType)?.name || 'string'
@@ -723,24 +727,26 @@ export function convertTrackerStructsToStrings(
         values.push(decodedValue)
       }
 
-      const inputs: MappedTrackerJSON = {
-        name: mappedTrackerNames[iter].trackerName,
-        valueType,
-        keyType,
-        initialKeys: keys,
-        initialValues: values,
-      }
-      const validatedInputs = validateMappedTrackerJSON(JSON.stringify(inputs))
-      if (isRight(validatedInputs)) {
-        const mappedTrackerJSON = unwrapEither(validatedInputs)
-        const mappedTrackerData: MappedTrackerData = {
-          id: Number(tracker.trackerIndex),
-          ...mappedTrackerJSON,
+      var inputs: MappedTrackerJSON
+      if (tracker.trackerIndex > 0) {
+        inputs = {
+          Id: tracker.trackerIndex,
+          name: mappedTrackerNames[iter].trackerName,
+          valueType,
+          keyType,
+          initialKeys: keys,
+          initialValues: values,
         }
-        return { data: mappedTrackerData, json: mappedTrackerJSON }
       } else {
-        throw new Error(`Invalid mapped tracker input: ${JSON.stringify(validatedInputs.left)}`)
+        inputs = {
+          name: mappedTrackerNames[iter].trackerName,
+          valueType,
+          keyType,
+          initialKeys: keys,
+          initialValues: values,
+        }
       }
+      return inputs
     })
   return {
     Trackers,

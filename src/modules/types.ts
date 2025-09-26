@@ -7,15 +7,6 @@ import RulesEngineRuleLogicArtifact from '@fortefoundation/forte-rules-engine/ou
 import RulesEngineAdminLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineAdminRolesFacet.sol/RulesEngineAdminRolesFacet.json'
 import RulesEngineForeignCallLogicArtifact from '@fortefoundation/forte-rules-engine/out/RulesEngineForeignCallFacet.sol/RulesEngineForeignCallFacet.json'
 
-import {
-  CallingFunctionJSON,
-  ForeignCallJSON,
-  MappedTrackerJSON,
-  PolicyJSON,
-  RuleJSON,
-  TrackerJSON,
-} from './validation'
-
 /**
  * @file types.ts
  * @description This module provides the comprehensive set types that are used throughout the SDK
@@ -209,15 +200,6 @@ export type CallingFunctionHashMapping = {
   name: string
 }
 
-export interface CallingFunctionData extends CallingFunctionJSON {
-  id: string
-}
-
-export type CallingFunctionDataAndJSON = {
-  data: CallingFunctionData
-  json: CallingFunctionJSON
-}
-
 // -----------------------------------------------------------------------------
 // Rule Types
 // -----------------------------------------------------------------------------
@@ -283,42 +265,9 @@ export type RuleStorageSet = {
   rule: any
 }
 
-export interface RuleData extends RuleJSON {
-  id: number
-}
-
-export type RuleDataAndJSON = {
-  data: RuleData
-  json: RuleJSON
-}
-
 // -----------------------------------------------------------------------------
 // Policy Types
 // -----------------------------------------------------------------------------
-
-/**
- * Result type for the getPolicy function
- * Contains both the parsed policy object and its JSON string representation
- */
-export type PolicyResult = {
-  /** The parsed policy object */
-  Policy: PolicyData
-  /** The JSON string representation of the policy */
-  JSON: string
-}
-
-export interface PolicyData {
-  /** The rules defined in the policy */
-  id: number
-  name: string
-  description: string
-  policyType: string
-  rules: RuleData[]
-  foreignCalls: ForeignCallData[]
-  trackers: TrackerData[]
-  mappedTrackers: MappedTrackerData[]
-  callingFunctions: CallingFunctionData[]
-}
 
 /**
  * Metadata about a policy
@@ -426,15 +375,6 @@ export type ForeignCallArgument = FunctionArgument & {
   fcPlaceholder: string
 }
 
-export interface ForeignCallData extends ForeignCallJSON {
-  id: number
-}
-
-export type ForeignCallDataAndJSON = {
-  data: ForeignCallData
-  json: ForeignCallJSON
-}
-
 // -----------------------------------------------------------------------------
 // Tracker Types
 // -----------------------------------------------------------------------------
@@ -513,26 +453,6 @@ export type TrackerArgument = FunctionArgument & {
   rawType: 'tracker'
   /** Secondary raw type information */
   rawTypeTwo?: string
-}
-
-export interface TrackerData extends TrackerJSON {
-  /** ID of the tracker */
-  id: number
-}
-
-export type TrackerDataAndJSON = {
-  data: TrackerData
-  json: TrackerJSON
-}
-
-export interface MappedTrackerData extends MappedTrackerJSON {
-  /** ID of the mapped tracker */
-  id: number
-}
-
-export type MappedTrackerDataAndJSON = {
-  data: MappedTrackerData
-  json: MappedTrackerJSON
 }
 
 // -----------------------------------------------------------------------------

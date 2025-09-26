@@ -41,7 +41,6 @@ import {
   PolicyMetadataStruct,
   TrackerMetadataStruct,
   ContractBlockParameters,
-  PolicyResult,
   CallingFunctionOnChain,
   ForeignCallOnChain,
 } from './types'
@@ -133,6 +132,7 @@ import {
   getCallingFunctions as getAllCallingFunctionsInternal,
 } from './calling-functions'
 import { Config } from '@wagmi/core'
+import { PolicyJSON } from './validation'
 
 var config: Config
 
@@ -264,27 +264,20 @@ export class RulesEngine {
   /**
    * Updates an existing policy in the Rules Engine.
    *
-   * @param policyId - The ID of the policy to update.
-   * @param callingFunctions - The calling functions associated with the policy.
-   * @param ruleIds - The mapping of rules to calling functions.
-   * @returns The result of the policy update.
+   *
+   * @param policyJSON - Policy defined in a JSON string.
+   * @returns The ID of the updated policy.
    */
-  updatePolicy(
-    policyId: number,
-    callingFunctions: any[],
-    ruleIds: any[],
-    name: string,
-    description: string
-  ): Promise<number> {
+  updatePolicy(policySyntax: string, policyId: number): Promise<number> {
     return updatePolicyInternal(
       config,
       this.rulesEnginePolicyContract,
-      policyId,
-      callingFunctions,
-      ruleIds,
-      name,
-      description,
-      this.confirmationCount
+      this.rulesEngineRulesContract,
+      this.rulesEngineComponentContract,
+      this.rulesEngineForeignCallContract,
+      this.confirmationCount,
+      policySyntax,
+      policyId
     )
   }
 
@@ -353,7 +346,7 @@ export class RulesEngine {
    * @param blockParams - Optional parameters to specify block number or tag for the contract read operation.
    * @returns — A PolicyResult object containing both the policy object and JSON string, or an empty string if an error occurs.
    */
-  getPolicy(policyId: number, blockParams?: ContractBlockParameters): Promise<Maybe<PolicyResult>> {
+  getPolicy(policyId: number, blockParams?: ContractBlockParameters): Promise<Maybe<PolicyJSON>> {
     return getPolicyInternal(
       config,
       this.rulesEnginePolicyContract,
@@ -1210,7 +1203,7 @@ export class RulesEngine {
    *
    * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
    */
-  deleteCallingFunction(policyId: number, callingFunctionId: number): Promise<number> {
+  deleteCallingFunction(policyId: number, callingFunctionId: string): Promise<number> {
     return deleteCallingFunctionInternal(
       config,
       this.rulesEngineComponentContract,
@@ -1221,7 +1214,7 @@ export class RulesEngine {
   }
 
   /**
-   * retrieves the metadata for a calling function from the rules engine component contract.
+   * retrieves the metadata for a xscalling function from the rules engine component contract.
    *
    * @param policyId - The ID of the policy which the calling function belongs to.
    * @param callingFunctionId - The Calling Function ID.

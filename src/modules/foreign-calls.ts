@@ -20,6 +20,7 @@ import { getAllTrackers, getTrackerMetadata } from './trackers'
 import { getCallingFunctionMetadata } from './calling-functions'
 import { isLeft, unwrapEither } from './utils'
 import { ForeignCallJSON, getRulesErrorMessages, validateForeignCallJSON } from './validation'
+import { convertForeignCallStructsToStrings } from '../parsing/reverse-parsing-logic'
 
 /**
  * @file ForeignCalls.ts
@@ -46,7 +47,7 @@ const getCFIndexAndEncodedValues = (
   cfMetaData: CallingFunctionHashMapping[],
   fcJSON: ForeignCallJSON
 ): { cfIndex: number; cfEncodedValues: string[] } => {
-  const cfIndex = cfMetaData.findIndex((cf) => cf.callingFunction.trim() == fcJSON.callingFunction.trim())
+  const cfIndex = cfMetaData.findIndex((cf) => cf.name.trim() == fcJSON.callingFunction.trim())
   const callingFunction = cfMetaData[cfIndex]
   const cfEncodedValues = parseCallingFunction({
     name: fcJSON.callingFunction,
@@ -126,7 +127,6 @@ export const createForeignCall = async (
     getCallingFunctionMetadata(config, rulesEngineComponentContract, policyId, cfId)
   )
   const callingFunctionMetadata = await Promise.all(callingFunctionsMetadataCalls)
-
   const json = validateForeignCallJSON(fcSyntax)
   if (isLeft(json)) {
     throw new Error(getRulesErrorMessages(unwrapEither(json)))
@@ -406,6 +406,7 @@ export const getForeignCall = async (
       ...blockParams,
     })
     let foreignCallResult = addFC as ForeignCallOnChain
+
     return foreignCallResult
   } catch (error) {
     console.error(error)
