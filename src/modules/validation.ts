@@ -128,7 +128,9 @@ export const safeParseJson = (input: string): Either<RulesError[], object> => {
 export const PType = PT.map((p) => p.name) // ["address", "string", "uint256", "bool", "void", "bytes"]
 
 export const splitFunctionInput = (input: string): string[] => {
-  return input?.split('(')[1]?.split(')')[0]?.split(',') || []
+  const params = input?.split('(')[1]?.split(')')[0]?.trim() || '';
+  // Return empty array for empty parameters instead of array with empty string
+  return params === '' ? [] : params.split(',').map(p => p.trim());
 }
 
 /**
@@ -275,6 +277,11 @@ const validateValuesToPass = (
   mappedTrackerNames: string[],
   valuesToPass: string
 ): boolean => {
+  // Handle empty valuesToPass - this is valid for functions with no parameters
+  if (valuesToPass.trim() === '') {
+    return true
+  }
+  
   return valuesToPass
     .split(',')
     .map((value) => {
