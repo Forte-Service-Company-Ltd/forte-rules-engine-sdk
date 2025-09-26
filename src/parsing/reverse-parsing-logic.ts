@@ -686,13 +686,11 @@ export function convertTrackerStructsToStrings(
   const Trackers: TrackerJSON[] = trackers
     .filter((tracker) => !tracker.mapped)
     .map((tracker, iter) => {
-      console.log('pre pre')
       const trackerType = PT.find((pt) => pt.enumeration === tracker.pType)?.name || 'string'
 
       var initialValue = retrieveDecoded(tracker.pType, trackerNames[iter].initialValue)
 
       var inputs: TrackerJSON
-      console.log('pre')
       if (tracker.trackerIndex > 0) {
         inputs = {
           Id: tracker.trackerIndex,
@@ -707,16 +705,7 @@ export function convertTrackerStructsToStrings(
           initialValue: initialValue,
         }
       }
-      // console.log('inputs', inputs)
-      // const validatedInputs = validateTrackerJSON(JSON.stringify(inputs))
-      // console.log('validated', validatedInputs)
-      // if (isRight(validatedInputs)) {
-      const trackerJSON = inputs //unwrapEither(validatedInputs)
-
-      return trackerJSON
-      // } else {
-      //   throw new Error(`Invalid tracker input: ${JSON.stringify(validatedInputs.left)}`)
-      // }
+      return inputs
     })
   const MappedTrackers: MappedTrackerJSON[] = trackers
     .filter((tracker) => tracker.mapped)
@@ -758,13 +747,6 @@ export function convertTrackerStructsToStrings(
         }
       }
       return inputs
-      // const validatedInputs = validateMappedTrackerJSON(JSON.stringify(inputs))
-      // if (isRight(validatedInputs)) {
-      //   const mappedTrackerJSON = unwrapEither(validatedInputs)
-      //   return mappedTrackerJSON
-      // } else {
-      //   throw new Error(`Invalid mapped tracker input: ${JSON.stringify(validatedInputs.left)}`)
-      // }
     })
   return {
     Trackers,

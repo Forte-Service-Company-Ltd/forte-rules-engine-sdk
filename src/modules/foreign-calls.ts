@@ -48,9 +48,6 @@ const getCFIndexAndEncodedValues = (
   fcJSON: ForeignCallJSON
 ): { cfIndex: number; cfEncodedValues: string[] } => {
   const cfIndex = cfMetaData.findIndex((cf) => cf.name.trim() == fcJSON.callingFunction.trim())
-  console.log('CFINDEX', cfIndex)
-  console.log(cfMetaData)
-  console.log(fcJSON)
   const callingFunction = cfMetaData[cfIndex]
   const cfEncodedValues = parseCallingFunction({
     name: fcJSON.callingFunction,
@@ -130,7 +127,6 @@ export const createForeignCall = async (
     getCallingFunctionMetadata(config, rulesEngineComponentContract, policyId, cfId)
   )
   const callingFunctionMetadata = await Promise.all(callingFunctionsMetadataCalls)
-  console.log('SYNTAX', fcSyntax)
   const json = validateForeignCallJSON(fcSyntax)
   if (isLeft(json)) {
     throw new Error(getRulesErrorMessages(unwrapEither(json)))

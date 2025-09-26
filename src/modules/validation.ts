@@ -655,12 +655,8 @@ export const mappedTrackerValidator = z
  */
 export const validateTrackerJSON = (tracker: string): Either<RulesError[], TrackerJSON> => {
   const parsedJson = safeParseJson(tracker)
-  console.log('tracker', tracker)
-  console.log('parsed', parsedJson)
   if (isLeft(parsedJson)) return parsedJson
-  console.log('pre parse')
   const parsed = trackerValidator.safeParse(unwrapEither(parsedJson))
-  console.log('parsed', parsed)
   if (parsed.success) {
     return makeRight(parsed.data)
   } else {

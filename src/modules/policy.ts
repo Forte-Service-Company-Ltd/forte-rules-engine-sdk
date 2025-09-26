@@ -500,6 +500,16 @@ const buildRules = async (
   )
 }
 
+/**
+ * Updates a policy in the Rules Engine, including rules, trackers, and foreign calls.
+ *
+ * @param rulesEnginePolicyContract - The contract instance for interacting with the Rules Engine Policy.
+ * @param rulesEngineRulesContract - The contract instance for interacting with the Rules Engine Rules.
+ * @param rulesEngineComponentContract - The contract instance for interacting with the Rules Engine Component.
+ * @param policySyntax - The JSON string representing the policy syntax.
+ * @param policyId - the ID of the policy to be updated
+ * @returns The ID of the updated policy.
+ */
 export const updatePolicy = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
@@ -545,7 +555,6 @@ export const updatePolicy = async (
     const resolveFunction = (callingFunctionRef: string): string => {
       return resolveCallingFunction(callingFunctionRef, lookupMaps)
     }
-    console.log('built calling functions')
     await buildTrackers(config, rulesEngineComponentContract, trackerIds, policyJSON, policyId, confirmationCount)
 
     await buildForeignCalls(
@@ -1070,21 +1079,6 @@ export const getPolicy = async (
       Rules: ruleJSONObjs,
     }
 
-    // const policyData: PolicyData = {
-    //   id: Number(policyId),
-    //   name: policyMeta.policyName,
-    //   description: policyMeta.policyDescription,
-    //   policyType: PolicyType ? 'closed' : 'open',
-    //   rules: ruleJSONObjs.map((rule) => rule.data),
-    //   foreignCalls: callStrings.map((fc) => fc.data),
-    //   trackers: trackerJSONs.Trackers.map((tracker) => tracker.data),
-    //   mappedTrackers: trackerJSONs.MappedTrackers.map((tracker) => tracker.data),
-    //   callingFunctions: callingFunctionsDataAndJSON.map((cf) => cf.data),
-    // }
-
-    // const jsonString = JSON.stringify(policyJSON, null, 2)
-
-    // return { Policy: policyData, JSON: jsonString }
     return policyJSON
   } catch (error) {
     console.error(error)
