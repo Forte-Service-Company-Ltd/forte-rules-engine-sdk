@@ -88,7 +88,6 @@ export function processSyntax(
   components = [...components, ...effectCalls]
 
   const [finalSyntax, effectTrackers] = parseTrackers(updatedSyntax, components, trackerNameToID)
-
   const gvEComponents = parseGlobalVariables(finalSyntax)
 
   return [finalSyntax, [...components, ...effectTrackers, ...gvEComponents]]

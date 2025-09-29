@@ -702,7 +702,6 @@ export const validateMappedTrackerJSON = (tracker: string): Either<RulesError[],
 }
 
 export const callingFunctionValidator = z.object({
-  Id: z.number().optional(),
   name: z.string().trim(),
   functionSignature: z.string().trim(),
   encodedValues: z.string().trim(),

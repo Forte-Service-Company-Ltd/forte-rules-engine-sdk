@@ -129,16 +129,30 @@ export function parseTrackers(
   const updatedTrackers: TrackerArgument[] = updateMatchesSet
     .map((name: string): Maybe<TrackerArgument> => {
       let tIndex = 0
+      let rawTypeTwo = 'address'
       name = name.replace('TRU:', 'TR:')
       const tracker = trackerNameToID.find((tr) => 'TR:' + tr.name == name)
       if (tracker) {
         tIndex = tracker.id
+
+        if (tracker.type == 0) {
+          rawTypeTwo = 'address'
+        } else if (tracker.type == 1) {
+          rawTypeTwo = 'string'
+        } else if (tracker.type == 3) {
+          rawTypeTwo = 'bool'
+        } else if (tracker.type == 5) {
+          rawTypeTwo = 'bytes'
+        } else {
+          rawTypeTwo = 'uint256'
+        }
       }
       if (![...names, ...trackers].some((item) => item.name == name)) {
         return {
           name,
           tIndex,
           rawType: 'tracker',
+          rawTypeTwo,
         }
       }
 

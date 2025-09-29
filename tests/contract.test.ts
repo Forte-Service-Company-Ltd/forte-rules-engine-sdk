@@ -1148,9 +1148,9 @@ describe('Rules Engine Interactions', async () => {
                      "PolicyType": "open",
                      "CallingFunctions": [
                        {
-                         "name": "transfer(address to, uint256 value)",
-                         "functionSignature": "transfer(address to, uint256 value)",
-                         "encodedValues": "address to, uint256 value"
+                         "name": "transfer",
+                         "functionSignature": "transfer(address to, uint256 value, bool someValue)",
+                         "encodedValues": "address to, uint256 value, bool someValue"
                        }
                      ],
                      "ForeignCalls": [
@@ -1161,7 +1161,7 @@ describe('Rules Engine Interactions', async () => {
                            "returnType": "uint256",
                            "valuesToPass": "to",
                            "mappedTrackerKeyValues": "",
-                           "callingFunction": "transfer(address to, uint256 value)"
+                           "callingFunction": "transfer"
                        },
                        {
                            "name": "ATestForeignCall",
@@ -1170,7 +1170,7 @@ describe('Rules Engine Interactions', async () => {
                            "returnType": "uint256",
                            "valuesToPass": "FC:AnotherTestForeignCall, TR:trackerOne",
                            "mappedTrackerKeyValues": "",
-                           "callingFunction": "transfer(address to, uint256 value)"
+                           "callingFunction": "transfer"
                        }
 
                      ],
@@ -1192,10 +1192,10 @@ describe('Rules Engine Interactions', async () => {
                          {
                              "Name": "Rule A",
                              "Description": "Rule A Description",
-                             "condition": "FC:ATestForeignCall > 1000",
+                             "condition": "FC:ATestForeignCall > 1000 AND someValue == true",
                              "positiveEffects": ["emit \\"Success\\"", "FC:AnotherTestForeignCall", "TRU:mappedTrackerOne(to) += 1"],
                              "negativeEffects": ["revert(\\"Negative\\")", "TRU:trackerOne += 12"],
-                             "callingFunction": "transfer(address to, uint256 value)"
+                             "callingFunction": "transfer"
                          }
                      ]
                      }`
