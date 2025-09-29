@@ -31,7 +31,12 @@ import { createForeignCall, getAllForeignCalls, getForeignCallMetadata, updateFo
 import { createRule, getRuleMetadata, getAllRules, updateRule } from './rules'
 import { createMappedTracker, getAllTrackers, getTrackerMetadata, updateMappedTracker, updateTracker } from './trackers'
 import { sleep } from './contract-interaction-utils'
-import { createCallingFunction, getCallingFunctionMetadata, updateCallingFunction } from './calling-functions'
+import {
+  createCallingFunction,
+  getCallingFunctionMetadata,
+  getCallingFunctions,
+  updateCallingFunction,
+} from './calling-functions'
 import { createTracker } from './trackers'
 import {
   convertOnChainRuleStructToString,
@@ -197,11 +202,18 @@ const buildCallingFunctions = async (
   var fsSelectors = []
   var fsIds = []
   var emptyRules = []
+  var existingIds = []
+  if (policyId > 0) {
+    var existingCallingFunctions = await getCallingFunctions(config, rulesEngineComponentContract, policyId)
+    for (var callingFunc of existingCallingFunctions) {
+      existingIds.push(callingFunc.signature)
+    }
+  }
   for (var callingFunctionJSON of policyJSON.CallingFunctions) {
     var callingFunction = callingFunctionJSON.functionSignature
     if (!callingFunctions.includes(callingFunction)) {
       let fsId = -1
-      if (callingFunctionJSON.Id !== undefined) {
+      if (existingIds.includes(callingFunction)) {
         fsId = await updateCallingFunction(
           config,
           rulesEngineComponentContract,
@@ -939,7 +951,6 @@ export const getPolicy = async (
       }
       allFunctionMappings.push(newMapping)
       var callingFunctionJSON: CallingFunctionJSON = {
-        Id: _cfId,
         name: mapp.name,
         functionSignature: mapp.callingFunction,
         encodedValues: mapp.encodedValues,

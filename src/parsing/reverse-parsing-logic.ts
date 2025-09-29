@@ -1,6 +1,6 @@
 /// SPDX-License-Identifier: BUSL-1.1
 
-import { Address, decodeAbiParameters, hexToString, parseAbiParameters } from 'viem'
+import { Address, decodeAbiParameters, hexToString, parseAbiParameters, toHex } from 'viem'
 import {
   stringReplacement,
   RuleOnChain,
@@ -423,12 +423,24 @@ export const reverseParsePlaceholder = (
     if (map) {
       // For foreign calls, the name field should always be provided since foreign call names are required
       // Fallback to extracting from functionString for backward compatibility
-      return 'FC:' + (map.name || map.functionString.split('(')[0])
+      var str = 'FC:' + map.name || map.functionString.split('(')[0]
+      if (call?.returnType == 0) {
+        str = str + '!' + 'address'
+      } else if (call?.returnType == 3) {
+        str = str + '!' + 'bool'
+      }
+      return str
     }
     return 'FC:unknown'
   } else if (placeholder.flags == 0x02) {
     const map = mappings.find((map) => map.index === placeholder.typeSpecificIndex)
-    return 'TR:' + map?.functionString
+    var strTR = map?.functionString
+    if (placeholder.pType == 0) {
+      strTR = strTR + '!' + 'address'
+    } else if (placeholder.pType == 3) {
+      strTR = strTR + '!' + 'bool'
+    }
+    return 'TR:' + strTR
   } else if (placeholder.flags == 0x04) {
     return 'GV:MSG_SENDER'
   } else if (placeholder.flags == 0x08) {
@@ -440,7 +452,7 @@ export const reverseParsePlaceholder = (
   } else if (placeholder.flags == 0x14) {
     return 'GV:TX_ORIGIN'
   } else {
-    return names[placeholder.typeSpecificIndex].name
+    return names[placeholder.typeSpecificIndex].name + '!' + names[placeholder.typeSpecificIndex].rawType
   }
 }
 
@@ -555,7 +567,6 @@ export function convertOnChainRuleStructToString(
   }
 
   var names = parseFunctionArguments(encodedValues)
-
   const plhArray = ruleS.placeHolders.map((placeholder) =>
     reverseParsePlaceholder(placeholder, names, foreignCalls, trackers, mappings)
   )
@@ -570,7 +581,6 @@ export function convertOnChainRuleStructToString(
   }
   rJSON.condition = reverseParseInstructionSet(ruleS!.instructionSet, plhArray, stringReplacements, 0)
   rJSON.callingFunction = functionString
-
   const posEffectPlhArray = ruleS.positiveEffectPlaceHolders.map((placeholder) =>
     reverseParsePlaceholder(placeholder, names, foreignCalls, trackers, mappings)
   )
@@ -578,6 +588,7 @@ export function convertOnChainRuleStructToString(
   const negEffectPlhArray = ruleS.negativeEffectPlaceHolders.map((placeholder) =>
     reverseParsePlaceholder(placeholder, names, foreignCalls, trackers, mappings)
   )
+
   var rawDataIndex = 1
   for (var effect of ruleS.posEffects) {
     rJSON.positiveEffects.push(reverseParseEffect(effect, posEffectPlhArray, rawDataIndex, ruleS))
@@ -798,6 +809,46 @@ function arithmeticOperatorReverseInterpretation(
     }
   }
   if (currentActionIndex == 1) {
+    var firstParameterIsPlaceholder = false
+    var firstParameterType = 'uint256'
+    var secondParameterIsPlaceholder = false
+    var secondParameterType = 'uint256'
+    if (typeof currentInstructionValues[0] === 'string') {
+      if (currentInstructionValues[0].split('!').length > 1) {
+        firstParameterIsPlaceholder = true
+        if (currentInstructionValues[0].split('!')[1].includes(')')) {
+          currentInstructionValues[0] = currentInstructionValues[0].split('!')[0] + ')'
+        } else {
+          firstParameterType = currentInstructionValues[0].split('!')[1]
+          currentInstructionValues[0] = currentInstructionValues[0].split('!')[0]
+        }
+      }
+    }
+
+    if (typeof currentInstructionValues[1] === 'string') {
+      if (currentInstructionValues[1].split('!').length > 1) {
+        secondParameterIsPlaceholder = true
+        secondParameterType = currentInstructionValues[1].split('!')[1]
+        currentInstructionValues[1] = currentInstructionValues[1].split('!')[0]
+      }
+    } else {
+      if (firstParameterIsPlaceholder) {
+        if (firstParameterType == 'bool') {
+          currentInstructionValues[1] = currentInstructionValues[1] == 0 ? 'false' : 'true'
+        } else if (firstParameterType == 'address') {
+          currentInstructionValues[1] = toHex(currentInstructionValues[1])
+        }
+      }
+    }
+
+    if (secondParameterIsPlaceholder && !firstParameterIsPlaceholder) {
+      if (secondParameterType == 'bool') {
+        currentInstructionValues[0] = currentInstructionValues[0] == 0 ? 'false' : 'true'
+      } else if (firstParameterType == 'address') {
+        currentInstructionValues[0] = toHex(currentInstructionValues[0])
+      }
+    }
+
     var currentString = currentInstructionValues[0] + symbol + currentInstructionValues[1]
     memAddressesMap.push({ memAddr: currentMemAddress, value: currentString })
     return currentString
@@ -837,4 +888,7 @@ function logicalOperatorReverseInterpretation(
     return currentString
   }
   return ''
+}
+function toAddress(arg0: string): any {
+  throw new Error('Function not implemented.')
 }
