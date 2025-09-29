@@ -570,8 +570,8 @@ export enum pTypeEnum {
   BOOL = 3,
   VOID = 4,
   BYTES = 5,
-  STATIC_TYPE_ARRAY = 6,
-  DYNAMIC_TYPE_ARRAY = 7,
+  ARRAY_OF_VALUE_TYPES = 6,
+  ARRAY_OF_REFERENCE_TYPES = 7,
 }
 
 /**
@@ -596,11 +596,11 @@ export const PT = [
   { name: 'bool', enumeration: pTypeEnum.BOOL },
   { name: 'void', enumeration: pTypeEnum.VOID },
   { name: 'bytes', enumeration: pTypeEnum.BYTES },
-  { name: 'address[]', enumeration: pTypeEnum.STATIC_TYPE_ARRAY },
-  { name: 'uint256[]', enumeration: pTypeEnum.STATIC_TYPE_ARRAY },
-  { name: 'bool[]', enumeration: pTypeEnum.STATIC_TYPE_ARRAY },
-  { name: 'string[]', enumeration: pTypeEnum.DYNAMIC_TYPE_ARRAY },
-  { name: 'bytes[]', enumeration: pTypeEnum.DYNAMIC_TYPE_ARRAY },
+  { name: 'address[]', enumeration: pTypeEnum.ARRAY_OF_VALUE_TYPES },
+  { name: 'uint256[]', enumeration: pTypeEnum.ARRAY_OF_VALUE_TYPES },
+  { name: 'bool[]', enumeration: pTypeEnum.ARRAY_OF_VALUE_TYPES },
+  { name: 'string[]', enumeration: pTypeEnum.ARRAY_OF_REFERENCE_TYPES },
+  { name: 'bytes[]', enumeration: pTypeEnum.ARRAY_OF_REFERENCE_TYPES },
 ]
 
 export const PTNames = PT.map((pt) => pt.name)
