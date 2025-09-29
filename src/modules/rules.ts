@@ -73,14 +73,14 @@ export const createRule = async (
   foreignCallNameToID: NameToID[],
   trackerNameToID: NameToID[],
   confirmationCount: number
-): Promise<number> => {
+): Promise<{ ruleId: number; transactionHash: `0x${string}` }> => {
   const validatedRuleSyntax = validateRuleJSON(ruleS)
   const validatedEffectSyntax = validateRuleJSON(ruleS)
   if (isLeft(validatedRuleSyntax)) {
-    return -1
+    return { ruleId: -1, transactionHash: '0x0' as `0x${string}` }
   }
   if (isLeft(validatedEffectSyntax)) {
-    return -1
+    return { ruleId: -1, transactionHash: '0x0' as `0x${string}` }
   }
   const ruleSyntax = unwrapEither(validatedRuleSyntax)
   const effectSyntax = unwrapEither(validatedEffectSyntax)
@@ -90,7 +90,7 @@ export const createRule = async (
       (effectSyntax.negativeEffects != null && effectSyntax.negativeEffects.length > 0)
     )
   ) {
-    return -1
+    return { ruleId: -1, transactionHash: '0x0' as `0x${string}` }
   }
 
   const retrievePolicy = await readContract(config, {
@@ -198,7 +198,7 @@ export const createRule = async (
     fullFCListEff
   )
   if (effects == null) {
-    return -1
+    return { ruleId: -1, transactionHash: '0x0' as `0x${string}` }
   }
   var rule = buildAnOnChainRule(
     ruleSyntax,
@@ -210,7 +210,7 @@ export const createRule = async (
     fullFCListEff
   )
   if (rule == null) {
-    return -1
+    return { ruleId: -1, transactionHash: '0x0' as `0x${string}` }
   }
   var addRule
   var failureCount = 0
@@ -227,7 +227,7 @@ export const createRule = async (
       if (failureCount < 5) {
         failureCount += 1
       } else {
-        return -1
+        return { ruleId: -1, transactionHash: '0x0' as `0x${string}` }
       }
       await sleep(1000)
     }
@@ -242,9 +242,9 @@ export const createRule = async (
       hash: returnHash,
     })
 
-    return addRule.result
+    return { ruleId: addRule.result, transactionHash: returnHash }
   }
-  return -1
+  return { ruleId: -1, transactionHash: '0x0' as `0x${string}` }
 }
 
 /**
@@ -272,10 +272,10 @@ export const updateRule = async (
   foreignCallNameToID: NameToID[],
   trackerNameToID: NameToID[],
   confirmationCount: number
-): Promise<number> => {
+): Promise<{ ruleId: number; transactionHash: `0x${string}` }> => {
   const validatedRuleSyntax = validateRuleJSON(ruleS)
   if (isLeft(validatedRuleSyntax)) {
-    return -1
+    return { ruleId: -1, transactionHash: '0x0' as `0x${string}` }
   }
 
   const ruleSyntax = unwrapEither(validatedRuleSyntax)
@@ -377,7 +377,7 @@ export const updateRule = async (
     fullFCListEff
   )
   if (effects == null) {
-    return -1
+    return { ruleId: -1, transactionHash: '0x0' as `0x${string}` }
   }
   var rule = buildAnOnChainRule(
     ruleSyntax,
@@ -389,7 +389,7 @@ export const updateRule = async (
     fullFCListEff
   )
   if (rule == null) {
-    return -1
+    return { ruleId: -1, transactionHash: '0x0' as `0x${string}` }
   }
   var addRule
   var failureCount = 0
@@ -406,7 +406,7 @@ export const updateRule = async (
       if (failureCount < 5) {
         failureCount += 1
       } else {
-        return -1
+        return { ruleId: -1, transactionHash: '0x0' as `0x${string}` }
       }
       await sleep(1000)
     }
@@ -421,9 +421,9 @@ export const updateRule = async (
       hash: returnHash,
     })
 
-    return addRule.result
+    return { ruleId: addRule.result, transactionHash: returnHash }
   }
-  return -1
+  return { ruleId: -1, transactionHash: '0x0' as `0x${string}` }
 }
 
 /**

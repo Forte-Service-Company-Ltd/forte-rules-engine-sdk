@@ -58,7 +58,7 @@ export const createCallingFunction = async (
   name: string,
   encodedValues: string,
   confirmationCount: number
-): Promise<number> => {
+): Promise<{ functionId: number; transactionHash: `0x${string}` }> => {
   const args: number[] = encodedValues.split(',').map((val) => determinePTEnumeration(val.trim().split(' ')[0]))
   var addRule
   var duplicate = await checkIfSelectorExists(config, rulesEngineComponentContract, policyId, callingFunction)
@@ -77,7 +77,7 @@ export const createCallingFunction = async (
         if (failureCount < 5) {
           failureCount += 1
         } else {
-          return -1
+          return { functionId: -1, transactionHash: '0x0' as `0x${string}` }
         }
         await sleep(1000)
       }
@@ -92,10 +92,10 @@ export const createCallingFunction = async (
         hash: returnHash,
       })
 
-      return addRule.result
+      return { functionId: addRule.result, transactionHash: returnHash }
     }
   }
-  return -1
+  return { functionId: -1, transactionHash: '0x0' as `0x${string}` }
 }
 
 /**
@@ -120,7 +120,7 @@ export const updateCallingFunction = async (
   name: string,
   encodedValues: string,
   confirmationCount: number
-): Promise<number> => {
+): Promise<{ functionId: number; transactionHash: `0x${string}` }> => {
   const args: number[] = encodedValues.split(',').map((val) => determinePTEnumeration(val.trim().split(' ')[0]))
   var addRule
   var failureCount = 0
@@ -137,7 +137,7 @@ export const updateCallingFunction = async (
       if (failureCount < 5) {
         failureCount += 1
       } else {
-        return -1
+        return { functionId: -1, transactionHash: '0x0' as `0x${string}` }
       }
       await sleep(1000)
     }
@@ -152,9 +152,9 @@ export const updateCallingFunction = async (
       hash: returnHash,
     })
 
-    return addRule.result
+    return { functionId: addRule.result, transactionHash: returnHash }
   }
-  return -1
+  return { functionId: -1, transactionHash: '0x0' as `0x${string}` }
 }
 
 const checkIfSelectorExists = async (

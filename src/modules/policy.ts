@@ -94,7 +94,14 @@ export const createPolicy = async (
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   confirmationCount: number,
   policySyntax?: string
-): Promise<{ policyId: number }> => {
+): Promise<{
+  callingFunctions: { functionId: number; transactionHash: `0x${string}` }[];
+  trackers: { trackerId: number; transactionHash: `0x${string}` }[];
+  foreignCalls: { foreignCallId: number; transactionHash: `0x${string}` }[];
+  rules: { ruleId: number; transactionHash: `0x${string}` }[];
+  policyId: number;
+  transactionHash: `0x${string}`;
+}> => {
   var fcIds: NameToID[] = []
   var trackerIds: NameToID[] = []
 
@@ -103,6 +110,7 @@ export const createPolicy = async (
   let allFunctionMappings: hexToFunctionString[] = []
   var nonDuplicatedCallingFunctions: CallingFunctionJSON[] = []
   var policyId = -1
+  var transactionHash: `0x${string}` = '0x0'
 
   if (policySyntax !== undefined) {
     const validatedPolicyJSON = validatePolicyJSON(policySyntax)
@@ -117,32 +125,29 @@ export const createPolicy = async (
       functionName: 'createPolicy',
       args: [1, policyJSON.Policy, policyJSON.Description],
     })
-    const returnHash = await writeContract(config, {
+    transactionHash = await writeContract(config, {
       ...addPolicy.request,
       account: config.getClient().account,
     })
     const transactionReceipt = await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
-      hash: returnHash,
+      hash: transactionHash,
     })
 
     policyId = addPolicy.result
-    try {
-      await buildCallingFunctions(
-        config,
-        rulesEnginePolicyContract,
-        rulesEngineComponentContract,
-        callingFunctions,
-        policyJSON,
-        policyId,
-        callingFunctionParamSets,
-        allFunctionMappings,
-        nonDuplicatedCallingFunctions,
-        confirmationCount
-      )
-    } catch (err) {
-      throw err
-    }
+
+    const callingFunctionResults = await buildCallingFunctions(
+      config,
+      rulesEnginePolicyContract,
+      rulesEngineComponentContract,
+      callingFunctions,
+      policyJSON,
+      policyId,
+      callingFunctionParamSets,
+      allFunctionMappings,
+      nonDuplicatedCallingFunctions,
+      confirmationCount
+    )
 
     // Create lookup maps for O(1) resolution instead of O(n) find operations
     const lookupMaps = createCallingFunctionLookupMaps(nonDuplicatedCallingFunctions)
@@ -197,7 +202,6 @@ export const createPolicy = async (
       throw err
     }
   }
-  return { policyId }
 }
 
 const buildCallingFunctions = async (
@@ -211,11 +215,12 @@ const buildCallingFunctions = async (
   allFunctionMappings: any[],
   nonDuplicatedCallingFunctions: CallingFunctionJSON[],
   confirmationCount: number
-) => {
+): Promise<{ functionId: number; transactionHash: `0x${string}` }[]> => {
   var fsSelectors = []
   var fsIds = []
   var emptyRules = []
   var existingIds = []
+  var transactionHashes: { functionId: number; transactionHash: `0x${string}` }[] = []
   if (policyId > 0) {
     var existingCallingFunctions = await getCallingFunctions(config, rulesEngineComponentContract, policyId)
     for (var callingFunc of existingCallingFunctions) {
@@ -225,9 +230,9 @@ const buildCallingFunctions = async (
   for (var callingFunctionJSON of policyJSON.CallingFunctions) {
     var callingFunction = callingFunctionJSON.functionSignature
     if (!callingFunctions.includes(callingFunction)) {
-      let fsId = -1
+      let result: { functionId: number; transactionHash: `0x${string}` }
       if (existingIds.includes(toFunctionSelector(callingFunction))) {
-        fsId = await updateCallingFunction(
+        result = await updateCallingFunction(
           config,
           rulesEngineComponentContract,
           policyId,
@@ -237,7 +242,7 @@ const buildCallingFunctions = async (
           confirmationCount
         )
       } else {
-        fsId = await createCallingFunction(
+        result = await createCallingFunction(
           config,
           rulesEngineComponentContract,
           policyId,
@@ -247,7 +252,8 @@ const buildCallingFunctions = async (
           confirmationCount
         )
       }
-      if (fsId != -1) {
+      if (result.functionId != -1) {
+        transactionHashes.push(result)
         nonDuplicatedCallingFunctions.push(callingFunctionJSON)
         callingFunctions.push(callingFunction)
         callingFunctionParamSets.push(parseCallingFunction(callingFunctionJSON))
@@ -259,7 +265,7 @@ const buildCallingFunctions = async (
         })
         var selector = toFunctionSelector(callingFunction)
         fsSelectors.push(selector)
-        fsIds.push(fsId)
+        fsIds.push(result.functionId)
         emptyRules.push([])
       } else {
         throw new Error(`Invalid calling function syntax: ${JSON.stringify(callingFunction)}`)
@@ -279,6 +285,8 @@ const buildCallingFunctions = async (
     policyJSON.Description,
     confirmationCount
   )
+  
+  return transactionHashes
 }
 
 const buildTrackers = async (
@@ -288,13 +296,15 @@ const buildTrackers = async (
   policyJSON: PolicyJSON,
   policyId: number,
   confirmationCount: number
-) => {
+): Promise<{ trackerId: number; transactionHash: `0x${string}` }[]> => {
+  var transactionHashes: { trackerId: number; transactionHash: `0x${string}` }[] = []
+  
   if (policyJSON.Trackers != null) {
     for (var tracker of policyJSON.Trackers) {
       const parsedTracker = parseTrackerSyntax(tracker)
-      let trId = -1
+      let result: { trackerId: number; transactionHash: `0x${string}` }
       if (tracker.Id !== undefined) {
-        trId = await updateTracker(
+        result = await updateTracker(
           config,
           rulesEngineComponentContract,
           policyId,
@@ -303,7 +313,7 @@ const buildTrackers = async (
           confirmationCount
         )
       } else {
-        trId = await createTracker(
+        result = await createTracker(
           config,
           rulesEngineComponentContract,
           policyId,
@@ -311,9 +321,10 @@ const buildTrackers = async (
           confirmationCount
         )
       }
-      if (trId != -1) {
+      if (result.trackerId != -1) {
+        transactionHashes.push(result)
         var struc: NameToID = {
-          id: trId,
+          id: result.trackerId,
           name: parsedTracker.name,
           type: parsedTracker.type,
         }
@@ -329,6 +340,7 @@ const buildTrackers = async (
       const parsedTracker = parseMappedTrackerSyntax(mTracker)
       let trId = -1
       if (mTracker.Id !== undefined) {
+        // Note: updateMappedTracker currently returns number, needs to be updated later
         trId = await updateMappedTracker(
           config,
           rulesEngineComponentContract,
@@ -338,6 +350,7 @@ const buildTrackers = async (
           confirmationCount
         )
       } else {
+        // Note: createMappedTracker currently returns number, needs to be updated later
         trId = await createMappedTracker(
           config,
           rulesEngineComponentContract,
@@ -358,6 +371,8 @@ const buildTrackers = async (
       }
     }
   }
+  
+  return transactionHashes
 }
 
 const buildForeignCalls = async (
@@ -373,19 +388,41 @@ const buildForeignCalls = async (
   trackerIds: NameToID[],
   resolveFunction: any,
   confirmationCount: number
-) => {
+): Promise<{ foreignCallId: number; transactionHash: `0x${string}` }[]> => {
+  var transactionHashes: { foreignCallId: number; transactionHash: `0x${string}` }[] = []
+  
   if (policyJSON.ForeignCalls != null) {
     for (var foreignCall of policyJSON.ForeignCalls) {
       const resolvedForeignCallFunction = resolveFunction(foreignCall.callingFunction)
       try {
         // Find the calling function and its encoded values using the resolved function name
-        const callingFunctionIndex = callingFunctions.findIndex(
+        let callingFunctionIndex = callingFunctions.findIndex(
           (cf) => cf.trim() === resolvedForeignCallFunction.trim()
         )
+        let encodedValues: string[]
+        
         if (callingFunctionIndex === -1) {
-          throw new Error(`Calling function not found: ${resolvedForeignCallFunction}`)
+          // Calling function not found in current update, check if it exists from previous updates
+          const existingCallingFunctions = await getCallingFunctions(config, rulesEngineComponentContract, policyId)
+          const existingFunction = existingCallingFunctions.find(cf => {
+            // Try to match by function selector
+            try {
+              const selector = toFunctionSelector(resolvedForeignCallFunction)
+              return cf.signature === selector
+            } catch {
+              return false
+            }
+          })
+          
+          if (!existingFunction) {
+            throw new Error(`Calling function not found: ${resolvedForeignCallFunction}`)
+          }
+          
+          // Use the existing function's parameter types as encoded values
+          encodedValues = existingFunction.parameterTypes.map(String)
+        } else {
+          encodedValues = callingFunctionParamSets[callingFunctionIndex]
         }
-        const encodedValues = callingFunctionParamSets[callingFunctionIndex]
 
         // Create a copy of the foreign call with the resolved calling function name
         const resolvedForeignCall = {
@@ -394,9 +431,9 @@ const buildForeignCalls = async (
         }
 
         const fcStruct = parseForeignCallDefinition(resolvedForeignCall, fcIds, trackerIds, encodedValues)
-        let fcId = -1
+        let result: { foreignCallId: number; transactionHash: `0x${string}` }
         if (foreignCall.Id !== undefined) {
-          fcId = await updateForeignCall(
+          result = await updateForeignCall(
             config,
             rulesEnginePolicyContract,
             rulesEngineComponentContract,
@@ -407,7 +444,7 @@ const buildForeignCalls = async (
             confirmationCount
           )
         } else {
-          fcId = await createForeignCall(
+          result = await createForeignCall(
             config,
             rulesEngineForeignCallContract,
             rulesEngineComponentContract,
@@ -419,9 +456,10 @@ const buildForeignCalls = async (
         }
 
         // Only add successfully created foreign calls to the mapping
-        if (fcId !== -1) {
+        if (result.foreignCallId !== -1) {
+          transactionHashes.push(result)
           var struc: NameToID = {
-            id: fcId,
+            id: result.foreignCallId,
             name: fcStruct.name.split('(')[0],
             type: 0,
           }
@@ -442,6 +480,8 @@ const buildForeignCalls = async (
       }
     }
   }
+  
+  return transactionHashes
 }
 
 const buildRules = async (
@@ -457,11 +497,12 @@ const buildRules = async (
   trackerIds: NameToID[],
   resolveFunction: any,
   confirmationCount: number
-) => {
+): Promise<{ transactionHashes: { ruleId: number; transactionHash: `0x${string}` }[]; policyId: number }> => {
   let ruleIds = []
   let ruleToCallingFunction = new Map<string, number[]>()
   let rulesDoubleMapping = []
   let callingFunctionSelectors = []
+  var transactionHashes: { ruleId: number; transactionHash: `0x${string}` }[] = []
   // Sort rules by order field if provided, otherwise maintain original order
   const sortedRules = [...policyJSON.Rules].sort((a, b) => {
     const orderA = a.order !== undefined ? a.order : Number.MAX_SAFE_INTEGER
@@ -470,9 +511,9 @@ const buildRules = async (
   })
 
   for (var rule of sortedRules) {
-    let ruleId = -1
+    let result: { ruleId: number; transactionHash: `0x${string}` }
     if (rule.Id !== undefined) {
-      ruleId = await updateRule(
+      result = await updateRule(
         config,
         rulesEnginePolicyContract,
         rulesEngineRulesContract,
@@ -486,7 +527,7 @@ const buildRules = async (
         confirmationCount
       )
     } else {
-      ruleId = await createRule(
+      result = await createRule(
         config,
         rulesEnginePolicyContract,
         rulesEngineRulesContract,
@@ -499,15 +540,16 @@ const buildRules = async (
         confirmationCount
       )
     }
-    if (ruleId == -1) {
+    if (result.ruleId == -1) {
       throw new Error(`Invalid rule syntax: ${JSON.stringify(rule)}`)
     }
-    ruleIds.push(ruleId)
+    transactionHashes.push(result)
+    ruleIds.push(result.ruleId)
     const resolvedCallingFunction = resolveFunction(rule.callingFunction)
     if (ruleToCallingFunction.has(resolvedCallingFunction)) {
-      ruleToCallingFunction.get(resolvedCallingFunction)?.push(ruleId)
+      ruleToCallingFunction.get(resolvedCallingFunction)?.push(result.ruleId)
     } else {
-      ruleToCallingFunction.set(resolvedCallingFunction, [ruleId])
+      ruleToCallingFunction.set(resolvedCallingFunction, [result.ruleId])
     }
   }
   for (var cf of callingFunctions) {
@@ -529,6 +571,8 @@ const buildRules = async (
     policyJSON.Description,
     confirmationCount
   )
+  
+  return { transactionHashes, policyId }
 }
 
 /**
@@ -550,7 +594,13 @@ export const updatePolicy = async (
   confirmationCount: number,
   policySyntax: string,
   policyId: number
-): Promise<number> => {
+): Promise<{
+  callingFunctions: { functionId: number; transactionHash: `0x${string}` }[];
+  trackers: { trackerId: number; transactionHash: `0x${string}` }[];
+  foreignCalls: { foreignCallId: number; transactionHash: `0x${string}` }[];
+  rules: { ruleId: number; transactionHash: `0x${string}` }[];
+  policyId: number;
+}> => {
   var fcIds: NameToID[] = []
   var trackerIds: NameToID[] = []
   let callingFunctions: string[] = []
@@ -634,7 +684,6 @@ export const updatePolicy = async (
     }
     return policyId
   }
-  return -1
 }
 
 /**
@@ -703,7 +752,7 @@ export const setPolicies = async (
   policyIds: [number],
   contractAddressForPolicy: Address,
   confirmationCount: number
-): Promise<void> => {
+): Promise<{ transactionHash: `0x${string}` }> => {
   var applyPolicy
   while (true) {
     try {
@@ -721,15 +770,17 @@ export const setPolicies = async (
   }
 
   if (applyPolicy != null) {
-    const returnHash = await writeContract(config, {
+    const transactionHash = await writeContract(config, {
       ...applyPolicy.request,
       account: config.getClient().account,
     })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
-      hash: returnHash,
+      hash: transactionHash,
     })
+    return { transactionHash }
   }
+  return { transactionHash: '0x0' as `0x${string}` }
 }
 
 /**
@@ -789,7 +840,7 @@ export const appendPolicy = async (
   policyId: number,
   contractAddressForPolicy: Address,
   confirmationCount: number
-): Promise<void> => {
+): Promise<{ transactionHash: `0x${string}` }> => {
   const retrievePolicies = await readContract(config, {
     address: rulesEnginePolicyContract.address,
     abi: rulesEnginePolicyContract.abi,
@@ -800,7 +851,7 @@ export const appendPolicy = async (
   let policyResult = retrievePolicies as [number]
   policyResult.push(policyId)
 
-  setPolicies(config, rulesEnginePolicyContract, policyResult, contractAddressForPolicy, confirmationCount)
+  return setPolicies(config, rulesEnginePolicyContract, policyResult, contractAddressForPolicy, confirmationCount)
 }
 
 /**
@@ -809,14 +860,14 @@ export const appendPolicy = async (
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEnginePolicyContract - The contract instance for interacting with the Rules Engine Policy.
  * @param policyId - The ID of the policy to delete.
- * @returns `0` if successful, `-1` if an error occurs.
+ * @returns Object with `result` (`0` if successful, `-1` if an error occurs) and `transactionHash`.
  */
 export const deletePolicy = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyId: number,
   confirmationCount: number
-): Promise<number> => {
+): Promise<{ result: number; transactionHash: `0x${string}` }> => {
   var addFC
   try {
     addFC = await simulateContract(config, {
@@ -826,21 +877,23 @@ export const deletePolicy = async (
       args: [policyId],
     })
   } catch (err) {
-    return -1
+    throw new Error(`Failed to simulate delete policy transaction: ${err}`)
   }
 
   if (addFC != null) {
-    const returnHash = await writeContract(config, {
+    const transactionHash = await writeContract(config, {
       ...addFC.request,
       account: config.getClient().account,
     })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
-      hash: returnHash,
+      hash: transactionHash,
     })
+    
+    return { result: 0, transactionHash }
   }
 
-  return 0
+  throw new Error('Failed to delete policy: simulation returned null')
 }
 
 const getFunctionArgument = (encodedArgs: string, index: number): string => {
@@ -1285,14 +1338,14 @@ export async function isDisabledPolicy(
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEnginePolicyContract - The contract instance for interacting with the Rules Engine Policy.
  * @param policyId - The ID of the policy to close.
- * @returns `0` if successful, `-1` if an error occurs.
+ * @returns Object with `result` (`0` if successful, `-1` if an error occurs) and `transactionHash`.
  */
 export const closePolicy = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyId: number,
   confirmationCount: number
-): Promise<number> => {
+): Promise<{ result: number; transactionHash: `0x${string}` }> => {
   var addFC
   try {
     addFC = await simulateContract(config, {
@@ -1302,21 +1355,23 @@ export const closePolicy = async (
       args: [policyId],
     })
   } catch (err) {
-    return -1
+    throw new Error(`Failed to simulate close policy transaction: ${err}`)
   }
 
   if (addFC != null) {
-    const returnHash = await writeContract(config, {
+    const transactionHash = await writeContract(config, {
       ...addFC.request,
       account: config.getClient().account,
     })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
-      hash: returnHash,
+      hash: transactionHash,
     })
+    
+    return { result: 0, transactionHash }
   }
 
-  return 0
+  throw new Error('Failed to close policy: simulation returned null')
 }
 
 /**
@@ -1325,14 +1380,14 @@ export const closePolicy = async (
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEnginePolicyContract - The contract instance for interacting with the Rules Engine Policy.
  * @param policyId - The ID of the policy to open.
- * @returns `0` if successful, `-1` if an error occurs.
+ * @returns Object with `result` (`0` if successful, `-1` if an error occurs) and `transactionHash`.
  */
 export const openPolicy = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyId: number,
   confirmationCount: number
-): Promise<number> => {
+): Promise<{ result: number; transactionHash: `0x${string}` }> => {
   var addFC
   try {
     addFC = await simulateContract(config, {
@@ -1342,21 +1397,23 @@ export const openPolicy = async (
       args: [policyId],
     })
   } catch (err) {
-    return -1
+    throw new Error(`Failed to simulate open policy transaction: ${err}`)
   }
 
   if (addFC != null) {
-    const returnHash = await writeContract(config, {
+    const transactionHash = await writeContract(config, {
       ...addFC.request,
       account: config.getClient().account,
     })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
-      hash: returnHash,
+      hash: transactionHash,
     })
+    
+    return { result: 0, transactionHash }
   }
 
-  return 0
+  throw new Error('Failed to open policy: simulation returned null')
 }
 
 /**
@@ -1395,7 +1452,7 @@ export async function isClosedPolicySubscriber(
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEngineComponentContract - The contract instance for interacting with the Rules Engine Components.
  * @param policyId - The ID of the policy to add to.
- * @returns `0` if successful, `-1` if an error occurs.
+ * @returns Object with `result` (`0` if successful, `-1` if an error occurs) and `transactionHash`.
  */
 export const addClosedPolicySubscriber = async (
   config: Config,
@@ -1403,7 +1460,7 @@ export const addClosedPolicySubscriber = async (
   policyId: number,
   subscriber: Address,
   confirmationCount: number
-): Promise<number> => {
+): Promise<{ result: number; transactionHash: `0x${string}` }> => {
   var addFC
   try {
     addFC = await simulateContract(config, {
@@ -1413,21 +1470,23 @@ export const addClosedPolicySubscriber = async (
       args: [policyId, subscriber],
     })
   } catch (err) {
-    return -1
+    throw new Error(`Failed to simulate add closed policy subscriber transaction: ${err}`)
   }
 
   if (addFC != null) {
-    const returnHash = await writeContract(config, {
+    const transactionHash = await writeContract(config, {
       ...addFC.request,
       account: config.getClient().account,
     })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
-      hash: returnHash,
+      hash: transactionHash,
     })
+    
+    return { result: 0, transactionHash }
   }
 
-  return 0
+  throw new Error('Failed to add closed policy subscriber: simulation returned null')
 }
 
 /**
@@ -1437,7 +1496,7 @@ export const addClosedPolicySubscriber = async (
  * @param rulesEngineComponentContract - The contract instance for interacting with the Rules Engine Components.
  * @param policyId - The ID of the policy to remove from.
  * @param subscriber - The address of the subscriber to remove.
- * @returns `0` if successful, `-1` if an error occurs.
+ * @returns Object with `result` (`0` if successful, `-1` if an error occurs) and `transactionHash`.
  */
 export const removeClosedPolicySubscriber = async (
   config: Config,
@@ -1445,7 +1504,7 @@ export const removeClosedPolicySubscriber = async (
   policyId: number,
   subscriber: Address,
   confirmationCount: number
-): Promise<number> => {
+): Promise<{ result: number; transactionHash: `0x${string}` }> => {
   var addFC
   try {
     addFC = await simulateContract(config, {
@@ -1455,21 +1514,23 @@ export const removeClosedPolicySubscriber = async (
       args: [policyId, subscriber],
     })
   } catch (err) {
-    return -1
+    throw new Error(`Failed to simulate remove closed policy subscriber transaction: ${err}`)
   }
 
   if (addFC != null) {
-    const returnHash = await writeContract(config, {
+    const transactionHash = await writeContract(config, {
       ...addFC.request,
       account: config.getClient().account,
     })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
-      hash: returnHash,
+      hash: transactionHash,
     })
+    
+    return { result: 0, transactionHash }
   }
 
-  return 0
+  throw new Error('Failed to remove closed policy subscriber: simulation returned null')
 }
 
 /**
@@ -1478,14 +1539,14 @@ export const removeClosedPolicySubscriber = async (
  * @param config - The configuration object containing network and wallet information.
  * @param rulesEnginePolicyContract - The contract instance for interacting with the Rules Engine Policy.
  * @param policyId - The ID of the policy to cement.
- * @returns `0` if successful, `-1` if an error occurs.
+ * @returns Object with `result` (`0` if successful, `-1` if an error occurs) and `transactionHash`.
  */
 export const cementPolicy = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyId: number,
   confirmationCount: number
-): Promise<number> => {
+): Promise<{ result: number; transactionHash: `0x${string}` }> => {
   var addFC
   try {
     addFC = await simulateContract(config, {
@@ -1495,21 +1556,23 @@ export const cementPolicy = async (
       args: [policyId],
     })
   } catch (err) {
-    return -1
+    throw new Error(`Failed to simulate cement policy transaction: ${err}`)
   }
 
   if (addFC != null) {
-    const returnHash = await writeContract(config, {
+    const transactionHash = await writeContract(config, {
       ...addFC.request,
       account: config.getClient().account,
     })
     await waitForTransactionReceipt(config, {
       confirmations: confirmationCount,
-      hash: returnHash,
+      hash: transactionHash,
     })
+    
+    return { result: 0, transactionHash }
   }
 
-  return 0
+  throw new Error('Failed to cement policy: simulation returned null')
 }
 
 /**

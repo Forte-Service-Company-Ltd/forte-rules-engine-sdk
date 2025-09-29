@@ -229,9 +229,16 @@ export class RulesEngine {
    * Creates a policy in the Rules Engine.
    *
    * @param policyJSON - Policy defined in a JSON string.
-   * @returns The ID of the newly created policy.
+   * @returns An object containing the policy ID, transaction hash, and individual transaction hashes for all created components.
    */
-  createPolicy(policyJSON: string): Promise<{ policyId: number }> {
+  createPolicy(policyJSON: string): Promise<{
+    callingFunctions: { functionId: number; transactionHash: `0x${string}` }[];
+    trackers: { trackerId: number; transactionHash: `0x${string}` }[];
+    foreignCalls: { foreignCallId: number; transactionHash: `0x${string}` }[];
+    rules: { ruleId: number; transactionHash: `0x${string}` }[];
+    policyId: number;
+    transactionHash: `0x${string}`;
+  }> {
     return createPolicyInternal(
       config,
       this.rulesEnginePolicyContract,
@@ -266,9 +273,15 @@ export class RulesEngine {
    *
    *
    * @param policyJSON - Policy defined in a JSON string.
-   * @returns The ID of the updated policy.
+   * @returns The ID of the updated policy and the transaction hashes of the updated components.
    */
-  updatePolicy(policySyntax: string, policyId: number): Promise<number> {
+  updatePolicy(policySyntax: string, policyId: number): Promise<{
+    callingFunctions: { functionId: number; transactionHash: `0x${string}` }[];
+    trackers: { trackerId: number; transactionHash: `0x${string}` }[];
+    foreignCalls: { foreignCallId: number; transactionHash: `0x${string}` }[];
+    rules: { ruleId: number; transactionHash: `0x${string}` }[];
+    policyId: number;
+  }> {
     return updatePolicyInternal(
       config,
       this.rulesEnginePolicyContract,
@@ -333,9 +346,9 @@ export class RulesEngine {
    * Deletes a policy from the Rules Engine.
    *
    * @param policyId - The ID of the policy to delete.
-   * @returns `0` if successful, `-1` if an error occurs.
+   * @returns Object with `result` (0 if successful, -1 if error) and `transactionHash`.
    */
-  deletePolicy(policyId: number): Promise<number> {
+  deletePolicy(policyId: number): Promise<{ result: number; transactionHash: `0x${string}` }> {
     return deletePolicyInternal(config, this.rulesEnginePolicyContract, policyId, this.confirmationCount)
   }
 
@@ -418,9 +431,9 @@ export class RulesEngine {
    * Opens a policy on the Rules Engine.
    *
    * @param policyId - The ID of the policy to open.
-   * @returns `0` if successful, `-1` if an error occurs.
+   * @returns Object with `result` (0 if successful, -1 if error) and `transactionHash`.
    */
-  openPolicy(policyId: number): Promise<number> {
+  openPolicy(policyId: number): Promise<{ result: number; transactionHash: `0x${string}` }> {
     return openPolicyInternal(config, this.rulesEnginePolicyContract, policyId, this.confirmationCount)
   }
 
@@ -428,9 +441,9 @@ export class RulesEngine {
    * Closes a policy on the Rules Engine.
    *
    * @param policyId - The ID of the policy to close.
-   * @returns `0` if successful, `-1` if an error occurs.
+   * @returns Object with `result` (0 if successful, -1 if error) and `transactionHash`.
    */
-  closePolicy(policyId: number): Promise<number> {
+  closePolicy(policyId: number): Promise<{ result: number; transactionHash: `0x${string}` }> {
     return closePolicyInternal(config, this.rulesEnginePolicyContract, policyId, this.confirmationCount)
   }
 
@@ -459,9 +472,9 @@ export class RulesEngine {
    *
    * @param policyId - The ID of the policy to add to.
    * @param subscriber - The address of the subscriber to add.
-   * @returns `0` if successful, `-1` if an error occurs.
+   * @returns Object with `result` (0 if successful, -1 if error) and `transactionHash`.
    */
-  addClosedPolicySubscriber(policyId: number, subscriber: Address): Promise<number> {
+  addClosedPolicySubscriber(policyId: number, subscriber: Address): Promise<{ result: number; transactionHash: `0x${string}` }> {
     return addClosedPolicySubscriberInternal(
       config,
       this.rulesEngineComponentContract,
@@ -476,9 +489,9 @@ export class RulesEngine {
    *
    * @param policyId - The ID of the policy to remove from.
    * @param subscriber - The address of the subscriber to remove.
-   * @returns `0` if successful, `-1` if an error occurs.
+   * @returns Object with `result` (0 if successful, -1 if error) and `transactionHash`.
    */
-  removeClosedPolicySubscriber(policyId: number, subscriber: Address): Promise<number> {
+  removeClosedPolicySubscriber(policyId: number, subscriber: Address): Promise<{ result: number; transactionHash: `0x${string}` }> {
     return removeClosedPolicySubscriberInternal(
       config,
       this.rulesEngineComponentContract,
@@ -506,7 +519,7 @@ export class RulesEngine {
     ruleS: string,
     foreignCallNameToID: NameToID[],
     trackerNameToID: NameToID[]
-  ): Promise<number> {
+  ): Promise<{ ruleId: number; transactionHash: `0x${string}` }> {
     return createRuleInternal(
       config,
       this.rulesEnginePolicyContract,
@@ -529,7 +542,7 @@ export class RulesEngine {
    * @param ruleS - A JSON string representing the rule's structure and logic.
    * @param foreignCallNameToID - A mapping of foreign call names to their corresponding IDs.
    * @param trackerNameToID - A mapping of tracker names to their corresponding IDs.
-   * @returns A promise that resolves to the result of the rule update operation. Returns the result ID if successful, or -1 if the operation fails.
+   * @returns A promise that resolves to object with `ruleId` and `transactionHash`. Returns the ruleId if successful, or -1 if the operation fails.
    *
    */
   updateRule(
@@ -538,7 +551,7 @@ export class RulesEngine {
     ruleS: string,
     foreignCallNameToID: NameToID[],
     trackerNameToID: NameToID[]
-  ): Promise<number> {
+  ): Promise<{ ruleId: number; transactionHash: `0x${string}` }> {
     return updateRuleInternal(
       config,
       this.rulesEnginePolicyContract,
@@ -617,7 +630,7 @@ export class RulesEngine {
    *
    * @param policyId - The ID of the policy to associate with the foreign call.
    * @param fcSyntax - A JSON string representing the foreign call definition.
-   * @returns A promise that resolves to the foreign call index. Returns `-1` if the operation fails.
+   * @returns A promise that resolves to object with `foreignCallId` and `transactionHash`. Returns `-1` if the operation fails.
    *
    * @remarks
    * - The function retries the contract interaction in case of failure, with a delay of 1 second between attempts.
@@ -627,7 +640,7 @@ export class RulesEngine {
    *
    * @throws Will throw an error if the JSON parsing of `fcSyntax` fails.
    */
-  createForeignCall(policyId: number, fcSyntax: string): Promise<number> {
+  createForeignCall(policyId: number, fcSyntax: string): Promise<{ foreignCallId: number; transactionHash: `0x${string}` }> {
     return createForeignCallInternal(
       config,
       this.rulesEngineForeignCallContract,
@@ -645,7 +658,7 @@ export class RulesEngine {
    * @param policyId - The ID of the policy to associate with the foreign call.
    * @param foreignCallId - The ID of the foreign call to update.
    * @param fcSyntax - A JSON string representing the foreign call definition.
-   * @returns A promise that resolves to the foreign call index. Returns `-1` if the operation fails.
+   * @returns A promise that resolves to object with `foreignCallId` and `transactionHash`. Returns `-1` if the operation fails.
    *
    * @remarks
    * - The function retries the contract interaction in case of failure, with a delay of 1 second between attempts.
@@ -655,7 +668,7 @@ export class RulesEngine {
    *
    * @throws Will throw an error if the JSON parsing of `fcSyntax` fails.
    */
-  updateForeignCall(policyId: number, foreignCallId: number, fcSyntax: string): Promise<number> {
+  updateForeignCall(policyId: number, foreignCallId: number, fcSyntax: string): Promise<{ foreignCallId: number; transactionHash: `0x${string}` }> {
     return updateForeignCallInternal(
       config,
       this.rulesEnginePolicyContract,
@@ -964,12 +977,12 @@ export class RulesEngine {
    *
    * @param policyId - The ID of the policy associated with the tracker.
    * @param trSyntax - A JSON string representing the tracker syntax.
-   * @returns A promise that resolves to the new tracker ID
+   * @returns A promise that resolves to object with `trackerId` and `transactionHash`.
    *
    * @throws Will retry indefinitely with a 1-second delay between attempts if an error occurs during the contract simulation.
    *         Ensure proper error handling or timeout mechanisms are implemented to avoid infinite loops.
    */
-  createTracker(policyId: number, trSyntax: string): Promise<number> {
+  createTracker(policyId: number, trSyntax: string): Promise<{ trackerId: number; transactionHash: `0x${string}` }> {
     return createTrackerInternal(config, this.rulesEngineComponentContract, policyId, trSyntax, this.confirmationCount)
   }
 
@@ -1017,12 +1030,12 @@ export class RulesEngine {
    * @param policyId - The ID of the policy associated with the tracker.
    * @param trackerId - The ID of the tracker to update.
    * @param trSyntax - A JSON string representing the tracker syntax.
-   * @returns A promise that resolves to the existing tracker ID is returned. Returns -1 if the operation fails.
+   * @returns A promise that resolves to object with `trackerId` and `transactionHash`. Returns -1 if the operation fails.
    *
    * @throws Will retry indefinitely with a 1-second delay between attempts if an error occurs during the contract simulation.
    *         Ensure proper error handling or timeout mechanisms are implemented to avoid infinite loops.
    */
-  updateTracker(policyId: number, trackerId: number, trSyntax: string): Promise<number> {
+  updateTracker(policyId: number, trackerId: number, trSyntax: string): Promise<{ trackerId: number; transactionHash: `0x${string}` }> {
     return updateTrackerInternal(
       config,
       this.rulesEngineComponentContract,
@@ -1142,7 +1155,7 @@ export class RulesEngine {
    * @param callingFunction - The calling function string to be parsed and added to the contract.
    * @param name - Name of the Calling Function instance
    * @param encodedValues - the encoded values that will be sent along with the rules invocation.
-   * @returns A promise that resolves to the result of the contract interaction, or -1 if unsuccessful.
+   * @returns A promise that resolves to object with `functionId` and `transactionHash`, or -1 if unsuccessful.
    *
    * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
    */
@@ -1151,7 +1164,7 @@ export class RulesEngine {
     callingFunction: string,
     name: string,
     encodedValues: string
-  ): Promise<number> {
+  ): Promise<{ functionId: number; transactionHash: `0x${string}` }> {
     return createCallingFunctionInternal(
       config,
       this.rulesEngineComponentContract,
@@ -1173,7 +1186,7 @@ export class RulesEngine {
    *                          of the rules engine component.
    * @param name - Name of the Calling Function instance
    * @param encodedValues - The encoded values string for the calling function.
-   * @returns A promise that resolves to the result of the contract interaction, or -1 if unsuccessful.
+   * @returns A promise that resolves to object with `functionId` and `transactionHash`, or -1 if unsuccessful.
    *
    * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
    */
@@ -1182,7 +1195,7 @@ export class RulesEngine {
     callingFunction: string,
     name: string,
     encodedValues: string
-  ): Promise<number> {
+  ): Promise<{ functionId: number; transactionHash: `0x${string}` }> {
     return updateCallingFunctionInternal(
       config,
       this.rulesEngineComponentContract,
@@ -1498,9 +1511,9 @@ export class RulesEngine {
    * Cements a policy on the Rules Engine.
    *
    * @param policyId - The ID of the policy to cement.
-   * @returns `0` if successful, `-1` if an error occurs.
+   * @returns Object with `result` (0 if successful, -1 if error) and `transactionHash`.
    */
-  cementPolicy(policyId: number): Promise<number> {
+  cementPolicy(policyId: number): Promise<{ result: number; transactionHash: `0x${string}` }> {
     return cementPolicyInternal(config, this.rulesEnginePolicyContract, policyId, this.confirmationCount)
   }
 
