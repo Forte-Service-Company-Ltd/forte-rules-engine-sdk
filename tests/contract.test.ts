@@ -2291,4 +2291,119 @@ describe('Rules Engine Interactions', async () => {
     expect(parsed!.Rules[1].Description).toEqual('Second rule by order')
     expect(parsed!.Rules[2].Description).toEqual('Third rule by order')
   }, 1000000) // 100 second timeout
+
+  test('Can create policy with foreign calls having empty parameters and void return type', options, async () => {
+    var policyJSON = `{
+      "Policy": "Empty Params and Void Return Test",
+      "Description": "Test policy with foreign calls: one with no params, one with uint256 param and void return",
+      "PolicyType": "open",
+      "CallingFunctions": [
+        {
+          "name": "transfer(address to, uint256 value)",
+          "functionSignature": "transfer(address to, uint256 value)",
+          "encodedValues": "address to, uint256 value"
+        }
+      ],
+      "ForeignCalls": [
+        {
+          "name": "EmptyParamCall",
+          "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+          "function": "checkStatus()",
+          "returnType": "bool",
+          "valuesToPass": "",
+          "mappedTrackerKeyValues": "",
+          "callingFunction": "transfer(address to, uint256 value)"
+        },
+        {
+          "name": "VoidReturnCall",
+          "address": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+          "function": "updateCounter(uint256)",
+          "returnType": "void",
+          "valuesToPass": "value",
+          "mappedTrackerKeyValues": "",
+          "callingFunction": "transfer(address to, uint256 value)"
+        }
+      ],
+      "Trackers": [
+        {
+          "name": "statusTracker",
+          "type": "bool",
+          "initialValue": "true"
+        }
+      ],
+      "MappedTrackers": [],
+      "Rules": [
+        {
+          "Name": "Empty Param and Void Return Rule",
+          "Description": "Test rule using both foreign calls",
+          "condition": "FC:EmptyParamCall == 1",
+          "positiveEffects": ["emit \\"Status OK\\""],
+          "negativeEffects": ["revert()"],
+          "callingFunction": "transfer(address to, uint256 value)"
+        }
+      ]
+    }`
+
+    var result = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      policyJSON
+    )
+    
+    expect(result.policyId).toBeGreaterThan(0)
+
+    // Verify foreign calls were created correctly
+    var resultFC = await getAllForeignCalls(
+      config,
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      result.policyId
+    )
+    
+    expect(resultFC?.length).toEqual(2)
+
+    // Verify the policy can be retrieved and parsed
+    var retVal = await getPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      result.policyId
+    )
+
+    expect(retVal).toBeDefined()
+
+    const parsed = retVal!
+    const input = JSON.parse(policyJSON)
+
+    expect(parsed).toBeDefined()
+    expect(parsed.ForeignCalls).toHaveLength(2)
+    
+    // Verify empty parameter foreign call
+    const emptyParamFC = parsed.ForeignCalls.find((fc: any) => fc.name === "EmptyParamCall")
+    expect(emptyParamFC).toBeDefined()
+    expect(emptyParamFC!.function).toEqual("checkStatus()")
+    expect(emptyParamFC!.returnType).toEqual("bool")
+    expect(emptyParamFC!.valuesToPass).toEqual("")
+
+    // Verify void return foreign call
+    const voidReturnFC = parsed.ForeignCalls.find((fc: any) => fc.name === "VoidReturnCall")
+    expect(voidReturnFC).toBeDefined()
+    expect(voidReturnFC!.function).toEqual("updateCounter(uint256)")
+    expect(voidReturnFC!.returnType).toEqual("void")
+    expect(voidReturnFC!.valuesToPass).toEqual("value")
+
+    // Verify Policy data mirrors input fields (excluding exact effects matching due to encoding)
+    const inputJson = JSON.parse(policyJSON)
+    expect(retVal).toBeDefined()
+    expect(parsed.Rules.length).toEqual(inputJson.Rules.length)
+    expect(parsed.Rules[0].Name).toEqual(inputJson.Rules[0].Name)
+    expect(parsed.Rules[0].Description).toEqual(inputJson.Rules[0].Description)
+    expect(parsed.Rules[0].condition).toEqual(inputJson.Rules[0].condition)
+    expect(parsed.Rules[0].callingFunction).toEqual(inputJson.Rules[0].callingFunction)
+  })
 })

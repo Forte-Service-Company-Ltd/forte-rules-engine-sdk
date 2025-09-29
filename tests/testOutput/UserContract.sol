@@ -23,7 +23,7 @@ contract ExampleUserContract is RulesEngineClientCustom {
      * @param somethingElse An additional parameter for custom logic (purpose not specified in the given code).
      * @return bool Returns true if the transfer is successful.
      */
-    function transfer(address to, uint256 value, uint256 somethingElse) public checkRulesBeforetransfer(to, value, somethinElse) returns (bool) {
+    function transfer(address to, uint256 value, uint256 somethingElse) public checkRulesBeforetransfer(to, value, somethingElse) returns (bool) {
         somethingElse;
         to;
         value;

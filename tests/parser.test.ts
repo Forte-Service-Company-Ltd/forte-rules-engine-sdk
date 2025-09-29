@@ -2680,3 +2680,35 @@ test('Test Parsing Event Effect with Dynamic Parameter', () => {
   console.log(retVal?.negativeEffects)
   console.log(retVal?.negativeEffectPlaceHolders)
 })
+
+test('Should parse foreign call with empty parameters correctly', () => {
+  const fcJSON = {
+    name: "EmptyParamCall",
+    address: "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC" as const,
+    function: "testSig()",
+    returnType: "uint256" as const,
+    valuesToPass: "",
+    mappedTrackerKeyValues: "",
+    callingFunction: "transfer(address to, uint256 value)"
+  }
+
+  const result = parseForeignCallDefinition(fcJSON, [], [], [])
+  expect(result.parameterTypes).toEqual([]) // Should be empty array, not [4] (VOID)
+  expect(result.returnType).toBe(2) // uint256
+})
+
+test('Should parse foreign call with void return type correctly', () => {
+  const fcJSON = {
+    name: "VoidReturnCall",
+    address: "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC" as const,
+    function: "testSig(uint256)",
+    returnType: "void" as const,
+    valuesToPass: "value",
+    mappedTrackerKeyValues: "",
+    callingFunction: "transfer(address to, uint256 value)"
+  }
+
+  const result = parseForeignCallDefinition(fcJSON, [], [], ['value'])
+  expect(result.parameterTypes).toEqual([2]) // uint256
+  expect(result.returnType).toBe(4) // void
+})

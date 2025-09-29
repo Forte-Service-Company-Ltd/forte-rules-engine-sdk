@@ -480,6 +480,24 @@ test('Can return multiple errors if foreign call JSON is invalid', () => {
   }
 })
 
+test('Can validate foreign call JSON with void return type', () => {
+  const fcWithVoidReturn = `{
+    "name": "VoidReturnCall",
+    "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+    "function": "testSig(uint256)",
+    "returnType": "void",
+    "valuesToPass": "value",
+    "mappedTrackerKeyValues": "",
+    "callingFunction": "transfer(address to, uint256 value)"
+  }`
+  const parsed = validateForeignCallJSON(fcWithVoidReturn)
+  expect(isRight(parsed)).toBeTruthy()
+  if (isRight(parsed)) {
+    const fc = unwrapEither(parsed)
+    expect(fc.returnType).toEqual('void')
+  }
+})
+
 test('Can validate tracker JSON', () => {
   const parsedJSON = JSON.parse(trackerJSON)
   const parsedTracker = validateTrackerJSON(trackerJSON)
