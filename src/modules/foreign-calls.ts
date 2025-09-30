@@ -155,6 +155,7 @@ export const createForeignCall = async (
       callingFunctionSelector: callingFunctionIds[cfIndex],
     }
     var addFC
+    var failureCount = 0
     while (true) {
       try {
         addFC = await simulateContract(config, {
@@ -165,7 +166,11 @@ export const createForeignCall = async (
         })
         break
       } catch (err) {
-        // TODO: Look into replacing this loop/sleep with setTimeout
+        if (failureCount < 5) {
+          failureCount += 1
+        } else {
+          return -1
+        }
         await sleep(1000)
         return -1
       }
@@ -301,7 +306,7 @@ export const updateForeignCall = async (
       callingFunctionSelector: callingFunctionIds[cfIndex],
     }
     var addFC
-
+    var failureCount = 0
     while (true) {
       try {
         addFC = await simulateContract(config, {
@@ -312,7 +317,11 @@ export const updateForeignCall = async (
         })
         break
       } catch (err) {
-        // TODO: Look into replacing this loop/sleep with setTimeout
+        if (failureCount < 5) {
+          failureCount += 1
+        } else {
+          return -1
+        }
         await sleep(1000)
       }
     }

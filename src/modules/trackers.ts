@@ -65,6 +65,7 @@ export const createMappedTracker = async (
       trackerIndex: 0,
     }
     var addTR
+    var failureCount = 0
     while (true) {
       try {
         addTR = await simulateContract(config, {
@@ -82,8 +83,11 @@ export const createMappedTracker = async (
         })
         break
       } catch (err) {
-        console.log(err)
-        // TODO: Look into replacing this loop/sleep with setTimeout
+        if (failureCount < 5) {
+          failureCount += 1
+        } else {
+          return -1
+        }
         await sleep(1000)
       }
     }
@@ -140,6 +144,7 @@ export const createTracker = async (
       trackerIndex: 0,
     }
     var addTR
+    var failureCount = 0
     while (true) {
       try {
         addTR = await simulateContract(config, {
@@ -150,7 +155,11 @@ export const createTracker = async (
         })
         break
       } catch (err) {
-        // TODO: Look into replacing this loop/sleep with setTimeout
+        if (failureCount < 5) {
+          failureCount += 1
+        } else {
+          return -1
+        }
         await sleep(1000)
       }
     }
@@ -225,6 +234,7 @@ export const updateMappedTracker = async (
       trackerIndex: 0,
     }
     var addTR
+    var failureCount = 0
     while (true) {
       try {
         addTR = await simulateContract(config, {
@@ -242,8 +252,11 @@ export const updateMappedTracker = async (
         })
         break
       } catch (err) {
-        console.log(err)
-        // TODO: Look into replacing this loop/sleep with setTimeout
+        if (failureCount < 5) {
+          failureCount += 1
+        } else {
+          return -1
+        }
         await sleep(1000)
       }
     }
@@ -301,6 +314,7 @@ export const updateTracker = async (
       trackerIndex: trackerId,
     }
     var addTR
+    var failureCount = 0
     while (true) {
       try {
         addTR = await simulateContract(config, {
@@ -311,7 +325,11 @@ export const updateTracker = async (
         })
         break
       } catch (err) {
-        // TODO: Look into replacing this loop/sleep with setTimeout
+        if (failureCount < 5) {
+          failureCount += 1
+        } else {
+          return -1
+        }
         await sleep(1000)
       }
     }

@@ -63,6 +63,7 @@ export const createCallingFunction = async (
   var addRule
   var duplicate = await checkIfSelectorExists(config, rulesEngineComponentContract, policyId, callingFunction)
   if (!duplicate) {
+    var failureCount = 0
     while (true) {
       try {
         addRule = await simulateContract(config, {
@@ -73,7 +74,11 @@ export const createCallingFunction = async (
         })
         break
       } catch (err) {
-        // TODO: Look into replacing this loop/sleep with setTimeout
+        if (failureCount < 5) {
+          failureCount += 1
+        } else {
+          return -1
+        }
         await sleep(1000)
       }
     }
@@ -118,7 +123,7 @@ export const updateCallingFunction = async (
 ): Promise<number> => {
   const args: number[] = encodedValues.split(',').map((val) => determinePTEnumeration(val.trim().split(' ')[0]))
   var addRule
-
+  var failureCount = 0
   while (true) {
     try {
       addRule = await simulateContract(config, {
@@ -129,7 +134,11 @@ export const updateCallingFunction = async (
       })
       break
     } catch (err) {
-      // TODO: Look into replacing this loop/sleep with setTimeout
+      if (failureCount < 5) {
+        failureCount += 1
+      } else {
+        return -1
+      }
       await sleep(1000)
     }
   }

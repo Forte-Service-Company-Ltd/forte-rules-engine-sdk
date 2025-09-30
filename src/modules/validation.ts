@@ -262,8 +262,12 @@ const validateInputReferencedCalls = (
     },
     [[], []]
   )
-
-  const validateForeignCalls = fcMatches.every((match) => foreignCallNames.includes(match.replace('FC:', '').trim()))
+  let validateForeignCalls = true
+  if (fcMatches.length > 0)
+    validateForeignCalls =
+      foreignCallNames !== undefined
+        ? fcMatches.every((match) => foreignCallNames.includes(match.replace('FC:', '').trim()))
+        : false
   const validateTrackers = trMatches.every((match) => trackerNames.includes(match.replace(/^(TR|TRU):/, '').trim()))
   const validateMappedTrackers = mappedTrackers.every((match) => mappedTrackerNames.includes(match))
 
@@ -371,7 +375,6 @@ const validateReferencedCalls = (input: any): boolean => {
     }
     return acc
   }, {})
-
   const validatedInputs = Object.entries(testInputs)
     .map((input: [string, string[]]) => {
       return input[1]
