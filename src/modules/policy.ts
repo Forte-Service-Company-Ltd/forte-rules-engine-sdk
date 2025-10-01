@@ -95,12 +95,12 @@ export const createPolicy = async (
   confirmationCount: number,
   policySyntax?: string
 ): Promise<{
-  callingFunctions: { functionId: number; transactionHash: `0x${string}` }[];
-  trackers: { trackerId: number; transactionHash: `0x${string}` }[];
-  foreignCalls: { foreignCallId: number; transactionHash: `0x${string}` }[];
-  rules: { ruleId: number; transactionHash: `0x${string}` }[];
-  policyId: number;
-  transactionHash: `0x${string}`;
+  callingFunctions: { functionId: number; transactionHash: `0x${string}` }[]
+  trackers: { trackerId: number; transactionHash: `0x${string}` }[]
+  foreignCalls: { foreignCallId: number; transactionHash: `0x${string}` }[]
+  rules: { ruleId: number; transactionHash: `0x${string}` }[]
+  policyId: number
+  transactionHash: `0x${string}`
 }> => {
   var fcIds: NameToID[] = []
   var trackerIds: NameToID[] = []
@@ -135,19 +135,24 @@ export const createPolicy = async (
     })
 
     policyId = addPolicy.result
-
-    const callingFunctionResults = await buildCallingFunctions(
-      config,
-      rulesEnginePolicyContract,
-      rulesEngineComponentContract,
-      callingFunctions,
-      policyJSON,
-      policyId,
-      callingFunctionParamSets,
-      allFunctionMappings,
-      nonDuplicatedCallingFunctions,
-      confirmationCount
-    )
+    let callingFunctionResults
+    try {
+      callingFunctionResults = await buildCallingFunctions(
+        config,
+        rulesEnginePolicyContract,
+        rulesEngineComponentContract,
+        callingFunctions,
+        policyJSON,
+        policyId,
+        callingFunctionParamSets,
+        allFunctionMappings,
+        nonDuplicatedCallingFunctions,
+        confirmationCount,
+        true
+      )
+    } catch (err) {
+      throw err
+    }
 
     // Create lookup maps for O(1) resolution instead of O(n) find operations
     const lookupMaps = createCallingFunctionLookupMaps(nonDuplicatedCallingFunctions)
@@ -162,7 +167,16 @@ export const createPolicy = async (
 
     let trackerResults
     try {
-      trackerResults = await buildTrackers(config, rulesEngineComponentContract, trackerIds, policyJSON, policyId, confirmationCount)
+      trackerResults = await buildTrackers(
+        config,
+        rulesEnginePolicyContract,
+        rulesEngineComponentContract,
+        trackerIds,
+        policyJSON,
+        policyId,
+        confirmationCount,
+        true
+      )
     } catch (err) {
       throw err
     }
@@ -181,7 +195,8 @@ export const createPolicy = async (
         fcIds,
         trackerIds,
         resolveFunction,
-        confirmationCount
+        confirmationCount,
+        true
       )
     } catch (err) {
       throw err
@@ -201,7 +216,8 @@ export const createPolicy = async (
         fcIds,
         trackerIds,
         resolveFunction,
-        confirmationCount
+        confirmationCount,
+        true
       )
     } catch (err) {
       throw err
@@ -213,7 +229,7 @@ export const createPolicy = async (
       foreignCalls: foreignCallResults,
       rules: rulesResults.transactionHashes,
       policyId,
-      transactionHash
+      transactionHash,
     }
   }
   return {
@@ -222,7 +238,7 @@ export const createPolicy = async (
     foreignCalls: [],
     rules: [],
     policyId: -1,
-    transactionHash: '0x0'
+    transactionHash: '0x0',
   }
 }
 
@@ -236,7 +252,8 @@ const buildCallingFunctions = async (
   callingFunctionParamSets: string[][],
   allFunctionMappings: any[],
   nonDuplicatedCallingFunctions: CallingFunctionJSON[],
-  confirmationCount: number
+  confirmationCount: number,
+  create: boolean
 ): Promise<{ functionId: number; transactionHash: `0x${string}` }[]> => {
   var fsSelectors = []
   var fsIds = []
@@ -290,7 +307,20 @@ const buildCallingFunctions = async (
         fsIds.push(result.functionId)
         emptyRules.push([])
       } else {
-        throw new Error(`Invalid calling function syntax: ${JSON.stringify(callingFunction)}`)
+        if (create) {
+          var deleteVerification = await deletePolicy(config, rulesEnginePolicyContract, policyId, confirmationCount)
+          if (deleteVerification.result == -1) {
+            throw new Error(
+              `Invalid calling function syntax: ${JSON.stringify(
+                callingFunction
+              )} Failed to delete policy. Partial Policy with id: ${policyId} exists`
+            )
+          } else {
+            throw new Error(`Invalid calling function syntax: ${JSON.stringify(callingFunction)} Policy Deleted`)
+          }
+        } else {
+          throw new Error(`Invalid calling function syntax: ${JSON.stringify(callingFunction)}`)
+        }
       }
     } else {
       console.log('Policy JSON contained a duplicate calling function, the duplicate was not created')
@@ -307,20 +337,22 @@ const buildCallingFunctions = async (
     policyJSON.Description,
     confirmationCount
   )
-  
+
   return transactionHashes
 }
 
 const buildTrackers = async (
   config: Config,
+  rulesEnginePolicyContract: RulesEnginePolicyContract,
   rulesEngineComponentContract: RulesEngineComponentContract,
   trackerIds: NameToID[],
   policyJSON: PolicyJSON,
   policyId: number,
-  confirmationCount: number
+  confirmationCount: number,
+  create: boolean
 ): Promise<{ trackerId: number; transactionHash: `0x${string}` }[]> => {
   var transactionHashes: { trackerId: number; transactionHash: `0x${string}` }[] = []
-  
+
   if (policyJSON.Trackers != null) {
     for (var tracker of policyJSON.Trackers) {
       const parsedTracker = parseTrackerSyntax(tracker)
@@ -352,7 +384,19 @@ const buildTrackers = async (
         }
         trackerIds.push(struc)
       } else {
-        throw new Error(`Invalid tracker syntax: ${JSON.stringify(tracker)}`)
+        if (create) {
+          var deleteVerification = await deletePolicy(config, rulesEnginePolicyContract, policyId, confirmationCount)
+          if (deleteVerification.result == -1) {
+            throw new Error(
+              `Invalid tracker syntax: ${JSON.stringify(tracker)}
+              Failed to delete policy. Partial Policy with id: ${policyId} exists`
+            )
+          } else {
+            throw new Error(`Invalid tracker syntax: ${JSON.stringify(tracker)} Policy Deleted`)
+          }
+        } else {
+          throw new Error(`Invalid tracker syntax: ${JSON.stringify(tracker)}`)
+        }
       }
     }
   }
@@ -393,7 +437,7 @@ const buildTrackers = async (
       }
     }
   }
-  
+
   return transactionHashes
 }
 
@@ -409,24 +453,23 @@ const buildForeignCalls = async (
   fcIds: NameToID[],
   trackerIds: NameToID[],
   resolveFunction: any,
-  confirmationCount: number
+  confirmationCount: number,
+  create: boolean
 ): Promise<{ foreignCallId: number; transactionHash: `0x${string}` }[]> => {
   var transactionHashes: { foreignCallId: number; transactionHash: `0x${string}` }[] = []
-  
+
   if (policyJSON.ForeignCalls != null) {
     for (var foreignCall of policyJSON.ForeignCalls) {
       const resolvedForeignCallFunction = resolveFunction(foreignCall.callingFunction)
       try {
         // Find the calling function and its encoded values using the resolved function name
-        let callingFunctionIndex = callingFunctions.findIndex(
-          (cf) => cf.trim() === resolvedForeignCallFunction.trim()
-        )
+        let callingFunctionIndex = callingFunctions.findIndex((cf) => cf.trim() === resolvedForeignCallFunction.trim())
         let encodedValues: string[]
-        
+
         if (callingFunctionIndex === -1) {
           // Calling function not found in current update, check if it exists from previous updates
           const existingCallingFunctions = await getCallingFunctions(config, rulesEngineComponentContract, policyId)
-          const existingFunction = existingCallingFunctions.find(cf => {
+          const existingFunction = existingCallingFunctions.find((cf) => {
             // Try to match by function selector
             try {
               const selector = toFunctionSelector(resolvedForeignCallFunction)
@@ -435,11 +478,28 @@ const buildForeignCalls = async (
               return false
             }
           })
-          
+
           if (!existingFunction) {
-            throw new Error(`Calling function not found: ${resolvedForeignCallFunction}`)
+            if (create) {
+              var deleteVerification = await deletePolicy(
+                config,
+                rulesEnginePolicyContract,
+                policyId,
+                confirmationCount
+              )
+              if (deleteVerification.result == -1) {
+                throw new Error(
+                  `Calling function not found: ${resolvedForeignCallFunction}
+               Failed to delete policy. Partial Policy with id: ${policyId} exists`
+                )
+              } else {
+                throw new Error(`Calling function not found: ${resolvedForeignCallFunction} Policy Deleted`)
+              }
+            } else {
+              throw new Error(`Calling function not found: ${resolvedForeignCallFunction}`)
+            }
           }
-          
+
           // Use the existing function's parameter types as encoded values
           encodedValues = existingFunction.parameterTypes.map(String)
         } else {
@@ -487,14 +547,35 @@ const buildForeignCalls = async (
           }
           fcIds.push(struc)
         } else {
-          throw new Error(`Invalid foreign call syntax: ${JSON.stringify(foreignCall)}`)
+          if (create) {
+            var deleteVerification = await deletePolicy(config, rulesEnginePolicyContract, policyId, confirmationCount)
+            if (deleteVerification.result == -1) {
+              throw new Error(
+                `Invalid foreign call syntax: ${JSON.stringify(foreignCall)}
+               Failed to delete policy. Partial Policy with id: ${policyId} exists`
+              )
+            } else {
+              throw new Error(`Invalid foreign call syntax: ${JSON.stringify(foreignCall)}Policy Deleted`)
+            }
+          } else {
+            throw new Error(`Invalid foreign call syntax: ${JSON.stringify(foreignCall)}`)
+          }
         }
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error)
 
         // Re-throw self-reference validation errors to fail the policy creation
         if (errorMessage.includes('cannot reference itself')) {
-          throw error
+          if (create) {
+            var deleteVerification = await deletePolicy(config, rulesEnginePolicyContract, policyId, confirmationCount)
+            if (deleteVerification.result == -1) {
+              throw new Error(errorMessage + 'Failed to delete policy. Partial Policy with id: ${policyId} exists')
+            } else {
+              throw new Error(errorMessage + 'Policy Deleted')
+            }
+          } else {
+            throw error
+          }
         }
 
         // For other errors, log and continue (existing behavior)
@@ -502,7 +583,7 @@ const buildForeignCalls = async (
       }
     }
   }
-  
+
   return transactionHashes
 }
 
@@ -518,7 +599,8 @@ const buildRules = async (
   fcIds: NameToID[],
   trackerIds: NameToID[],
   resolveFunction: any,
-  confirmationCount: number
+  confirmationCount: number,
+  create: boolean
 ): Promise<{ transactionHashes: { ruleId: number; transactionHash: `0x${string}` }[]; policyId: number }> => {
   let ruleIds = []
   let ruleToCallingFunction = new Map<string, number[]>()
@@ -562,8 +644,22 @@ const buildRules = async (
         confirmationCount
       )
     }
+
     if (result.ruleId == -1) {
-      throw new Error(`Invalid rule syntax: ${JSON.stringify(rule)}`)
+      if (create) {
+        var deleteVerification = await deletePolicy(config, rulesEnginePolicyContract, policyId, confirmationCount)
+        if (deleteVerification.result == -1) {
+          throw new Error(
+            `Invalid rule syntax: ${JSON.stringify(
+              rule
+            )} Failed to delete policy. Partial Policy with id: ${policyId} exists`
+          )
+        } else {
+          throw new Error(`Invalid rule syntax: ${JSON.stringify(rule)} Policy Deleted`)
+        }
+      } else {
+        throw new Error(`Invalid rule syntax: ${JSON.stringify(rule)}`)
+      }
     }
     transactionHashes.push(result)
     ruleIds.push(result.ruleId)
@@ -593,7 +689,7 @@ const buildRules = async (
     policyJSON.Description,
     confirmationCount
   )
-  
+
   return { transactionHashes, policyId }
 }
 
@@ -617,11 +713,11 @@ export const updatePolicy = async (
   policySyntax: string,
   policyId: number
 ): Promise<{
-  callingFunctions: { functionId: number; transactionHash: `0x${string}` }[];
-  trackers: { trackerId: number; transactionHash: `0x${string}` }[];
-  foreignCalls: { foreignCallId: number; transactionHash: `0x${string}` }[];
-  rules: { ruleId: number; transactionHash: `0x${string}` }[];
-  policyId: number;
+  callingFunctions: { functionId: number; transactionHash: `0x${string}` }[]
+  trackers: { trackerId: number; transactionHash: `0x${string}` }[]
+  foreignCalls: { foreignCallId: number; transactionHash: `0x${string}` }[]
+  rules: { ruleId: number; transactionHash: `0x${string}` }[]
+  policyId: number
 }> => {
   var fcIds: NameToID[] = []
   var trackerIds: NameToID[] = []
@@ -635,18 +731,24 @@ export const updatePolicy = async (
       throw new Error(getRulesErrorMessages(unwrapEither(validatedPolicyJSON)))
     }
     const policyJSON = unwrapEither(validatedPolicyJSON)
-    const callingFunctionResults = await buildCallingFunctions(
-      config,
-      rulesEnginePolicyContract,
-      rulesEngineComponentContract,
-      callingFunctions,
-      policyJSON,
-      policyId,
-      callingFunctionParamSets,
-      allFunctionMappings,
-      nonDuplicatedCallingFunctions,
-      confirmationCount
-    )
+    let callingFunctionResults
+    try {
+      callingFunctionResults = await buildCallingFunctions(
+        config,
+        rulesEnginePolicyContract,
+        rulesEngineComponentContract,
+        callingFunctions,
+        policyJSON,
+        policyId,
+        callingFunctionParamSets,
+        allFunctionMappings,
+        nonDuplicatedCallingFunctions,
+        confirmationCount,
+        false
+      )
+    } catch (err) {
+      throw err
+    }
 
     // Create lookup maps for O(1) resolution instead of O(n) find operations
     const lookupMaps = createCallingFunctionLookupMaps(nonDuplicatedCallingFunctions)
@@ -658,10 +760,19 @@ export const updatePolicy = async (
     const resolveFunction = (callingFunctionRef: string): string => {
       return resolveCallingFunction(callingFunctionRef, lookupMaps)
     }
-    
+
     let trackerResults
     try {
-      trackerResults = await buildTrackers(config, rulesEngineComponentContract, trackerIds, policyJSON, policyId, confirmationCount)
+      trackerResults = await buildTrackers(
+        config,
+        rulesEnginePolicyContract,
+        rulesEngineComponentContract,
+        trackerIds,
+        policyJSON,
+        policyId,
+        confirmationCount,
+        false
+      )
     } catch (err) {
       throw err
     }
@@ -680,7 +791,8 @@ export const updatePolicy = async (
         fcIds,
         trackerIds,
         resolveFunction,
-        confirmationCount
+        confirmationCount,
+        false
       )
     } catch (err) {
       throw err
@@ -700,7 +812,8 @@ export const updatePolicy = async (
         fcIds,
         trackerIds,
         resolveFunction,
-        confirmationCount
+        confirmationCount,
+        false
       )
     } catch (err) {
       throw err
@@ -711,7 +824,7 @@ export const updatePolicy = async (
       trackers: trackerResults,
       foreignCalls: foreignCallResults,
       rules: rulesResults.transactionHashes,
-      policyId: rulesResults.policyId
+      policyId: rulesResults.policyId,
     }
   }
   return {
@@ -719,7 +832,7 @@ export const updatePolicy = async (
     trackers: [],
     foreignCalls: [],
     rules: [],
-    policyId: -1
+    policyId: -1,
   }
 }
 
@@ -926,7 +1039,7 @@ export const deletePolicy = async (
       confirmations: confirmationCount,
       hash: transactionHash,
     })
-    
+
     return { result: 0, transactionHash }
   }
 
@@ -1404,7 +1517,7 @@ export const closePolicy = async (
       confirmations: confirmationCount,
       hash: transactionHash,
     })
-    
+
     return { result: 0, transactionHash }
   }
 
@@ -1446,7 +1559,7 @@ export const openPolicy = async (
       confirmations: confirmationCount,
       hash: transactionHash,
     })
-    
+
     return { result: 0, transactionHash }
   }
 
@@ -1519,7 +1632,7 @@ export const addClosedPolicySubscriber = async (
       confirmations: confirmationCount,
       hash: transactionHash,
     })
-    
+
     return { result: 0, transactionHash }
   }
 
@@ -1563,7 +1676,7 @@ export const removeClosedPolicySubscriber = async (
       confirmations: confirmationCount,
       hash: transactionHash,
     })
-    
+
     return { result: 0, transactionHash }
   }
 
@@ -1605,7 +1718,7 @@ export const cementPolicy = async (
       confirmations: confirmationCount,
       hash: transactionHash,
     })
-    
+
     return { result: 0, transactionHash }
   }
 
