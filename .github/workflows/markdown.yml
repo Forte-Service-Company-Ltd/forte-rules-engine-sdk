@@ -13,6 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: Forte-Service-Company-Ltd/infrastructure-tooling
+          ref: v0.0.4b
+          path: infrastructure-tooling
       - uses: Forte-Service-Company-Ltd/infrastructure-tooling/.github/actions/markdown-link-checker@v0.0.4b
         with:
           config-file: '.github/workflows/mlc_config.json'
