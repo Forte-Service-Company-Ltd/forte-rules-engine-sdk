@@ -213,6 +213,7 @@ export const createRule = async (
     return -1
   }
   var addRule
+  var failureCount = 0
   while (true) {
     try {
       addRule = await simulateContract(config, {
@@ -223,7 +224,11 @@ export const createRule = async (
       })
       break
     } catch (err) {
-      // TODO: Look into replacing this loop/sleep with setTimeout
+      if (failureCount < 5) {
+        failureCount += 1
+      } else {
+        return -1
+      }
       await sleep(1000)
     }
   }
@@ -387,6 +392,7 @@ export const updateRule = async (
     return -1
   }
   var addRule
+  var failureCount = 0
   while (true) {
     try {
       addRule = await simulateContract(config, {
@@ -397,7 +403,11 @@ export const updateRule = async (
       })
       break
     } catch (err) {
-      // TODO: Look into replacing this loop/sleep with setTimeout
+      if (failureCount < 5) {
+        failureCount += 1
+      } else {
+        return -1
+      }
       await sleep(1000)
     }
   }
