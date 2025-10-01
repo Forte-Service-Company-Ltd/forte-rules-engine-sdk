@@ -159,14 +159,17 @@ export const createPolicy = async (
     const resolveFunction = (callingFunctionRef: string): string => {
       return resolveCallingFunction(callingFunctionRef, lookupMaps)
     }
+
+    let trackerResults
     try {
-      await buildTrackers(config, rulesEngineComponentContract, trackerIds, policyJSON, policyId, confirmationCount)
+      trackerResults = await buildTrackers(config, rulesEngineComponentContract, trackerIds, policyJSON, policyId, confirmationCount)
     } catch (err) {
       throw err
     }
 
+    let foreignCallResults
     try {
-      await buildForeignCalls(
+      foreignCallResults = await buildForeignCalls(
         config,
         rulesEnginePolicyContract,
         rulesEngineComponentContract,
@@ -183,8 +186,10 @@ export const createPolicy = async (
     } catch (err) {
       throw err
     }
+
+    let rulesResults
     try {
-      await buildRules(
+      rulesResults = await buildRules(
         config,
         rulesEnginePolicyContract,
         rulesEngineComponentContract,
@@ -201,6 +206,23 @@ export const createPolicy = async (
     } catch (err) {
       throw err
     }
+
+    return {
+      callingFunctions: callingFunctionResults,
+      trackers: trackerResults,
+      foreignCalls: foreignCallResults,
+      rules: rulesResults.transactionHashes,
+      policyId,
+      transactionHash
+    }
+  }
+  return {
+    callingFunctions: [],
+    trackers: [],
+    foreignCalls: [],
+    rules: [],
+    policyId: -1,
+    transactionHash: '0x0'
   }
 }
 
@@ -613,22 +635,18 @@ export const updatePolicy = async (
       throw new Error(getRulesErrorMessages(unwrapEither(validatedPolicyJSON)))
     }
     const policyJSON = unwrapEither(validatedPolicyJSON)
-    try {
-      await buildCallingFunctions(
-        config,
-        rulesEnginePolicyContract,
-        rulesEngineComponentContract,
-        callingFunctions,
-        policyJSON,
-        policyId,
-        callingFunctionParamSets,
-        allFunctionMappings,
-        nonDuplicatedCallingFunctions,
-        confirmationCount
-      )
-    } catch (err) {
-      throw err
-    }
+    const callingFunctionResults = await buildCallingFunctions(
+      config,
+      rulesEnginePolicyContract,
+      rulesEngineComponentContract,
+      callingFunctions,
+      policyJSON,
+      policyId,
+      callingFunctionParamSets,
+      allFunctionMappings,
+      nonDuplicatedCallingFunctions,
+      confirmationCount
+    )
 
     // Create lookup maps for O(1) resolution instead of O(n) find operations
     const lookupMaps = createCallingFunctionLookupMaps(nonDuplicatedCallingFunctions)
@@ -640,13 +658,17 @@ export const updatePolicy = async (
     const resolveFunction = (callingFunctionRef: string): string => {
       return resolveCallingFunction(callingFunctionRef, lookupMaps)
     }
+    
+    let trackerResults
     try {
-      await buildTrackers(config, rulesEngineComponentContract, trackerIds, policyJSON, policyId, confirmationCount)
+      trackerResults = await buildTrackers(config, rulesEngineComponentContract, trackerIds, policyJSON, policyId, confirmationCount)
     } catch (err) {
       throw err
     }
+
+    let foreignCallResults
     try {
-      await buildForeignCalls(
+      foreignCallResults = await buildForeignCalls(
         config,
         rulesEnginePolicyContract,
         rulesEngineComponentContract,
@@ -664,8 +686,9 @@ export const updatePolicy = async (
       throw err
     }
 
+    let rulesResults
     try {
-      await buildRules(
+      rulesResults = await buildRules(
         config,
         rulesEnginePolicyContract,
         rulesEngineComponentContract,
@@ -682,7 +705,21 @@ export const updatePolicy = async (
     } catch (err) {
       throw err
     }
-    return policyId
+
+    return {
+      callingFunctions: callingFunctionResults,
+      trackers: trackerResults,
+      foreignCalls: foreignCallResults,
+      rules: rulesResults.transactionHashes,
+      policyId: rulesResults.policyId
+    }
+  }
+  return {
+    callingFunctions: [],
+    trackers: [],
+    foreignCalls: [],
+    rules: [],
+    policyId: -1
   }
 }
 
