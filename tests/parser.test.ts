@@ -1598,7 +1598,7 @@ test('Evaluate a simple syntax string for a event effect without text', () => {
     "condition": "(TR:simpleTrackler + 2 == 5) AND (value < 10000)",
       "positiveEffects": ["emit \\"Goodvibes\\""],
         "negativeEffects": [],
-          "callingFunction": "addValue(uint256 value)"
+          "callingFunction": "addValue"
   } `
   var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
   expect(retVal).not.toBeNull()
@@ -2513,7 +2513,7 @@ test('Creates a simple foreign call with a boolean return', () => {
   "returnType": "bool",
   "valuesToPass": "to, someString, value",
   "mappedTrackerKeyValues": "",
-  "callingFunction": "someFunction(address to, string someString, uint256 value)"
+  "callingFunction": "someFunction"
   }`
 
   var retVal = parseForeignCallDefinition(JSON.parse(str), [], [], ['to', 'someString', 'value'])
@@ -2531,7 +2531,7 @@ test('Creates a foreign call using a mapped tracker as a parameter', () => {
   "returnType": "bool",
   "valuesToPass": "TR:someTracker, someString, value",
   "mappedTrackerKeyValues": "value",
-  "callingFunction": "someFunction(address to, string someString, uint256 value)"
+  "callingFunction": "someFunction"
   }`
 
   var retVal = parseForeignCallDefinition(

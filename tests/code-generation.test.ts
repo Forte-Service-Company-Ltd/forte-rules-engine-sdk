@@ -29,7 +29,7 @@ test('Code Generation test)', () => {
         "PolicyType": "open",
         "CallingFunctions": [
             {
-              "name": "transfer(address to, uint256 value)",
+              "name": "transfer",
               "functionSignature": "transfer(address to, uint256 value)",
               "encodedValues": "address to, uint256 value"
             }
@@ -42,7 +42,7 @@ test('Code Generation test)', () => {
                 "returnType": "uint256",
                 "valuesToPass": "to",
                 "mappedTrackerKeyValues": "",
-                "callingFunction": "transfer(address to, uint256 value)"
+                "callingFunction": "transfer"
             }
         ], 
         "Trackers": [
@@ -60,7 +60,7 @@ test('Code Generation test)', () => {
                 "condition": "value > 500",
                 "positiveEffects": ["emit Success"],
                 "negativeEffects": ["revert()"],
-                "callingFunction": "transfer(address to, uint256 value)"
+                "callingFunction": "transfer"
             }
         ]
         }`

@@ -42,11 +42,8 @@ function validateSolidityFiles(filePaths: string[]): string[] {
 function fileContainsFunction(filePath: string, callingFunction: string): boolean {
   const fileContent = fs.readFileSync(filePath, 'utf-8')
 
-  // Extract function name and parameters from the signature
-  const functionNameMatch = callingFunction.match(/^([^(]+)\s*\(/)
-  if (!functionNameMatch) return false
-
-  const functionName = functionNameMatch[1].trim()
+  // Since callingFunction is now just the function name, use it directly
+  const functionName = callingFunction.trim()
 
   // Create a regex pattern that looks for the function name followed by parameters
   // This is a simplified approach and might need refinement for complex cases
@@ -93,7 +90,8 @@ export function policyModifierGeneration(configPath: string, outputFile: string,
   console.log(`Generated modifier and saved to ${outputFile}`)
   // Process each rule
   policyConfig.Rules.forEach((rule, index) => {
-    const functionName = rule.callingFunction.split('(')[0].trim()
+    // Since rule.callingFunction is now just the function name, use it directly
+    const functionName = rule.callingFunction.trim()
 
     // Find files that contain the calling function and inject the modifier
     let injectionCount = 0
@@ -101,7 +99,7 @@ export function policyModifierGeneration(configPath: string, outputFile: string,
       if (fileContainsFunction(filePath, rule.callingFunction)) {
         console.log(`Found matching function in ${filePath}`)
         const encodedValues =
-          policyConfig.CallingFunctions.find((cf) => cf.name === rule.callingFunction)?.encodedValues || ''
+          policyConfig.CallingFunctions.find((cf) => cf.name === functionName)?.encodedValues || ''
 
         // Inject the modifier (without creating a diff file)
         injectModifier(

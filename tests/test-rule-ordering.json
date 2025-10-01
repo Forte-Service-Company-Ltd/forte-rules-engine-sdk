@@ -4,7 +4,7 @@
   "PolicyType": "open",
   "CallingFunctions": [
     {
-      "name": "transfer(address to, uint256 value)",
+      "name": "transfer",
       "functionSignature": "transfer(address to, uint256 value)",
       "encodedValues": "address to, uint256 value"
     }
@@ -19,7 +19,7 @@
       "condition": "value > 300",
       "positiveEffects": ["emit RuleC"],
       "negativeEffects": ["revert()"],
-      "callingFunction": "transfer(address to, uint256 value)",
+      "callingFunction": "transfer",
       "order": 3
     },
     {
@@ -28,7 +28,7 @@
       "condition": "value > 100",
       "positiveEffects": ["emit RuleA"],
       "negativeEffects": ["revert()"],
-      "callingFunction": "transfer(address to, uint256 value)",
+      "callingFunction": "transfer",
       "order": 1
     },
     {
@@ -37,7 +37,7 @@
       "condition": "value > 200",
       "positiveEffects": ["emit RuleB"],
       "negativeEffects": ["revert()"],
-      "callingFunction": "transfer(address to, uint256 value)",
+      "callingFunction": "transfer",
       "order": 2
     }
   ]
