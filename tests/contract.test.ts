@@ -213,7 +213,7 @@ describe('Rules Engine Interactions', async () => {
             "condition": "3 + 4 > 5 AND (1 == 1 AND 2 == 2)",
             "positiveEffects": ["revert"],
             "negativeEffects": [],
-            "callingFunction": "addValue(uint256 value)"
+            "callingFunction": "addValue"
           }
               ]
               }`
@@ -265,7 +265,7 @@ describe('Rules Engine Interactions', async () => {
             "condition": "3 + 4 > 5 AND (1 == 1 AND 2 == 2)",
             "positiveEffects": ["revert"],
             "negativeEffects": [],
-            "callingFunction": "addValue(uint256 value)"
+            "callingFunction": "addValue"
           }
               ]
               }`
@@ -323,7 +323,7 @@ describe('Rules Engine Interactions', async () => {
             "condition": "3 + 4 > 5 AND (1 == 1 AND 2 == 2)",
             "positiveEffects": ["revert"],
             "negativeEffects": [],
-            "callingFunction": "addValue(uint256 value)"
+            "callingFunction": "addValue"
           }
               ]
               }`
@@ -384,7 +384,7 @@ describe('Rules Engine Interactions', async () => {
             "condition": "3 + 4 > 5 AND (1 == 1 AND 2 == 2)",
             "positiveEffects": ["revert"],
             "negativeEffects": [],
-            "callingFunction": "addValue(uint256 value)"
+            "callingFunction": "addValue"
           }
               ]
               }`
@@ -407,7 +407,7 @@ describe('Rules Engine Interactions', async () => {
                     "condition": "3 + 4 > 5 AND (value == 1 AND 2 == 2)",
                     "positiveEffects": ["revert"],
                     "negativeEffects": [],
-                    "callingFunction": "addValue(uint256 value)"
+                    "callingFunction": "addValue"
                     }`
     var updatedRuleId = await updateRule(
       config,
@@ -462,7 +462,7 @@ describe('Rules Engine Interactions', async () => {
             "condition": "3 + 4 > 5 AND (1 == 1 AND 2 == 2)",
             "positiveEffects": ["revert"],
             "negativeEffects": [],
-            "callingFunction": "addValue(uint256 value)"
+            "callingFunction": "addValue"
           }
               ]
               }`
@@ -502,7 +502,7 @@ describe('Rules Engine Interactions', async () => {
           "Description": "This is a test policy",
           "PolicyType": "open",
           "CallingFunctions": [{
-            "name": "someFunction(address to, string someString, uint256 value)",
+            "name": "someFunction",
             "functionSignature": "someFunction(address to, string someString, uint256 value)",
             "encodedValues": "address to, string someString, uint256 value"
           }
@@ -520,7 +520,7 @@ describe('Rules Engine Interactions', async () => {
             "condition": "3 + 4 > 5 AND (1 == 1 AND 2 == 2)",
             "positiveEffects": ["revert"],
             "negativeEffects": [],
-            "callingFunction": "someFunction(address to, string someString, uint256 value)"
+            "callingFunction": "someFunction"
           }
               ]
               }`
@@ -543,7 +543,7 @@ describe('Rules Engine Interactions', async () => {
                     "returnType": "uint256",
                     "valuesToPass": "to, someString, value",
                     "mappedTrackerKeyValues": "",
-                    "callingFunction": "someFunction(address to, string someString, uint256 value)"
+                    "callingFunction": "someFunction"
                     }`
     var fcId = await createForeignCall(
       config,
@@ -588,7 +588,7 @@ describe('Rules Engine Interactions', async () => {
           "Description": "This is a test policy",
           "PolicyType": "open",
           "CallingFunctions": [{
-            "name": "someFunction(address to, string someString, uint256[] values)",
+            "name": "someFunction",
             "functionSignature": "someFunction(address to, string someString, uint256[] values)",
             "encodedValues": "address to, string someString, uint256[] values"
           }
@@ -606,7 +606,7 @@ describe('Rules Engine Interactions', async () => {
             "condition": "3 + 4 > 5 AND (1 == 1 AND 2 == 2)",
             "positiveEffects": ["revert"],
             "negativeEffects": [],
-            "callingFunction": "someFunction(address to, string someString, uint256[] values)"
+            "callingFunction": "someFunction"
           }
               ]
               }`
@@ -629,7 +629,7 @@ describe('Rules Engine Interactions', async () => {
                       "returnType": "uint256",
                       "valuesToPass": "to, someString, values",
                       "mappedTrackerKeyValues": "",
-                      "callingFunction": "someFunction(address to, string someString, uint256[] values)"
+                      "callingFunction": "someFunction"
                       }`
     var fcId = await createForeignCall(
       config,
@@ -668,7 +668,7 @@ describe('Rules Engine Interactions', async () => {
           "Description": "This is a test policy",
           "PolicyType": "open",
           "CallingFunctions": [{
-            "name": "someFunction(address to, string someString, uint256[] values)",
+            "name": "someFunction",
             "functionSignature": "someFunction(address to, string someString, uint256[] values)",
             "encodedValues": "address to, string someString, uint256[] values"
           }
@@ -686,7 +686,7 @@ describe('Rules Engine Interactions', async () => {
             "condition": "3 + 4 > 5 AND (1 == 1 AND 2 == 2)",
             "positiveEffects": ["revert"],
             "negativeEffects": [],
-            "callingFunction": "someFunction(address to, string someString, uint256[] values)"
+            "callingFunction": "someFunction"
           }
               ]
               }`
@@ -708,7 +708,7 @@ describe('Rules Engine Interactions', async () => {
                               "returnType": "uint256",
                               "valuesToPass": "to",
                               "mappedTrackerKeyValues": "",
-                              "callingFunction": "someFunction(address to, string someString, uint256[] values)"
+                              "callingFunction": "someFunction"
                           }`
     var fcId = await createForeignCall(
       config,
@@ -766,7 +766,7 @@ describe('Rules Engine Interactions', async () => {
           "Description": "This is a test policy",
           "PolicyType": "open",
           "CallingFunctions": [{
-            "name": "someFunction(address to, string someString, uint256[] values)",
+            "name": "someFunction",
             "functionSignature": "someFunction(address to, string someString, uint256[] values)",
             "encodedValues": "address to, string someString, uint256[] values"
           }
@@ -784,7 +784,7 @@ describe('Rules Engine Interactions', async () => {
             "condition": "3 + 4 > 5 AND (1 == 1 AND 2 == 2)",
             "positiveEffects": ["revert"],
             "negativeEffects": [],
-            "callingFunction": "someFunction(address to, string someString, uint256[] values)"
+            "callingFunction": "someFunction"
           }
               ]
               }`
@@ -806,7 +806,7 @@ describe('Rules Engine Interactions', async () => {
                           "returnType": "uint256",
                           "valuesToPass": "to",
                           "mappedTrackerKeyValues": "",
-                          "callingFunction": "someFunction(address to, string someString, uint256[] values)"
+                          "callingFunction": "someFunction"
                       }`
     var fcId = await createForeignCall(
       config,
@@ -837,7 +837,7 @@ describe('Rules Engine Interactions', async () => {
                           "returnType": "uint256",
                           "valuesToPass": "to",
                           "mappedTrackerKeyValues": "",
-                          "callingFunction": "someFunction(address to, string someString, uint256[] values)"
+                          "callingFunction": "someFunction"
                       }`
     var updatedId = await updateForeignCall(
       config,
@@ -1020,20 +1020,20 @@ describe('Rules Engine Interactions', async () => {
               "PolicyType": "open",
               "CallingFunctions": [
                 {
-                  "name": "transfer(address to, uint256 value)",
+                  "name": "transfer",
                   "functionSignature": "transfer(address to, uint256 value)",
                   "encodedValues": "address to, uint256 value"
                 }
               ],
               "ForeignCalls": [
                   {
-                      "name": "testSig(address)",
+                      "name": "testSig",
                       "function": "testSig(address)",
                       "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
                       "returnType": "uint256",
                       "valuesToPass": "to",
                       "mappedTrackerKeyValues": "",
-                      "callingFunction": "transfer(address to, uint256 value)"
+                      "callingFunction": "transfer"
                   }
               ],
               "Trackers": [
@@ -1051,7 +1051,7 @@ describe('Rules Engine Interactions', async () => {
                       "condition": "TR:testTracker > 500",
                       "positiveEffects": ["emit \\"Success\\""],
                       "negativeEffects": ["revert()"],
-                      "callingFunction": "transfer(address to, uint256 value)"
+                      "callingFunction": "transfer"
                   }
               ]
               }`
@@ -1090,7 +1090,7 @@ describe('Rules Engine Interactions', async () => {
                       "PolicyType": "open",
                       "CallingFunctions": [
                         {
-                          "name": "transfer(address to, uint256 value)",
+                          "name": "transfer",
                           "functionSignature": "transfer(address to, uint256 value)",
                           "encodedValues": "address to, uint256 value"
                         }
@@ -1111,7 +1111,7 @@ describe('Rules Engine Interactions', async () => {
                               "condition": "value > 500",
                               "positiveEffects": ["revert(\\\"Positive\\\")"],
                               "negativeEffects": ["revert(\\\"Negative\\\")"],
-                              "callingFunction": "transfer(address to, uint256 value)"
+                              "callingFunction": "transfer"
                           }
                       ]
                       }`
@@ -1273,20 +1273,20 @@ describe('Rules Engine Interactions', async () => {
                           "PolicyType": "open",
                           "CallingFunctions": [
                             {
-                              "name": "transfer(address to, uint256 value)",
+                              "name": "transfer",
                               "functionSignature": "transfer(address to, uint256 value)",
                               "encodedValues": "address to, uint256 value"
                             }
                           ],
                           "ForeignCalls": [
                               {
-                                  "name": "testSig(address)",
+                                  "name": "testSig",
                                   "function": "testSig(address)",
                                   "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
                                   "returnType": "uint256",
                                   "valuesToPass": "to",
                                   "mappedTrackerKeyValues": "",
-                                  "callingFunction": "transfer(address to, uint256 value)"
+                                  "callingFunction": "transfer"
                               }
                           ],
                           "Trackers": [
@@ -1304,7 +1304,7 @@ describe('Rules Engine Interactions', async () => {
                                   "condition": "TR:testTracker > 500",
                                   "positiveEffects": ["emit \\"Success\\""],
                                   "negativeEffects": ["revert()"],
-                                  "callingFunction": "transfer(address to, uint256 value)"
+                                  "callingFunction": "transfer"
                               }
                           ]
                           }`
@@ -1336,20 +1336,20 @@ describe('Rules Engine Interactions', async () => {
                         "PolicyType": "open",
                         "CallingFunctions": [
                           {
-                            "name": "transfer(address to, uint256 value)",
+                            "name": "transfer",
                             "functionSignature": "transfer(address to, uint256 value)",
                             "encodedValues": "address to, uint256 value"
                           }
                         ],
                         "ForeignCalls": [
                             {
-                                "name": "testSig(address)",
+                                "name": "testSig",
                                 "function": "testSig(address)",
                                 "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
                                 "returnType": "uint256",
                                 "valuesToPass": "to",
                                 "mappedTrackerKeyValues": "",
-                                "callingFunction": "transfer(address to, uint256 value)"
+                                "callingFunction": "transfer"
                             }
                         ],
                         "Trackers": [
@@ -1367,7 +1367,7 @@ describe('Rules Engine Interactions', async () => {
                                 "condition": "TR:testTracker > 500",
                                 "positiveEffects": ["emit \\"Success\\""],
                                 "negativeEffects": ["revert()"],
-                                "callingFunction": "transfer(address to, uint256 value)"
+                                "callingFunction": "transfer"
                             }
                         ]
                         }`
@@ -1399,7 +1399,7 @@ describe('Rules Engine Interactions', async () => {
                         "PolicyType": "open",
                         "CallingFunctions": [
                           {
-                            "name": "transfer(address to, uint256 value)",
+                            "name": "transfer",
                             "functionSignature": "transfer(address to, uint256 value)",
                             "encodedValues": "address to, uint256 value"
                           }
@@ -1407,13 +1407,13 @@ describe('Rules Engine Interactions', async () => {
                         "ForeignCalls": [
                             {
                                 "Id": 1,
-                                "name": "testSig(address)",
+                                "name": "testSig",
                                 "function": "testSig(address)",
                                 "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
                                 "returnType": "uint256",
                                 "valuesToPass": "to",
                                 "mappedTrackerKeyValues": "",
-                                "callingFunction": "transfer(address to, uint256 value)"
+                                "callingFunction": "transfer"
                             }
                         ],
                         "Trackers": [
@@ -1433,7 +1433,7 @@ describe('Rules Engine Interactions', async () => {
                                 "condition": "TR:testTracker > 500",
                                 "positiveEffects": ["emit \\"Success\\""],
                                 "negativeEffects": ["revert()"],
-                                "callingFunction": "transfer(address to, uint256 value)"
+                                "callingFunction": "transfer"
                             }
                         ]
                         }`
@@ -1473,7 +1473,7 @@ describe('Rules Engine Interactions', async () => {
                   "PolicyType": "open",
                   "CallingFunctions": [
                     {
-                      "name": "transfer(address to, uint256 value)",
+                      "name": "transfer",
                       "functionSignature": "transfer(address to, uint256 value)",
                       "encodedValues": "address to, uint256 value"
                     }
@@ -1486,15 +1486,15 @@ describe('Rules Engine Interactions', async () => {
                           "returnType": "uint256",
                           "valuesToPass": "TR:SimpleStringTracker",
                           "mappedTrackerKeyValues": "",
-                          "callingFunction": "transfer(address to, uint256 value)"
+                          "callingFunction": "transfer"
                   },{
-                          "name": "testSig(address)",
+                          "name": "testSig",
                           "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
                           "function": "testSig(uint256)",
                           "returnType": "uint256",
                           "valuesToPass": "FC:testSigTwo",
                           "mappedTrackerKeyValues": "",
-                          "callingFunction": "transfer(address to, uint256 value)"
+                          "callingFunction": "transfer"
                       }
                   ],
                   "Trackers": [
@@ -1512,7 +1512,7 @@ describe('Rules Engine Interactions', async () => {
                           "condition": "value > 500",
                           "positiveEffects": ["emit \\"Success\\""],
                           "negativeEffects": ["revert()"],
-                          "callingFunction": "transfer(address to, uint256 value)"
+                          "callingFunction": "transfer"
                       }
                       ]
                       }`
@@ -1536,7 +1536,7 @@ describe('Rules Engine Interactions', async () => {
                             "PolicyType": "open",
                             "CallingFunctions": [
                               {
-                                "name": "transfer(address to, uint256 value)",
+                                "name": "transfer",
                                 "functionSignature": "transfer(address to, uint256 value)",
                                 "encodedValues": "address to, uint256 value"
                               }
@@ -1549,7 +1549,7 @@ describe('Rules Engine Interactions', async () => {
                                     "returnType": "uint256",
                                     "valuesToPass": "to",
                                     "mappedTrackerKeyValues": "",
-                                    "callingFunction": "transfer(address to, uint256 value)"
+                                    "callingFunction": "transfer"
                                 }
                             ],
                             "Trackers": [
@@ -1567,7 +1567,7 @@ describe('Rules Engine Interactions', async () => {
                                     "condition": "value > 500",
                                     "positiveEffects": ["emit \\"Success\\""],
                                     "negativeEffects": ["revert()"],
-                                    "callingFunction": "transfer(address to, uint256 value)"
+                                    "callingFunction": "transfer"
                                 }
                             ]
                             }`
@@ -1615,7 +1615,7 @@ describe('Rules Engine Interactions', async () => {
                           "PolicyType": "open",
                           "CallingFunctions": [
                               {
-                                "name": "transfer(address to, uint256 value)",
+                                "name": "transfer",
                                 "functionSignature": "transfer(address to, uint256 value)",
                                 "encodedValues": "address to, uint256 value"
                               }
@@ -1628,7 +1628,7 @@ describe('Rules Engine Interactions', async () => {
                                   "returnType": "uint256",
                                   "valuesToPass": "to",
                                   "mappedTrackerKeyValues": "",
-                                  "callingFunction": "transfer(address to, uint256 value)"
+                                  "callingFunction": "transfer"
                               }
                           ],
                           "Trackers": [
@@ -1646,7 +1646,7 @@ describe('Rules Engine Interactions', async () => {
                                   "condition": "value > 500",
                                   "positiveEffects": ["emit \\"Success\\""],
                                   "negativeEffects": ["revert()"],
-                                  "callingFunction": "transfer(address to, uint256 value)"
+                                  "callingFunction": "transfer"
                               }
                               ]
                               }`
@@ -1675,20 +1675,20 @@ describe('Rules Engine Interactions', async () => {
                               "PolicyType": "open",
                               "CallingFunctions": [
                                 {
-                                  "name": "transfer(address to, uint256 value)",
+                                  "name": "transfer",
                                   "functionSignature": "transfer(address to, uint256 value)",
                                   "encodedValues": "address to, uint256 value"
                                 }
                               ],
                               "ForeignCalls": [
                                   {
-                                      "name": "testSig(address)",
+                                      "name": "testSig",
                                       "function": "testSig(address)",
                                       "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
                                       "returnType": "uint256",
                                       "valuesToPass": "to",
                                       "mappedTrackerKeyValues": "",
-                                      "callingFunction": "transfer(address to, uint256 value)"
+                                      "callingFunction": "transfer"
                                   }
                               ],
                               "Trackers": [
@@ -1706,7 +1706,7 @@ describe('Rules Engine Interactions', async () => {
                                       "condition": "TR:testTracker > 500",
                                       "positiveEffects": ["emit \\"Success\\""],
                                       "negativeEffects": ["revert()"],
-                                      "callingFunction": "transfer(address to, uint256 value)"
+                                      "callingFunction": "transfer"
                                   }
                               ]
                               }`
@@ -1737,7 +1737,7 @@ describe('Rules Engine Interactions', async () => {
                     "PolicyType": "open",
                     "CallingFunctions": [
                       {
-                        "name": "transfer(address to, uint256 value)",
+                        "name": "transfer",
                         "functionSignature": "transfer(address to, uint256 value)",
                         "encodedValues": "address to, uint256 value"
                       }
@@ -1750,15 +1750,15 @@ describe('Rules Engine Interactions', async () => {
                             "returnType": "uint256",
                             "valuesToPass": "value",
                             "mappedTrackerKeyValues": "",
-                            "callingFunction": "transfer(address to, uint256 value)"
+                            "callingFunction": "transfer"
                     },{
-                            "name": "testSig(address)",
+                            "name": "testSig",
                             "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
                             "function": "testSig(uint256)",
                             "returnType": "uint256",
                             "valuesToPass": "FC:testSigTwo",
                             "mappedTrackerKeyValues": "",
-                            "callingFunction": "transfer(address to, uint256 value)"
+                            "callingFunction": "transfer"
                         }
                     ],
                     "Trackers": [
@@ -1776,7 +1776,7 @@ describe('Rules Engine Interactions', async () => {
                             "condition": "value > 500",
                             "positiveEffects": ["emit \\"Success\\""],
                             "negativeEffects": ["revert()"],
-                            "callingFunction": "transfer(address to, uint256 value)"
+                            "callingFunction": "transfer"
                         }
                         ]
                         }`
@@ -1822,20 +1822,20 @@ describe('Rules Engine Interactions', async () => {
                   "PolicyType": "open",
                   "CallingFunctions": [
                     {
-                      "name": "transfer(address to, uint256 value)",
+                      "name": "transfer",
                       "functionSignature": "transfer(address to, uint256 value)",
                       "encodedValues": "address to, uint256 value"
                     }
                   ],
                   "ForeignCalls": [
                       {
-                          "name": "testSig(address)",
+                          "name": "testSig",
                           "function": "testSig(address)",
                           "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
                           "returnType": "uint256",
                           "valuesToPass": "to",
                           "mappedTrackerKeyValues": "",
-                          "callingFunction": "transfer(address to, uint256 value)"
+                          "callingFunction": "transfer"
                       }
                   ],
                   "Trackers": [
@@ -1853,7 +1853,7 @@ describe('Rules Engine Interactions', async () => {
                           "condition": "TR:testTracker > 500",
                           "positiveEffects": ["emit \\"Success\\""],
                           "negativeEffects": ["revert()"],
-                          "callingFunction": "transfer(address to, uint256 value)"
+                          "callingFunction": "transfer"
                       }
                   ]
                   }`
@@ -1875,13 +1875,13 @@ describe('Rules Engine Interactions', async () => {
     expect(callingFunctions.length).toEqual(1)
 
     var trSyntax = `{
-                          "name": "testSig(address)",
+                          "name": "testSig",
                           "function": "testSig(address)",
                           "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
                           "returnType": "uint256",
                           "valuesToPass": "to",
                           "mappedTrackerKeyValues": "",
-                          "callingFunction": "transfer(address to, uint256 value)"
+                          "callingFunction": "transfer"
                         }`
     var trId = await createForeignCall(
       config,
@@ -1903,7 +1903,7 @@ describe('Rules Engine Interactions', async () => {
                           "PolicyType": "open",
                           "CallingFunctions": [
                               {
-                                "name": "transfer(address to, uint256 value)",
+                                "name": "transfer",
                                 "functionSignature": "transfer(address to, uint256 value)",
                                 "encodedValues": "address to, uint256 value"
                               }
@@ -1916,7 +1916,7 @@ describe('Rules Engine Interactions', async () => {
                                   "returnType": "uint256",
                                   "valuesToPass": "to",
                                   "mappedTrackerKeyValues": "",
-                                  "callingFunction": "transfer(address to, uint256 value)"
+                                  "callingFunction": "transfer"
                               }
                           ],
                           "Trackers": [
@@ -1934,7 +1934,7 @@ describe('Rules Engine Interactions', async () => {
                                   "condition": "value > 500",
                                   "positiveEffects": ["emit \\"Success\\""],
                                   "negativeEffects": ["revert()"],
-                                  "callingFunction": "transfer(address to, uint256 value)"
+                                  "callingFunction": "transfer"
                               }
                               ]
                               }`
@@ -1978,7 +1978,7 @@ describe('Rules Engine Interactions', async () => {
                         "PolicyType": "open",
                         "CallingFunctions": [
                           {
-                            "name": "transfer(address to, uint256 value)",
+                            "name": "transfer",
                             "functionSignature": "transfer(address to, uint256 value)",
                             "encodedValues": "address to, uint256 value"
                           }
@@ -1991,7 +1991,7 @@ describe('Rules Engine Interactions', async () => {
                                 "returnType": "uint256",
                                 "valuesToPass": "to",
                                 "mappedTrackerKeyValues": "",
-                                "callingFunction": "transfer(address to, uint256 value)"
+                                "callingFunction": "transfer"
                             }
                         ],
                         "Trackers": [
@@ -2009,7 +2009,7 @@ describe('Rules Engine Interactions', async () => {
                                 "condition": "value > 500",
                                 "positiveEffects": ["emit \\"Success\\""],
                                 "negativeEffects": ["revert()"],
-                                "callingFunction": "transfer(address to, uint256 value)"
+                                "callingFunction": "transfer"
                             }
                             ]
                             }`
@@ -2052,7 +2052,7 @@ describe('Rules Engine Interactions', async () => {
                         "PolicyType": "open",
                         "CallingFunctions": [
                             {
-                              "name": "transfer(address to, uint256 value)",
+                              "name": "transfer",
                               "functionSignature": "transfer(address to, uint256 value)",
                               "encodedValues": "address to, uint256 value"
                             }
@@ -2065,7 +2065,7 @@ describe('Rules Engine Interactions', async () => {
                                 "returnType": "uint256",
                                 "valuesToPass": "to",
                                 "mappedTrackerKeyValues": "",
-                                "callingFunction": "transfer(address to, uint256 value)"
+                                "callingFunction": "transfer"
                             }
                         ],
                         "Trackers": [
@@ -2083,7 +2083,7 @@ describe('Rules Engine Interactions', async () => {
                                 "condition": "value > 500",
                                 "positiveEffects": ["emit \\"Success\\""],
                                 "negativeEffects": ["revert()"],
-                                "callingFunction": "transfer(address to, uint256 value)"
+                                "callingFunction": "transfer"
                             }
                             ]
                             }`
@@ -2140,7 +2140,7 @@ describe('Rules Engine Interactions', async () => {
                              "PolicyType": "open",
                              "CallingFunctions": [
                                {
-                                 "name": "transfer(address to, uint256 value)",
+                                 "name": "transfer",
                                  "functionSignature": "transfer(address to, uint256 value)",
                                  "encodedValues": "address to, uint256 value"
                                }
@@ -2153,7 +2153,7 @@ describe('Rules Engine Interactions', async () => {
                                    "returnType": "uint256",
                                    "valuesToPass": "to",
                                    "mappedTrackerKeyValues": "",
-                                   "callingFunction": "transfer(address to, uint256 value)"
+                                   "callingFunction": "transfer"
                                },
                                {
                                    "name": "ATestForeignCall",
@@ -2162,7 +2162,7 @@ describe('Rules Engine Interactions', async () => {
                                    "returnType": "uint256",
                                    "valuesToPass": "FC:AnotherTestForeignCall, TR:trackerOne",
                                    "mappedTrackerKeyValues": "",
-                                   "callingFunction": "transfer(address to, uint256 value)"
+                                   "callingFunction": "transfer"
                                }
 
                              ],
@@ -2187,7 +2187,7 @@ describe('Rules Engine Interactions', async () => {
                                      "condition": "FC:ATestForeignCall > 1000",
                                      "positiveEffects": ["emit \\"Success\\"", "FC:AnotherTestForeignCall", "TRU:mappedTrackerOne(to) += 1"],
                                      "negativeEffects": ["revert(\\\"Negative\\\")", "TRU:trackerOne += 12"],
-                                     "callingFunction": "transfer(address to, uint256 value)"
+                                     "callingFunction": "transfer"
                                  }
                              ]
                              }`
@@ -2232,7 +2232,7 @@ describe('Rules Engine Interactions', async () => {
                     "PolicyType": "open",
                     "CallingFunctions": [
                       {
-                        "name": "transfer(address to, uint256 value)",
+                        "name": "transfer",
                         "functionSignature": "transfer(address to, uint256 value)",
                         "encodedValues": "address to, uint256 value"
                       }
@@ -2247,7 +2247,7 @@ describe('Rules Engine Interactions', async () => {
                         "condition": "value > 300",
                         "positiveEffects": ["emit \\"RuleC\\""],
                         "negativeEffects": ["revert()"],
-                        "callingFunction": "transfer(address to, uint256 value)",
+                        "callingFunction": "transfer",
                         "order": 3
                       },
                       {
@@ -2256,7 +2256,7 @@ describe('Rules Engine Interactions', async () => {
                         "condition": "value > 100",
                         "positiveEffects": ["emit \\"RuleA\\""],
                         "negativeEffects": ["revert()"],
-                        "callingFunction": "transfer(address to, uint256 value)",
+                        "callingFunction": "transfer",
                         "order": 1
                       },
                       {
@@ -2265,7 +2265,7 @@ describe('Rules Engine Interactions', async () => {
                         "condition": "value > 200",
                         "positiveEffects": ["emit \\"RuleB\\""],
                         "negativeEffects": ["revert()"],
-                        "callingFunction": "transfer(address to, uint256 value)",
+                        "callingFunction": "transfer",
                         "order": 2
                       }
                     ]
@@ -2317,7 +2317,7 @@ describe('Rules Engine Interactions', async () => {
         "PolicyType": "open",
         "CallingFunctions": [
           {
-            "name": "transfer(address to, uint256 value)",
+            "name": "transfer",
             "functionSignature": "transfer(address to, uint256 value)",
             "encodedValues": "address to, uint256 value"
           }
@@ -2330,7 +2330,7 @@ describe('Rules Engine Interactions', async () => {
             "returnType": "bool",
             "valuesToPass": "",
             "mappedTrackerKeyValues": "",
-            "callingFunction": "transfer(address to, uint256 value)"
+            "callingFunction": "transfer"
           },
           {
             "name": "VoidReturnCall",
@@ -2339,7 +2339,7 @@ describe('Rules Engine Interactions', async () => {
             "returnType": "void",
             "valuesToPass": "value",
             "mappedTrackerKeyValues": "",
-            "callingFunction": "transfer(address to, uint256 value)"
+            "callingFunction": "transfer"
           }
         ],
         "Trackers": [
@@ -2357,7 +2357,7 @@ describe('Rules Engine Interactions', async () => {
             "condition": "FC:EmptyParamCall == true",
             "positiveEffects": ["emit \\"Status OK\\""],
             "negativeEffects": ["revert()"],
-            "callingFunction": "transfer(address to, uint256 value)"
+            "callingFunction": "transfer"
           }
         ]
       }`
@@ -2680,7 +2680,7 @@ describe('Rules Engine Interactions', async () => {
       "PolicyType": "open",
       "CallingFunctions": [
         {
-          "name": "transfer(address to, uint256 value)",
+          "name": "transfer",
           "functionSignature": "transfer(address to, uint256 value)",
           "encodedValues": "address to, uint256 value"
         }
@@ -2750,12 +2750,12 @@ describe('Rules Engine Interactions', async () => {
       "PolicyType": "open",
       "CallingFunctions": [
         {
-          "name": "transfer(address to, uint256 value)",
+          "name": "transfer",
           "functionSignature": "transfer(address to, uint256 value)",
           "encodedValues": "address to, uint256 value"
         },
         {
-          "name": "approve(address spender, uint256 amount)",
+          "name": "approve",
           "functionSignature": "approve(address spender, uint256 amount)",
           "encodedValues": "address spender, uint256 amount"
         }
@@ -2768,7 +2768,7 @@ describe('Rules Engine Interactions', async () => {
           "returnType": "uint256",
           "valuesToPass": "value",
           "mappedTrackerKeyValues": "",
-          "callingFunction": "transfer(address to, uint256 value)"
+          "callingFunction": "transfer"
         }
       ],
       "Trackers": [
@@ -2786,7 +2786,7 @@ describe('Rules Engine Interactions', async () => {
           "condition": "FC:TestForeignCall > 100",
           "positiveEffects": ["emit \\"Rule triggered\\""],
           "negativeEffects": ["revert()"],
-          "callingFunction": "transfer(address to, uint256 value)"
+          "callingFunction": "transfer"
         }
       ]
     }`

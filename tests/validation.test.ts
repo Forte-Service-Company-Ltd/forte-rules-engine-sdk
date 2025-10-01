@@ -8,6 +8,8 @@ import {
   formatParenConditionGroups,
   validateCondition,
   validateMappedTrackerJSON,
+  validateCallingFunctionExists,
+  CallingFunctionJSON,
 } from '../src/modules/validation'
 import { isLeft, isRight, unwrapEither } from '../src/modules/utils'
 import { RulesError } from '../src/modules/types'
@@ -18,7 +20,7 @@ const ruleJSON = `{
 				"condition": "3 + 4 > 5 AND (1 == 1 AND 2 == 2)",
 				"positiveEffects": ["revert"],
 				"negativeEffects": [],
-				"callingFunction": "addValue(uint256 value)"
+				"callingFunction": "addValue"
 				}`
 
 const fcJSON = `{
@@ -28,7 +30,7 @@ const fcJSON = `{
 					"returnType": "uint256",
 					"valuesToPass": "0, 1, 2",
           "mappedTrackerKeyValues": "",
-					"callingFunction": "transfer(address to, uint256 value)"
+					"callingFunction": "transfer"
 					}`
 
 const trackerJSON = `{
@@ -52,7 +54,7 @@ var policyJSON = `
     "PolicyType": "open",
     "CallingFunctions": [
       {
-        "name": "transfer(address to, uint256 value)",
+        "name": "transfer",
         "functionSignature": "transfer(address to, uint256 value)",
         "encodedValues": "address to, uint256 value"
       }
@@ -65,7 +67,7 @@ var policyJSON = `
             "returnType": "uint256",
             "valuesToPass": "to",
             "mappedTrackerKeyValues": "",
-            "callingFunction": "transfer(address to, uint256 value)"
+            "callingFunction": "transfer"
         }
     ],
     "Trackers": [
@@ -83,7 +85,7 @@ var policyJSON = `
             "condition": "value > 500",
             "positiveEffects": ["emit Success"],
             "negativeEffects": ["revert()"],
-            "callingFunction": "transfer(address to, uint256 value)"
+            "callingFunction": "transfer"
         }
         ]
         }`
@@ -95,12 +97,12 @@ var policyJSONFull = `
     "PolicyType": "open",
     "CallingFunctions": [
       {
-        "name": "transfer(address to, uint256 value)",
+        "name": "transfer",
         "functionSignature": "transfer(address to, uint256 value)",
         "encodedValues": "address to, uint256 value"
       },
       {
-        "name": "mint(address to, uint256 value)",
+        "name": "mint",
         "functionSignature": "mint(address to, uint256 value)",
         "encodedValues": "address to, uint256 value"
       }
@@ -113,7 +115,7 @@ var policyJSONFull = `
           "returnType": "uint256",
           "valuesToPass": "to",
           "mappedTrackerKeyValues": "",
-          "callingFunction": "transfer(address to, uint256 value)"
+          "callingFunction": "transfer"
       },
       {
           "name": "SimpleForeignCall",
@@ -122,7 +124,7 @@ var policyJSONFull = `
           "returnType": "uint256",
           "valuesToPass": "to",
           "mappedTrackerKeyValues": "",
-          "callingFunction": "mint(address to, uint256 value)"
+          "callingFunction": "mint"
       }
     ],
     "Trackers": [
@@ -160,7 +162,7 @@ var policyJSONFull = `
           "condition": "FC:SimpleForeignCall > 500 AND (TR:SimpleStringTracker == 'test' OR TR:SimpleMappedTracker(to) > 100)",
           "positiveEffects": ["emit Success"],
           "negativeEffects": ["revert()"],
-          "callingFunction": "transfer(address to, uint256 value)"
+          "callingFunction": "transfer"
       },
       {
           "Name": "Rule B",
@@ -168,7 +170,7 @@ var policyJSONFull = `
           "condition": "FC:SimpleForeignCall > 500",
           "positiveEffects": ["TR:SimpleStringTracker2(to) +=1", "TRU:SimpleMappedTracker2(to) +=1"],
           "negativeEffects": ["revert()"],
-          "callingFunction": "mint(address to, uint256 value)"
+          "callingFunction": "mint"
       }
     ]
   }`
@@ -409,7 +411,7 @@ test('Can catch foreign call function with no parameters', () => {
     "returnType": "uint256",
     "valuesToPass": "",
     "mappedTrackerKeyValues": "",
-    "callingFunction": "transfer(address to, uint256 value)"
+    "callingFunction": "transfer"
   }`
   const parsed = validateForeignCallJSON(invalidNoParamsFC)
   // Empty params should be valid
@@ -424,7 +426,7 @@ test('Fails validation when function has undefined parameters (no parens)', () =
     "returnType": "uint256",
     "valuesToPass": "",
     "mappedTrackerKeyValues": "",
-    "callingFunction": "transfer(address to, uint256 value)"
+    "callingFunction": "transfer"
   }`
   const parsed = validateForeignCallJSON(invalidNoParens)
   expect(isLeft(parsed)).toBeTruthy()
@@ -442,7 +444,7 @@ test('Can catch foreign call function with no parenthesis', () => {
     "returnType": "uint256",
     "valuesToPass": "",
     "mappedTrackerKeyValues": "",
-    "callingFunction": "transfer(address to, uint256 value)"
+    "callingFunction": "transfer"
   }`
   const parsed = validateForeignCallJSON(invalidNoParamsFC)
   expect(isLeft(parsed)).toBeTruthy()
@@ -488,7 +490,7 @@ test('Can validate foreign call JSON with void return type', () => {
     "returnType": "void",
     "valuesToPass": "value",
     "mappedTrackerKeyValues": "",
-    "callingFunction": "transfer(address to, uint256 value)"
+    "callingFunction": "transfer"
   }`
   const parsed = validateForeignCallJSON(fcWithVoidReturn)
   expect(isRight(parsed)).toBeTruthy()
@@ -1530,4 +1532,44 @@ test("Policy JSON validation handles null values robustly", () => {
     // Should NOT contain our custom rule ordering error since both rules have "no order" (null == undefined)
     expect(errors.some(err => err.message.includes('Rule ordering validation failed'))).toBeFalsy();
   }
+});
+
+test('validateCallingFunctionExists should detect missing calling functions', () => {
+  // Create calling function objects
+  const transferFunction: CallingFunctionJSON = {
+    name: 'transfer',
+    functionSignature: 'transfer(address to, uint256 value)',
+    encodedValues: ''
+  };
+  
+  const approveFunction: CallingFunctionJSON = {
+    name: 'approve', 
+    functionSignature: 'approve(address spender, uint256 amount)',
+    encodedValues: ''
+  };
+  
+  // Create a lookup map with some calling functions (only callingFunctionByName is used by the function)
+  const lookupMaps = {
+    callingFunctionByName: {
+      'transfer': transferFunction,
+      'approve': approveFunction
+    },
+    callingFunctionBySignature: {},  // Not used by validateCallingFunctionExists
+    callingFunctionByNameLower: {}   // Not used by validateCallingFunctionExists
+  };
+  
+  // Test with an existing calling function
+  expect(() => {
+    validateCallingFunctionExists('transfer', lookupMaps);
+  }).not.toThrow();
+  
+  // Test with a missing calling function
+  expect(() => {
+    validateCallingFunctionExists('nonExistentFunction', lookupMaps);
+  }).toThrow('Calling function "nonExistentFunction" not found. Available calling functions: transfer, approve. Please ensure the calling function is defined in the CallingFunctions array before referencing it in rules or foreign calls.');
+  
+  // Test with empty calling function
+  expect(() => {
+    validateCallingFunctionExists('', lookupMaps);
+  }).toThrow('Calling function "" not found. Available calling functions: transfer, approve. Please ensure the calling function is defined in the CallingFunctions array before referencing it in rules or foreign calls.');
 });

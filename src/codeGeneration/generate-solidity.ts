@@ -80,12 +80,12 @@ export function generateModifier(policyS: string, outputFileName: string): void 
   for (var syntax of policySyntax.Rules) {
     var argList = ''
     for (var fCall of policySyntax.CallingFunctions) {
-      if (fCall.functionSignature.trim() == syntax.callingFunction.trim()) {
+      if (fCall.name.trim() == syntax.callingFunction.trim()) {
         argList = fCall.encodedValues
         break
       }
     }
-    var callingFunction = syntax.callingFunction.split('(')[0]
+    var callingFunction = syntax.callingFunction.trim()
     if (functionNames.includes(callingFunction)) {
       continue
     } else {

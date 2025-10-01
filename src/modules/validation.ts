@@ -43,6 +43,35 @@ export const createCallingFunctionLookupMaps = (callingFunctions: CallingFunctio
 }
 
 /**
+ * Validates that a calling function exists by name in the lookup maps.
+ * This function checks if the referenced calling function name exists in the defined calling functions.
+ * 
+ * @param callingFunctionRef - The calling function name to validate
+ * @param lookupMaps - The pre-built lookup maps for efficient resolution
+ * @throws Error with descriptive message if calling function is not found
+ */
+export const validateCallingFunctionExists = (
+  callingFunctionRef: string,
+  lookupMaps: {
+    callingFunctionByName: Record<string, CallingFunctionJSON>
+    callingFunctionBySignature: Record<string, CallingFunctionJSON>
+    callingFunctionByNameLower: Record<string, CallingFunctionJSON>
+  }
+): void => {
+  const { callingFunctionByName } = lookupMaps
+
+  // Check if the calling function exists by name
+  if (!callingFunctionByName[callingFunctionRef]) {
+    const availableFunctions = Object.keys(callingFunctionByName)
+    throw new Error(
+      `Calling function "${callingFunctionRef}" not found. ` +
+      `Available calling functions: ${availableFunctions.length > 0 ? availableFunctions.join(', ') : 'none defined'}. ` +
+      `Please ensure the calling function is defined in the CallingFunctions array before referencing it in rules or foreign calls.`
+    )
+  }
+}
+
+/**
  * Resolves calling function name to full signature using lookup maps.
  * Supports backward compatibility by accepting both name-only references and full signatures.
  * Uses O(1) Map lookups for optimal performance.
@@ -357,6 +386,8 @@ const validateReferencedCalls = (input: any): boolean => {
 
   const testInputs: Record<string, string[]> = input.Rules.reduce((acc: Record<string, string[]>, rule: any) => {
     const inputs = [rule.condition, ...rule.positiveEffects, ...rule.negativeEffects]
+    // Validate calling function exists before resolving
+    validateCallingFunctionExists(rule.callingFunction, lookupMaps)
     const resolvedCallingFunction = resolveCallingFunction(rule.callingFunction, lookupMaps)
     if (!acc[resolvedCallingFunction]) {
       acc[resolvedCallingFunction] = inputs
@@ -367,6 +398,8 @@ const validateReferencedCalls = (input: any): boolean => {
   }, {})
 
   const groupedFC = input.ForeignCalls.reduce((acc: Record<string, string[]>, fc: any) => {
+    // Validate calling function exists before resolving
+    validateCallingFunctionExists(fc.callingFunction, lookupMaps)
     const resolvedCallingFunction = resolveCallingFunction(fc.callingFunction, lookupMaps)
     if (!acc[resolvedCallingFunction]) {
       acc[resolvedCallingFunction] = [fc.name]
@@ -384,6 +417,8 @@ const validateReferencedCalls = (input: any): boolean => {
     .every((isValid: boolean) => isValid)
 
   const validatedForeignCallValuesToPass = input.ForeignCalls.map((call: any) => {
+    // Validate calling function exists before resolving
+    validateCallingFunctionExists(call.callingFunction, lookupMaps)
     const resolvedCallingFunction = resolveCallingFunction(call.callingFunction, lookupMaps)
     return validateValuesToPass(
       callingFunctionEncodedValues[resolvedCallingFunction],
