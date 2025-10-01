@@ -2677,8 +2677,6 @@ test('Test Parsing Event Effect with Dynamic Parameter', () => {
   } `
 
   var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'bytes value, uint256 sAND, address lORe', [], [])
-  console.log(retVal?.negativeEffects)
-  console.log(retVal?.negativeEffectPlaceHolders)
 })
 
 test('Should parse foreign call with empty parameters correctly', () => {

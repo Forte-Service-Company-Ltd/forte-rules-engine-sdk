@@ -25,11 +25,14 @@ import {
   policyExists,
   isClosedPolicy,
   closePolicy,
+  openPolicy,
   isClosedPolicySubscriber,
   removeClosedPolicySubscriber,
   cementPolicy,
   isCementedPolicy,
   getPolicyMetadata,
+  setPolicies,
+  appendPolicy,
 } from '../src/modules/policy'
 import { createRule, getAllRules, updateRule, deleteRule, getRuleMetadata } from '../src/modules/rules'
 import {
@@ -422,7 +425,8 @@ describe('Rules Engine Interactions', async () => {
       [],
       1
     )
-    expect(updatedRuleId).toEqual(1n)
+    expect(updatedRuleId.ruleId).toEqual(1n)
+    expect(updatedRuleId.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
   test('Can delete a rule', options, async () => {
     var result = await createPolicy(
@@ -550,13 +554,15 @@ describe('Rules Engine Interactions', async () => {
       fcSyntax,
       1
     )
+    expect(fcId.foreignCallId).toBeGreaterThan(0)
+    expect(fcId.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
     var fcRetrieve = await getForeignCall(
       config,
       getRulesEngineForeignCallContract(rulesEngineContract, client),
       result.policyId,
-      fcId
+      fcId.foreignCallId
     )
-    expect(fcRetrieve?.foreignCallIndex).toEqual(fcId)
+    expect(fcRetrieve?.foreignCallIndex).toEqual(fcId.foreignCallId)
     var fcAllRetrieve = await getAllForeignCalls(
       config,
       getRulesEngineForeignCallContract(rulesEngineContract, client),
@@ -634,13 +640,15 @@ describe('Rules Engine Interactions', async () => {
       fcSyntax,
       1
     )
+    expect(fcId.foreignCallId).toBeGreaterThan(0)
+    expect(fcId.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
     var fcRetrieve = await getForeignCall(
       config,
       getRulesEngineForeignCallContract(rulesEngineContract, client),
       result.policyId,
-      fcId
+      fcId.foreignCallId
     )
-    expect(fcRetrieve?.foreignCallIndex).toEqual(fcId)
+    expect(fcRetrieve?.foreignCallIndex).toEqual(fcId.foreignCallId)
     expect(fcRetrieve?.parameterTypes[2]).toEqual(6)
   })
 
@@ -711,13 +719,15 @@ describe('Rules Engine Interactions', async () => {
       fcSyntax,
       1
     )
+    expect(fcId.foreignCallId).toBeGreaterThan(0)
+    expect(fcId.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
     var fcRetrieve = await getForeignCall(
       config,
       getRulesEngineForeignCallContract(rulesEngineContract, client),
       result.policyId,
-      fcId
+      fcId.foreignCallId
     )
-    expect(fcRetrieve?.foreignCallIndex).toEqual(fcId)
+    expect(fcRetrieve?.foreignCallIndex).toEqual(fcId.foreignCallId)
     var fcAllRetrieve = await getAllForeignCalls(
       config,
       getRulesEngineForeignCallContract(rulesEngineContract, client),
@@ -728,7 +738,7 @@ describe('Rules Engine Interactions', async () => {
       config,
       getRulesEngineForeignCallContract(rulesEngineContract, client),
       result.policyId,
-      fcId,
+      fcId.foreignCallId,
       1
     )
     expect(ret).toEqual(0)
@@ -811,9 +821,9 @@ describe('Rules Engine Interactions', async () => {
       config,
       getRulesEngineForeignCallContract(rulesEngineContract, client),
       result.policyId,
-      fcId
+      fcId.foreignCallId
     )
-    expect(fcRetrieve?.foreignCallIndex).toEqual(fcId)
+    expect(fcRetrieve?.foreignCallIndex).toEqual(fcId.foreignCallId)
     var fcAllRetrieve = await getAllForeignCalls(
       config,
       getRulesEngineForeignCallContract(rulesEngineContract, client),
@@ -835,11 +845,12 @@ describe('Rules Engine Interactions', async () => {
       getRulesEngineComponentContract(rulesEngineContract, client),
       getRulesEngineForeignCallContract(rulesEngineContract, client),
       result.policyId,
-      fcId,
+      fcId.foreignCallId,
       updatedSyntax,
       1
     )
-    expect(updatedId).toEqual(fcId)
+    expect(updatedId.foreignCallId).toEqual(fcId.foreignCallId)
+    expect(updatedId.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
   })
   test('Can create a new tracker', options, async () => {
     var trSyntax = `{
@@ -864,6 +875,8 @@ describe('Rules Engine Interactions', async () => {
       trSyntax,
       1
     )
+    expect(trId.trackerId).toBeGreaterThan(0)
+    expect(trId.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
     var trAllRetrieve = await getAllTrackers(
       config,
       getRulesEngineComponentContract(rulesEngineContract, client),
@@ -874,7 +887,7 @@ describe('Rules Engine Interactions', async () => {
       config,
       getRulesEngineComponentContract(rulesEngineContract, client),
       result.policyId,
-      trId
+      trId.trackerId
     )
     expect(trRetrieve?.trackerValue).toEqual('0x0000000000000000000000000000000000000000000000000000000000000004')
   })
@@ -901,6 +914,8 @@ describe('Rules Engine Interactions', async () => {
       trSyntax,
       1
     )
+    expect(trId.trackerId).toBeGreaterThan(0)
+    expect(trId.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
     var trAllRetrieve = await getAllTrackers(
       config,
       getRulesEngineComponentContract(rulesEngineContract, client),
@@ -911,10 +926,10 @@ describe('Rules Engine Interactions', async () => {
       config,
       getRulesEngineComponentContract(rulesEngineContract, client),
       result.policyId,
-      trId
+      trId.trackerId
     )
     expect(trRetrieve?.trackerValue).toEqual('0x0000000000000000000000000000000000000000000000000000000000000004')
-    await deleteTracker(config, getRulesEngineComponentContract(rulesEngineContract, client), result.policyId, trId, 1)
+    await deleteTracker(config, getRulesEngineComponentContract(rulesEngineContract, client), result.policyId, trId.trackerId, 1)
     var trAllRetrieve = await getAllTrackers(
       config,
       getRulesEngineComponentContract(rulesEngineContract, client),
@@ -957,6 +972,8 @@ describe('Rules Engine Interactions', async () => {
       trSyntax,
       1
     )
+    expect(trId.trackerId).toBeGreaterThan(0)
+    expect(trId.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
     var trAllRetrieve = await getAllTrackers(
       config,
       getRulesEngineComponentContract(rulesEngineContract, client),
@@ -967,27 +984,29 @@ describe('Rules Engine Interactions', async () => {
       config,
       getRulesEngineComponentContract(rulesEngineContract, client),
       result.policyId,
-      trId
+      trId.trackerId
     )
     expect(trRetrieve?.trackerValue).toEqual('0x0000000000000000000000000000000000000000000000000000000000000004')
     var updatedSyntax = `{
-                      "name": "Simple String Tracker",
-                      "type": "uint256",
-                      "initialValue": "5"
-                      }`
-    await updateTracker(
+                    "name": "Simple String Tracker",
+                    "type": "uint256",
+                    "initialValue": "5"
+                    }`
+    var updateResult = await updateTracker(
       config,
       getRulesEngineComponentContract(rulesEngineContract, client),
       result.policyId,
-      trId,
+      trId.trackerId,
       updatedSyntax,
       1
     )
+    expect(updateResult.trackerId).toEqual(trId.trackerId)
+    expect(updateResult.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
     var updatedTRRetrieve = await getTracker(
       config,
       getRulesEngineComponentContract(rulesEngineContract, client),
       result.policyId,
-      trId
+      trId.trackerId
     )
     expect(updatedTRRetrieve?.trackerValue).toEqual(
       '0x0000000000000000000000000000000000000000000000000000000000000005'
@@ -1209,7 +1228,7 @@ describe('Rules Engine Interactions', async () => {
       1,
       policyJSON
     )
-    console.log('Created policy with ID:', result.policyId)
+    // console.log('Created policy with ID:', result.policyId)
     expect(result.policyId).toBeGreaterThanOrEqual(0)
     var resultFC = await getAllForeignCalls(
       config,
@@ -1564,30 +1583,31 @@ describe('Rules Engine Interactions', async () => {
     expect(result.policyId).toBeGreaterThan(0)
     await sleep(4000)
 
-    await deletePolicy(config, getRulesEnginePolicyContract(rulesEngineContract, client), result.policyId, 1)
-    await sleep(4000)
-    var rules = (await getAllRules(
-      config,
-      getRulesEngineRulesContract(rulesEngineContract, client),
-      result.policyId
-    )) as any
-    expect(rules?.length).toEqual(0)
-    var trAllRetrieve = await getAllTrackers(
-      config,
-      getRulesEngineComponentContract(rulesEngineContract, client),
-      result.policyId
-    )
-    expect(trAllRetrieve?.length).toEqual(1)
-    expect(trAllRetrieve![0].set).toEqual(false)
-    var fcAllRetrieve = await getAllForeignCalls(
-      config,
-      getRulesEngineForeignCallContract(rulesEngineContract, client),
-      result.policyId
-    )
-    expect(fcAllRetrieve?.length).toEqual(1)
-    expect(fcAllRetrieve![0].set).toEqual(false)
-  })
-  test('Can check if address is admin', options, async () => {
+      await deletePolicy(config, getRulesEnginePolicyContract(rulesEngineContract, client), result.policyId, 1)
+      await sleep(4000)
+      var rules = (await getAllRules(
+        config,
+        getRulesEngineRulesContract(rulesEngineContract, client),
+        result.policyId
+      )) as any
+      expect(rules?.length).toEqual(0)
+      var trAllRetrieve = await getAllTrackers(
+        config,
+        getRulesEngineComponentContract(rulesEngineContract, client),
+        result.policyId
+      )
+      expect(trAllRetrieve?.length).toEqual(1)
+      expect(trAllRetrieve![0].set).toEqual(false)
+      var fcAllRetrieve = await getAllForeignCalls(
+        config,
+        getRulesEngineForeignCallContract(rulesEngineContract, client),
+        result.policyId
+      )
+      expect(fcAllRetrieve?.length).toEqual(1)
+      expect(fcAllRetrieve![0].set).toEqual(false)
+    }
+  )
+  test('Can check if address is admin', async () => {
     var policyJSON = `
                           {
                           "Policy": "Test Policy",
@@ -1646,7 +1666,7 @@ describe('Rules Engine Interactions', async () => {
       getAddress(foundryAccountAddress)
     )
     expect(admin).toEqual(true)
-  })
+  }, 150000)
   test('Cannot create duplicate calling functions', options, async () => {
     var policyJSON = `
                               {
@@ -1790,7 +1810,8 @@ describe('Rules Engine Interactions', async () => {
       trSyntax,
       1
     )
-    expect(trId).toEqual(-1)
+    expect(trId.trackerId).toEqual(-1)
+    expect(trId.transactionHash).toEqual("0x0")
   })
 
   test('Cannot create duplicate foreign calls', options, async () => {
@@ -1871,7 +1892,8 @@ describe('Rules Engine Interactions', async () => {
       trSyntax,
       1
     )
-    expect(trId).toEqual(-1)
+    expect(trId.foreignCallId).toEqual(-1)
+    expect(trId.transactionHash).toEqual("0x0")
   })
   test('Can update a policies admin', options, async () => {
     var policyJSON = `
@@ -2649,4 +2671,204 @@ describe('Rules Engine Interactions', async () => {
       )
     ).rejects.toThrow('Policy Unsupported type: Field Mapped')
   }, 1000000)
+
+  test('Functions return transaction hashes', async () => {
+    // Test createPolicy returns transaction hash
+    var policyJSON = `{
+      "Policy": "Transaction Hash Test Policy",
+      "Description": "Test policy to verify transaction hash is returned",
+      "PolicyType": "open",
+      "CallingFunctions": [
+        {
+          "name": "transfer(address to, uint256 value)",
+          "functionSignature": "transfer(address to, uint256 value)",
+          "encodedValues": "address to, uint256 value"
+        }
+      ],
+      "ForeignCalls": [],
+      "Trackers": [],
+      "MappedTrackers": [],
+      "Rules": []
+    }`
+
+    var createResult = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      policyJSON
+    )
+    
+    expect(createResult.policyId).toBeGreaterThan(0)
+    expect(createResult.transactionHash).toBeDefined()
+    expect(createResult.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
+
+    // Test closePolicy returns transaction hash and result
+    var closeResult = await closePolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      createResult.policyId,
+      1
+    )
+    
+    expect(closeResult.result).toBe(0)
+    expect(closeResult.transactionHash).toBeDefined()
+    expect(closeResult.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
+
+    // Test openPolicy returns transaction hash and result
+    var openResult = await openPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      createResult.policyId,
+      1
+    )
+    
+    expect(openResult.result).toBe(0)
+    expect(openResult.transactionHash).toBeDefined()
+    expect(openResult.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
+
+    // Test deletePolicy returns transaction hash and result
+    var deleteResult = await deletePolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      createResult.policyId,
+      1
+    )
+    
+    expect(deleteResult.result).toBe(0)
+    expect(deleteResult.transactionHash).toBeDefined()
+    expect(deleteResult.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
+  }, 60000) // 60 second timeout
+
+  test('CreatePolicy returns comprehensive transaction hashes for all components', async () => {
+    // Test createPolicy with all component types to verify individual transaction hash collection
+    var comprehensivePolicyJSON = `{
+      "Policy": "Comprehensive Transaction Hash Test Policy",
+      "Description": "Test policy to verify individual transaction hashes are captured for all components",
+      "PolicyType": "open",
+      "CallingFunctions": [
+        {
+          "name": "transfer(address to, uint256 value)",
+          "functionSignature": "transfer(address to, uint256 value)",
+          "encodedValues": "address to, uint256 value"
+        },
+        {
+          "name": "approve(address spender, uint256 amount)",
+          "functionSignature": "approve(address spender, uint256 amount)",
+          "encodedValues": "address spender, uint256 amount"
+        }
+      ],
+      "ForeignCalls": [
+        {
+          "name": "TestForeignCall",
+          "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+          "function": "testFunction(uint256)",
+          "returnType": "uint256",
+          "valuesToPass": "value",
+          "mappedTrackerKeyValues": "",
+          "callingFunction": "transfer(address to, uint256 value)"
+        }
+      ],
+      "Trackers": [
+        {
+          "name": "TestTracker",
+          "type": "uint256",
+          "initialValue": "0"
+        }
+      ],
+      "MappedTrackers": [],
+      "Rules": [
+        {
+          "Name": "Test Rule",
+          "Description": "A test rule",
+          "condition": "FC:TestForeignCall > 100",
+          "positiveEffects": ["emit \\"Rule triggered\\""],
+          "negativeEffects": ["revert()"],
+          "callingFunction": "transfer(address to, uint256 value)"
+        }
+      ]
+    }`
+
+    var createResult = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      comprehensivePolicyJSON
+    )
+    
+    // Verify basic policy creation
+    expect(createResult.policyId).toBeGreaterThan(0)
+    expect(createResult.transactionHash).toBeDefined()
+    expect(createResult.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
+
+    // Verify individual transaction hash arrays are present and properly structured
+    expect(createResult.callingFunctions).toBeInstanceOf(Array)
+    expect(createResult.trackers).toBeInstanceOf(Array)
+    expect(createResult.foreignCalls).toBeInstanceOf(Array)
+    expect(createResult.rules).toBeInstanceOf(Array)
+
+    // Verify calling functions transaction hashes
+    expect(createResult.callingFunctions.length).toBeGreaterThan(0)
+    createResult.callingFunctions.forEach(cf => {
+      // functionId is actually a function selector (hex string)
+      expect(typeof cf.functionId).toBe('string')
+      expect(cf.functionId).toMatch(/^0x[a-fA-F0-9]{8}$/) // Function selector format
+      expect(cf.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
+    })
+
+    // Verify trackers transaction hashes
+    expect(createResult.trackers.length).toBeGreaterThan(0)
+    createResult.trackers.forEach(tr => {
+      // trackerId should be a number
+      expect(['number', 'bigint'].includes(typeof tr.trackerId)).toBe(true)
+      if (typeof tr.trackerId === 'number') {
+        expect(tr.trackerId).toBeGreaterThan(0)
+      } else if (typeof tr.trackerId === 'bigint') {
+        expect(tr.trackerId > 0n).toBe(true)
+      }
+      expect(tr.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
+    })
+
+    // Verify foreign calls transaction hashes
+    expect(createResult.foreignCalls.length).toBeGreaterThan(0)
+    createResult.foreignCalls.forEach(fc => {
+      // foreignCallId should be a number
+      expect(['number', 'bigint'].includes(typeof fc.foreignCallId)).toBe(true)
+      if (typeof fc.foreignCallId === 'number') {
+        expect(fc.foreignCallId).toBeGreaterThan(0)
+      } else if (typeof fc.foreignCallId === 'bigint') {
+        expect(fc.foreignCallId > 0n).toBe(true)
+      }
+      expect(fc.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
+    })
+
+    // Verify rules transaction hashes
+    expect(createResult.rules.length).toBeGreaterThan(0)
+    createResult.rules.forEach(rule => {
+      // ruleId should be a number
+      expect(['number', 'bigint'].includes(typeof rule.ruleId)).toBe(true)
+      if (typeof rule.ruleId === 'number') {
+        expect(rule.ruleId).toBeGreaterThan(0)
+      } else if (typeof rule.ruleId === 'bigint') {
+        expect(rule.ruleId > 0n).toBe(true)
+      }
+      expect(rule.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
+    })
+
+    // Verify that transaction hashes are unique (basic sanity check)
+    const allHashes = [
+      createResult.transactionHash,
+      ...createResult.callingFunctions.map(cf => cf.transactionHash),
+      ...createResult.trackers.map(tr => tr.transactionHash),
+      ...createResult.foreignCalls.map(fc => fc.transactionHash),
+      ...createResult.rules.map(rule => rule.transactionHash)
+    ]
+    const uniqueHashes = new Set(allHashes)
+    expect(uniqueHashes.size).toBeGreaterThan(1) // Should have multiple unique transaction hashes
+  }, 60000) // 60 second timeout
 })

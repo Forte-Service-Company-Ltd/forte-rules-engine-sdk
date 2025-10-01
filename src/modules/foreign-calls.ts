@@ -81,7 +81,7 @@ export const createForeignCall = async (
   policyId: number,
   fcSyntax: string,
   confirmationCount: number
-): Promise<number> => {
+): Promise<{ foreignCallId: number; transactionHash: `0x${string}` }> => {
   var trackers: TrackerOnChain[] = await getAllTrackers(config, rulesEngineComponentContract, policyId)
   var mappedArray: boolean[] = trackers.map((tracker) => tracker.mapped)
 
@@ -169,10 +169,10 @@ export const createForeignCall = async (
         if (failureCount < 5) {
           failureCount += 1
         } else {
-          return -1
+          return { foreignCallId: -1, transactionHash: '0x0' as `0x${string}` }
         }
         await sleep(1000)
-        return -1
+        return { foreignCallId: -1, transactionHash: '0x0' as `0x${string}` }
       }
     }
 
@@ -185,10 +185,10 @@ export const createForeignCall = async (
         confirmations: confirmationCount,
         hash: returnHash,
       })
-      return addFC.result
+      return { foreignCallId: addFC.result, transactionHash: returnHash }
     }
   }
-  return -1
+  return { foreignCallId: -1, transactionHash: '0x0' as `0x${string}` }
 }
 
 const checkIfForeignCallExists = async (
@@ -236,7 +236,7 @@ export const updateForeignCall = async (
   foreignCallId: number,
   fcSyntax: string,
   confirmationCount: number
-): Promise<number> => {
+): Promise<{ foreignCallId: number; transactionHash: `0x${string}` }> => {
   var trackers: TrackerOnChain[] = await getAllTrackers(config, rulesEngineComponentContract, policyId)
   const trackerMetadataCalls = trackers.map((tracker) =>
     getTrackerMetadata(config, rulesEngineComponentContract, policyId, tracker.trackerIndex)
@@ -320,7 +320,7 @@ export const updateForeignCall = async (
         if (failureCount < 5) {
           failureCount += 1
         } else {
-          return -1
+          return { foreignCallId: -1, transactionHash: '0x0' as `0x${string}` }
         }
         await sleep(1000)
       }
@@ -335,10 +335,10 @@ export const updateForeignCall = async (
         hash: returnHash,
       })
       let foreignCallResult = addFC.result as any
-      return foreignCallResult.foreignCallIndex
+      return { foreignCallId: foreignCallResult.foreignCallIndex, transactionHash: returnHash }
     }
   }
-  return -1
+  return { foreignCallId: -1, transactionHash: '0x0' as `0x${string}` }
 }
 
 /**
