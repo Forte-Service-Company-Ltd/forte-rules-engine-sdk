@@ -340,19 +340,19 @@ export type ForeignCallOnChain = {
  */
 export type ForeignCallDefinition = {
   /** Name of the foreign call */
-  name: string
+  Name: string
   /** Contract address */
-  address: Address
+  Address: Address
   /** Function name */
-  function: string
+  Function: string
   /** Return type of the function */
-  returnType: number
+  ReturnType: number
   /** Types of parameters */
-  parameterTypes: number[]
+  ParameterTypes: number[]
   /** Indices for encoded parameters */
-  encodedIndices: ForeignCallEncodedIndex[]
+  EncodedIndices: ForeignCallEncodedIndex[]
   /** Indices for mapped tracker keys */
-  mappedTrackerKeyIndices: ForeignCallEncodedIndex[]
+  MappedTrackerKeyIndices: ForeignCallEncodedIndex[]
 }
 
 /**

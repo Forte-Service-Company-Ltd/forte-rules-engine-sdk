@@ -155,7 +155,7 @@ export function parseRuleSyntax(
     foreignCallNameToID,
     trackerNameToID,
     additionalForeignCalls,
-    removeExtraParenthesis(syntax.condition)
+    removeExtraParenthesis(syntax.Condition)
   )
 
   const placeHolders = buildPlaceholderList(ruleComponents)
@@ -165,7 +165,7 @@ export function parseRuleSyntax(
     foreignCallNameToID,
     trackerNameToID,
     additionalEffectForeignCalls,
-    syntax.positiveEffects
+    syntax.PositiveEffects
   )
   if (processedEffect == null) {
     return null
@@ -177,7 +177,7 @@ export function parseRuleSyntax(
     foreignCallNameToID,
     trackerNameToID,
     additionalEffectForeignCalls,
-    syntax.negativeEffects
+    syntax.NegativeEffects
   )
   if (retE == null) {
     return null
@@ -234,11 +234,11 @@ export function parseRuleSyntax(
 }
 
 export function parseMappedTrackerSyntax(syntax: MappedTrackerJSON): MappedTrackerDefinition {
-  let keyType = syntax.keyType
-  let valueType = syntax.valueType
+  let keyType = syntax.KeyType
+  let valueType = syntax.ValueType
   var trackerArrayValueType: number = 0 // Default to VOID type
-  var trackerInitialKeys: any[] = encodeTrackerData(syntax.initialKeys, keyType)
-  var trackerInitialValues: any[] = encodeTrackerData(syntax.initialValues, valueType)
+  var trackerInitialKeys: any[] = encodeTrackerData(syntax.InitialKeys, keyType)
+  var trackerInitialValues: any[] = encodeTrackerData(syntax.InitialValues, valueType)
   const keyTypeEnum = (PT.find((_pt) => _pt.name == keyType) ?? PT[4]).enumeration
   const valueTypeEnum = (PT.find((_pt) => _pt.name == valueType) ?? PT[4]).enumeration
   // Determine trackerArrayType based on valueType
@@ -257,7 +257,7 @@ export function parseMappedTrackerSyntax(syntax: MappedTrackerJSON): MappedTrack
   }
 
   return {
-    name: syntax.name,
+    name: syntax.Name,
     keyType: keyTypeEnum,
     valueType: valueTypeEnum,
     initialKeys: trackerInitialKeys,
@@ -334,43 +334,43 @@ function encodeTrackerData(valueSet: any[], keyType: string): any[] {
  * @returns Either an object containing the tracker's name, type, and encoded default value if successful or an error
  */
 export function parseTrackerSyntax(syntax: TrackerJSON): TrackerDefinition {
-  let trackerType = syntax.type
+  let trackerType = syntax.Type
 
   var trackerInitialValue: any
   var trackerValueType: number
 
   if (trackerType == 'string[]') {
-    trackerInitialValue = encodeAbiParameters(parseAbiParameters('string[]'), [syntax.initialValue as string[]])
+    trackerInitialValue = encodeAbiParameters(parseAbiParameters('string[]'), [syntax.InitialValue as string[]])
     trackerValueType = trackerArrayType.STR_ARRAY
   } else if (trackerType == 'bool[]') {
-    const encoded = (syntax.initialValue as string[]).map((val) => getBigIntForBool(val))
+    const encoded = (syntax.InitialValue as string[]).map((val) => getBigIntForBool(val))
     trackerInitialValue = encodePacked(['uint256[]'], [encoded])
     trackerValueType = trackerArrayType.BOOL_ARRAY
   } else if (trackerType == 'bytes[]') {
-    const values = (syntax.initialValue as string[]).map((val) => toHex(stringToBytes(String(val))))
+    const values = (syntax.InitialValue as string[]).map((val) => toHex(stringToBytes(String(val))))
     trackerInitialValue = encodeAbiParameters(parseAbiParameters('bytes[]'), [values])
     trackerValueType = trackerArrayType.BYTES_ARRAY
   } else if (trackerType == 'address[]') {
-    trackerInitialValue = (syntax.initialValue as string[]).map(getEncodedAddress)
+    trackerInitialValue = (syntax.InitialValue as string[]).map(getEncodedAddress)
     trackerValueType = trackerArrayType.ADDR_ARRAY
   } else if (trackerType == 'uint256[]') {
-    const values = (syntax.initialValue as string[]).map((val) => BigInt(val))
+    const values = (syntax.InitialValue as string[]).map((val) => BigInt(val))
     trackerInitialValue = encodePacked(['uint256[]'], [values])
     trackerValueType = trackerArrayType.UINT_ARRAY
   } else if (trackerType == 'uint256') {
-    trackerInitialValue = encodePacked(['uint256'], [BigInt(syntax.initialValue as string)])
+    trackerInitialValue = encodePacked(['uint256'], [BigInt(syntax.InitialValue as string)])
     trackerValueType = trackerArrayType.VOID
   } else if (trackerType == 'address') {
-    trackerInitialValue = getEncodedAddress(syntax.initialValue as string)
+    trackerInitialValue = getEncodedAddress(syntax.InitialValue as string)
     trackerValueType = trackerArrayType.VOID
   } else if (trackerType == 'bytes') {
-    trackerInitialValue = getEncodedBytes(syntax.initialValue as string)
+    trackerInitialValue = getEncodedBytes(syntax.InitialValue as string)
     trackerValueType = trackerArrayType.VOID
   } else if (trackerType == 'bool') {
-    trackerInitialValue = encodePacked(['uint256'], [getBigIntForBool(syntax.initialValue as string)])
+    trackerInitialValue = encodePacked(['uint256'], [getBigIntForBool(syntax.InitialValue as string)])
     trackerValueType = trackerArrayType.VOID
   } else {
-    trackerInitialValue = encodeAbiParameters(parseAbiParameters('string'), [syntax.initialValue as string])
+    trackerInitialValue = encodeAbiParameters(parseAbiParameters('string'), [syntax.InitialValue as string])
 
     trackerValueType = trackerArrayType.VOID
   }
@@ -378,7 +378,7 @@ export function parseTrackerSyntax(syntax: TrackerJSON): TrackerDefinition {
   trackerTypeEnum = PT.find((pt) => pt.name === trackerType)?.enumeration ?? 4
 
   return {
-    name: syntax.name,
+    name: syntax.Name,
     type: trackerTypeEnum,
     initialValue: trackerInitialValue,
     arrayValueType: trackerValueType,
@@ -427,62 +427,58 @@ export function parseForeignCallDefinition(
   functionArguments: string[]
 ): ForeignCallDefinition {
   // Validate that the foreign call doesn't reference itself
-  const selfReferences = syntax.valuesToPass
-    .split(',')
+  const selfReferences = syntax.ValuesToPass.split(',')
     .map((val) => val.trim())
     .filter((val) => val.startsWith('FC:'))
     .map((val) => val.substring(3).trim())
-    .filter((fcName) => fcName === syntax.name)
+    .filter((fcName) => fcName === syntax.Name)
 
   if (selfReferences.length > 0) {
     throw new Error(
-      `Foreign call "${syntax.name}" cannot reference itself in valuesToPass. ` +
+      `Foreign call "${syntax.Name}" cannot reference itself in valuesToPass. ` +
         `Self-referential foreign calls are not allowed as they would create infinite loops.`
     )
   }
 
   // Also check mapped tracker key values for self-references
-  if (syntax.mappedTrackerKeyValues && syntax.mappedTrackerKeyValues.trim() !== '') {
-    const mappedSelfReferences = syntax.mappedTrackerKeyValues
-      .split(',')
+  if (syntax.MappedTrackerKeyValues && syntax.MappedTrackerKeyValues.trim() !== '') {
+    const mappedSelfReferences = syntax.MappedTrackerKeyValues.split(',')
       .map((val) => val.trim())
       .filter((val) => val.startsWith('FC:'))
       .map((val) => val.substring(3).trim())
-      .filter((fcName) => fcName === syntax.name)
+      .filter((fcName) => fcName === syntax.Name)
 
     if (mappedSelfReferences.length > 0) {
       throw new Error(
-        `Foreign call "${syntax.name}" cannot reference itself in mappedTrackerKeyValues. ` +
+        `Foreign call "${syntax.Name}" cannot reference itself in mappedTrackerKeyValues. ` +
           `Self-referential foreign calls are not allowed as they would create infinite loops.`
       )
     }
   }
 
-  const encodedIndices = syntax.valuesToPass
-    .split(',')
+  const EncodedIndices = syntax.ValuesToPass.split(',')
     .map((encodedIndex) => getFCEncodedIndex(foreignCallNameToID, trackerNameToID, functionArguments, encodedIndex))
     .filter((encoded) => encoded !== null)
 
-  var mappedTrackerKeyIndices: ForeignCallEncodedIndex[] = []
-  if (syntax.mappedTrackerKeyValues == '') {
+  var MappedTrackerKeyIndices: ForeignCallEncodedIndex[] = []
+  if (syntax.MappedTrackerKeyValues == '') {
   } else {
-    mappedTrackerKeyIndices = syntax.mappedTrackerKeyValues
-      .split(',')
+    MappedTrackerKeyIndices = syntax.MappedTrackerKeyValues.split(',')
       .map((encodedIndex) => getFCEncodedIndex(foreignCallNameToID, trackerNameToID, functionArguments, encodedIndex))
       .filter((encoded) => encoded !== null)
   }
 
-  const returnType: number = PType.indexOf(syntax.returnType)
+  const ReturnType: number = PType.indexOf(syntax.ReturnType)
 
-  var parameterTypes: number[] = splitFunctionInput(syntax.function).map((val) => determinePTEnumeration(val))
+  var ParameterTypes: number[] = splitFunctionInput(syntax.Function).map((val) => determinePTEnumeration(val))
 
   // Validate that the number of encoded indices matches the expected parameter count
-  const expectedParamCount = parameterTypes.length
-  const actualIndicesCount = encodedIndices.length
+  const expectedParamCount = ParameterTypes.length
+  const actualIndicesCount = EncodedIndices.length
 
   if (actualIndicesCount !== expectedParamCount) {
     throw new Error(
-      `Parameter count mismatch for foreign call "${syntax.name}": ` +
+      `Parameter count mismatch for foreign call "${syntax.Name}": ` +
         `expected ${expectedParamCount} parameters but got ${actualIndicesCount} encoded indices. ` +
         `This usually means some dependencies (FC: references) failed to be created.`
     )
@@ -490,10 +486,10 @@ export function parseForeignCallDefinition(
 
   return {
     ...syntax,
-    returnType,
-    parameterTypes,
-    encodedIndices,
-    mappedTrackerKeyIndices,
+    ReturnType,
+    ParameterTypes,
+    EncodedIndices,
+    MappedTrackerKeyIndices,
   }
 }
 
@@ -502,7 +498,7 @@ export function determinePTEnumeration(name: string): number {
 }
 
 export function parseCallingFunction(syntax: CallingFunctionJSON): string[] {
-  return syntax.encodedValues.split(', ').map((val) => val.trim().split(' ')[1])
+  return syntax.EncodedValues.split(', ').map((val) => val.trim().split(' ')[1])
 }
 
 /**

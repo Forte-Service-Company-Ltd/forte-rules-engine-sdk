@@ -267,7 +267,7 @@ const buildCallingFunctions = async (
     }
   }
   for (var callingFunctionJSON of policyJSON.CallingFunctions) {
-    var callingFunction = callingFunctionJSON.functionSignature
+    var callingFunction = callingFunctionJSON.FunctionSignature
     if (!callingFunctions.includes(callingFunction)) {
       let result: { functionId: number; transactionHash: `0x${string}` }
       if (existingIds.includes(toFunctionSelector(callingFunction))) {
@@ -276,8 +276,8 @@ const buildCallingFunctions = async (
           rulesEngineComponentContract,
           policyId,
           callingFunction,
-          callingFunctionJSON.name,
-          callingFunctionJSON.encodedValues,
+          callingFunctionJSON.Name,
+          callingFunctionJSON.EncodedValues,
           confirmationCount
         )
       } else {
@@ -286,8 +286,8 @@ const buildCallingFunctions = async (
           rulesEngineComponentContract,
           policyId,
           callingFunction,
-          callingFunctionJSON.name,
-          callingFunctionJSON.encodedValues,
+          callingFunctionJSON.Name,
+          callingFunctionJSON.EncodedValues,
           confirmationCount
         )
       }
@@ -299,7 +299,7 @@ const buildCallingFunctions = async (
         allFunctionMappings.push({
           hex: toFunctionSelector(callingFunction),
           functionString: callingFunction,
-          encodedValues: callingFunctionJSON.encodedValues,
+          encodedValues: callingFunctionJSON.EncodedValues,
           index: -1,
         })
         var selector = toFunctionSelector(callingFunction)
@@ -464,7 +464,7 @@ const buildForeignCalls = async (
 
   if (policyJSON.ForeignCalls != null) {
     for (var foreignCall of policyJSON.ForeignCalls) {
-      const resolvedForeignCallFunction = resolveFunction(foreignCall.callingFunction)
+      const resolvedForeignCallFunction = resolveFunction(foreignCall.CallingFunction)
       try {
         // Find the calling function and its encoded values using the resolved function name
         let callingFunctionIndex = callingFunctions.findIndex((cf) => cf.trim() === resolvedForeignCallFunction.trim())
@@ -513,7 +513,7 @@ const buildForeignCalls = async (
         // Create a copy of the foreign call with the resolved calling function name
         const resolvedForeignCall = {
           ...foreignCall,
-          callingFunction: foreignCall.callingFunction,
+          callingFunction: foreignCall.CallingFunction,
         }
 
         const fcStruct = parseForeignCallDefinition(resolvedForeignCall, fcIds, trackerIds, encodedValues)
@@ -546,7 +546,7 @@ const buildForeignCalls = async (
           transactionHashes.push(result)
           var struc: NameToID = {
             id: result.foreignCallId,
-            name: fcStruct.name.split('(')[0],
+            name: fcStruct.Name.split('(')[0],
             type: 0,
           }
           fcIds.push(struc)
@@ -583,7 +583,7 @@ const buildForeignCalls = async (
         }
 
         // For other errors, log and continue (existing behavior)
-        console.error(`Skipping foreign call ${foreignCall.name}: ${errorMessage}`)
+        console.error(`Skipping foreign call ${foreignCall.Name}: ${errorMessage}`)
       }
     }
   }
@@ -613,8 +613,8 @@ const buildRules = async (
   var transactionHashes: { ruleId: number; transactionHash: `0x${string}` }[] = []
   // Sort rules by order field if provided, otherwise maintain original order
   const sortedRules = [...policyJSON.Rules].sort((a, b) => {
-    const orderA = a.order !== undefined ? a.order : Number.MAX_SAFE_INTEGER
-    const orderB = b.order !== undefined ? b.order : Number.MAX_SAFE_INTEGER
+    const orderA = a.Order !== undefined ? a.Order : Number.MAX_SAFE_INTEGER
+    const orderB = b.Order !== undefined ? b.Order : Number.MAX_SAFE_INTEGER
     return orderA - orderB
   })
 
@@ -667,7 +667,7 @@ const buildRules = async (
     }
     transactionHashes.push(result)
     ruleIds.push(result.ruleId)
-    const resolvedCallingFunction = resolveFunction(rule.callingFunction)
+    const resolvedCallingFunction = resolveFunction(rule.CallingFunction)
     if (ruleToCallingFunction.has(resolvedCallingFunction)) {
       ruleToCallingFunction.get(resolvedCallingFunction)?.push(result.ruleId)
     } else {
@@ -1194,9 +1194,9 @@ export const getPolicy = async (
       }
       allFunctionMappings.push(newMapping)
       var callingFunctionJSON: CallingFunctionJSON = {
-        name: mapp.name,
-        functionSignature: mapp.callingFunction,
-        encodedValues: mapp.encodedValues,
+        Name: mapp.name,
+        FunctionSignature: mapp.callingFunction,
+        EncodedValues: mapp.encodedValues,
       }
 
       callingFunctionsJSON.push(callingFunctionJSON)

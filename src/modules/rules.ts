@@ -86,8 +86,8 @@ export const createRule = async (
   const effectSyntax = unwrapEither(validatedEffectSyntax)
   if (
     !(
-      (effectSyntax.positiveEffects != null && effectSyntax.positiveEffects.length > 0) ||
-      (effectSyntax.negativeEffects != null && effectSyntax.negativeEffects.length > 0)
+      (effectSyntax.PositiveEffects != null && effectSyntax.PositiveEffects.length > 0) ||
+      (effectSyntax.NegativeEffects != null && effectSyntax.NegativeEffects.length > 0)
     )
   ) {
     return { ruleId: -1, transactionHash: '0x0' as `0x${string}` }
@@ -111,13 +111,13 @@ export const createRule = async (
   var iter = 1
   var encodedValues: string = ''
   for (var mapp of callingFunctionMetadata) {
-    if (mapp.name.trim() == ruleSyntax.callingFunction.trim()) {
+    if (mapp.name.trim() == ruleSyntax.CallingFunction.trim()) {
       encodedValues = mapp.encodedValues
       break
     }
     iter += 1
   }
-  var fcList = buildForeignCallList(ruleSyntax.condition)
+  var fcList = buildForeignCallList(ruleSyntax.Condition)
   var fullFCList = []
   for (var fc of fcList) {
     for (var id of foreignCallNameToID) {
@@ -150,13 +150,13 @@ export const createRule = async (
   }
   var fcListEff = []
   var fullFCListEff = []
-  if (ruleSyntax.positiveEffects != null) {
-    for (var eff of ruleSyntax.positiveEffects) {
+  if (ruleSyntax.PositiveEffects != null) {
+    for (var eff of ruleSyntax.PositiveEffects) {
       fcListEff.push(...buildForeignCallList(eff))
     }
   }
-  if (ruleSyntax.negativeEffects != null) {
-    for (var eff of ruleSyntax.negativeEffects) {
+  if (ruleSyntax.NegativeEffects != null) {
+    for (var eff of ruleSyntax.NegativeEffects) {
       fcListEff.push(...buildForeignCallList(eff))
     }
   }
@@ -297,14 +297,14 @@ export const updateRule = async (
   var iter = 1
   var encodedValues: string = ''
   for (var mapp of callingFunctionMetadata) {
-    if (mapp.name.trim() == ruleSyntax.callingFunction.trim()) {
+    if (mapp.name.trim() == ruleSyntax.CallingFunction.trim()) {
       encodedValues = mapp.encodedValues
       break
     }
     iter += 1
   }
 
-  var fcList = await buildForeignCallList(ruleSyntax.condition)
+  var fcList = await buildForeignCallList(ruleSyntax.Condition)
   var fullFCList = []
   for (var fc of fcList) {
     for (var id of foreignCallNameToID) {
@@ -335,7 +335,7 @@ export const updateRule = async (
       }
     }
   }
-  const fcListEff = [...ruleSyntax.positiveEffects, ...ruleSyntax.negativeEffects].map(buildForeignCallList).flat()
+  const fcListEff = [...ruleSyntax.PositiveEffects, ...ruleSyntax.NegativeEffects].map(buildForeignCallList).flat()
   var fullFCListEff = []
 
   for (var fc of fcListEff) {

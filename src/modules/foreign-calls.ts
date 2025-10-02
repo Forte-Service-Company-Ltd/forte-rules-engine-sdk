@@ -47,12 +47,12 @@ const getCFIndexAndEncodedValues = (
   cfMetaData: CallingFunctionHashMapping[],
   fcJSON: ForeignCallJSON
 ): { cfIndex: number; cfEncodedValues: string[] } => {
-  const cfIndex = cfMetaData.findIndex((cf) => cf.name.trim() == fcJSON.callingFunction.trim())
+  const cfIndex = cfMetaData.findIndex((cf) => cf.name.trim() == fcJSON.CallingFunction.trim())
   const callingFunction = cfMetaData[cfIndex]
   const cfEncodedValues = parseCallingFunction({
-    name: fcJSON.callingFunction,
-    functionSignature: fcJSON.callingFunction,
-    encodedValues: callingFunction ? callingFunction.encodedValues : '',
+    Name: fcJSON.CallingFunction,
+    FunctionSignature: fcJSON.CallingFunction,
+    EncodedValues: callingFunction ? callingFunction.encodedValues : '',
   })
   return { cfIndex, cfEncodedValues }
 }
@@ -139,19 +139,19 @@ export const createForeignCall = async (
     config,
     rulesEngineForeignCallContract,
     policyId,
-    foreignCall.name,
+    foreignCall.Name,
     callingFunctionIds[cfIndex]
   )
   if (!duplicate) {
     var fc = {
       set: true,
-      foreignCallAddress: foreignCall.address,
-      signature: toFunctionSelector(foreignCall.function),
+      foreignCallAddress: foreignCall.Address,
+      signature: toFunctionSelector(foreignCall.Function),
       foreignCallIndex: 0,
-      returnType: foreignCall.returnType,
-      parameterTypes: foreignCall.parameterTypes,
-      encodedIndices: foreignCall.encodedIndices,
-      mappedTrackerKeyIndices: foreignCall.mappedTrackerKeyIndices,
+      returnType: foreignCall.ReturnType,
+      parameterTypes: foreignCall.ParameterTypes,
+      encodedIndices: foreignCall.EncodedIndices,
+      mappedTrackerKeyIndices: foreignCall.MappedTrackerKeyIndices,
       callingFunctionSelector: callingFunctionIds[cfIndex],
     }
     var addFC
@@ -162,7 +162,7 @@ export const createForeignCall = async (
           address: rulesEngineForeignCallContract.address,
           abi: rulesEngineForeignCallContract.abi,
           functionName: 'createForeignCall',
-          args: [policyId, fc, foreignCall.name, foreignCall.function],
+          args: [policyId, fc, foreignCall.Name, foreignCall.Function],
         })
         break
       } catch (err) {
@@ -289,20 +289,20 @@ export const updateForeignCall = async (
     config,
     rulesEngineForeignCallContract,
     policyId,
-    foreignCall.name,
+    foreignCall.Name,
     callingFunctionIds[cfIndex],
     foreignCallId
   )
   if (!duplicate) {
     var fc = {
       set: true,
-      foreignCallAddress: foreignCall.address,
-      signature: toFunctionSelector(foreignCall.function),
+      foreignCallAddress: foreignCall.Address,
+      signature: toFunctionSelector(foreignCall.Function),
       foreignCallIndex: 0,
-      returnType: foreignCall.returnType,
-      parameterTypes: foreignCall.parameterTypes,
-      encodedIndices: foreignCall.encodedIndices,
-      mappedTrackerKeyIndices: foreignCall.mappedTrackerKeyIndices,
+      returnType: foreignCall.ReturnType,
+      parameterTypes: foreignCall.ParameterTypes,
+      encodedIndices: foreignCall.EncodedIndices,
+      mappedTrackerKeyIndices: foreignCall.MappedTrackerKeyIndices,
       callingFunctionSelector: callingFunctionIds[cfIndex],
     }
     var addFC

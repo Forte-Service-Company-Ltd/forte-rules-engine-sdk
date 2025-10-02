@@ -3,13 +3,6 @@ import { Either, PT, RulesError } from './types'
 import { isLeft, makeLeft, makeRight, unwrapEither } from './utils'
 import { Address, checksumAddress, isAddress } from 'viem'
 
-// Re-export the CallingFunctionJSON interface to avoid circular imports
-export interface CallingFunctionJSON {
-  name: string
-  functionSignature: string
-  encodedValues: string
-}
-
 /**
  * Creates lookup maps for efficient calling function resolution.
  * This utility function creates the necessary Map structures for O(1) lookups.
@@ -25,10 +18,10 @@ export const createCallingFunctionLookupMaps = (callingFunctions: CallingFunctio
   // Pre-populate lookup maps for efficient resolution using reduce
   callingFunctions.reduce(
     (maps, cf) => {
-      maps.byName[cf.name] = cf
-      maps.byNameLower[cf.name.toLowerCase()] = cf
-      if (cf.functionSignature && cf.functionSignature !== cf.name) {
-        maps.bySignature[cf.functionSignature] = cf
+      maps.byName[cf.Name] = cf
+      maps.byNameLower[cf.Name.toLowerCase()] = cf
+      if (cf.FunctionSignature && cf.FunctionSignature !== cf.Name) {
+        maps.bySignature[cf.FunctionSignature] = cf
       }
       return maps
     },
@@ -45,7 +38,7 @@ export const createCallingFunctionLookupMaps = (callingFunctions: CallingFunctio
 /**
  * Validates that a calling function exists by name in the lookup maps.
  * This function checks if the referenced calling function name exists in the defined calling functions.
- * 
+ *
  * @param callingFunctionRef - The calling function name to validate
  * @param lookupMaps - The pre-built lookup maps for efficient resolution
  * @throws Error with descriptive message if calling function is not found
@@ -65,8 +58,10 @@ export const validateCallingFunctionExists = (
     const availableFunctions = Object.keys(callingFunctionByName)
     throw new Error(
       `Calling function "${callingFunctionRef}" not found. ` +
-      `Available calling functions: ${availableFunctions.length > 0 ? availableFunctions.join(', ') : 'none defined'}. ` +
-      `Please ensure the calling function is defined in the CallingFunctions array before referencing it in rules or foreign calls.`
+        `Available calling functions: ${
+          availableFunctions.length > 0 ? availableFunctions.join(', ') : 'none defined'
+        }. ` +
+        `Please ensure the calling function is defined in the CallingFunctions array before referencing it in rules or foreign calls.`
     )
   }
 }
@@ -98,19 +93,19 @@ export const resolveCallingFunction = (
   // Try to find by name field (exact match) - O(1)
   const foundByName = callingFunctionByName[callingFunctionRef]
   if (foundByName) {
-    return foundByName.functionSignature || foundByName.name
+    return foundByName.FunctionSignature || foundByName.Name
   }
 
   // Try case-insensitive name match - O(1)
   const foundByNameIgnoreCase = callingFunctionByNameLower[callingFunctionRef.toLowerCase()]
   if (foundByNameIgnoreCase) {
-    return foundByNameIgnoreCase.functionSignature || foundByNameIgnoreCase.name
+    return foundByNameIgnoreCase.FunctionSignature || foundByNameIgnoreCase.Name
   }
 
   // Try to find by functionSignature field - O(1)
   const foundBySignature = callingFunctionBySignature[callingFunctionRef]
   if (foundBySignature) {
-    return foundBySignature.functionSignature || foundBySignature.name
+    return foundBySignature.FunctionSignature || foundBySignature.Name
   }
 
   // Return as-is if not found (will be validated elsewhere)
@@ -157,9 +152,9 @@ export const safeParseJson = (input: string): Either<RulesError[], object> => {
 export const PType = PT.map((p) => p.name) // ["address", "string", "uint256", "bool", "void", "bytes"]
 
 export const splitFunctionInput = (input: string): string[] => {
-  const params = input?.split('(')[1]?.split(')')[0]?.trim() || '';
+  const params = input?.split('(')[1]?.split(')')[0]?.trim() || ''
   // Return empty array for empty parameters instead of array with empty string
-  return params === '' ? [] : params.split(',').map(p => p.trim());
+  return params === '' ? [] : params.split(',').map((p) => p.trim())
 }
 
 /**
@@ -314,7 +309,7 @@ const validateValuesToPass = (
   if (valuesToPass.trim() === '') {
     return true
   }
-  
+
   return valuesToPass
     .split(',')
     .map((value) => {
@@ -348,11 +343,11 @@ const validateReferencedCalls = (input: any): boolean => {
     return (input.ForeignCalls?.length ?? 0) === 0 && (input.Rules?.length ?? 0) === 0
   }
 
-  const callingFunctionNames = input.CallingFunctions.map((call: CallingFunctionJSON) => call.name)
+  const callingFunctionNames = input.CallingFunctions.map((call: CallingFunctionJSON) => call.Name)
   const callingFunctionSignatures = input.CallingFunctions.map(
-    (call: CallingFunctionJSON) => call.functionSignature || call.name
+    (call: CallingFunctionJSON) => call.FunctionSignature || call.Name
   )
-  const fcCallingFunctions: string[] = input.ForeignCalls?.map((fc: any) => fc.callingFunction) ?? []
+  const fcCallingFunctions: string[] = input.ForeignCalls?.map((fc: any) => fc.CallingFunction) ?? []
 
   // Allow foreign calls to reference either the name or the full signature
   if (
@@ -365,30 +360,30 @@ const validateReferencedCalls = (input: any): boolean => {
 
   const callingFunctionEncodedValues = input.CallingFunctions.reduce(
     (acc: Record<string, string[]>, call: CallingFunctionJSON) => {
-      const typeValues = call.encodedValues.split(',')
+      const typeValues = call.EncodedValues.split(',')
       const values: string[] = typeValues.map((v: string) => v.trim().split(' ')[1].trim())
       // Index by both name and functionSignature for lookup flexibility
-      acc[call.name] = values
-      if (call.functionSignature && call.functionSignature !== call.name) {
-        acc[call.functionSignature] = values
+      acc[call.Name] = values
+      if (call.FunctionSignature && call.FunctionSignature !== call.Name) {
+        acc[call.FunctionSignature] = values
       }
       return acc
     },
     {} as Record<string, string[]>
   )
 
-  const foreignCallNames = input.ForeignCalls.map((call: any) => call.name)
-  const trackerNames = input.Trackers.map((tracker: any) => tracker.name)
-  const mappedTrackerNames = input.MappedTrackers.map((tracker: any) => tracker.name)
+  const foreignCallNames = input.ForeignCalls.map((call: any) => call.Name)
+  const trackerNames = input.Trackers.map((tracker: any) => tracker.Name)
+  const mappedTrackerNames = input.MappedTrackers.map((tracker: any) => tracker.Name)
 
   // Create lookup maps for O(1) resolution instead of O(n) find operations
   const lookupMaps = createCallingFunctionLookupMaps(input.CallingFunctions)
 
   const testInputs: Record<string, string[]> = input.Rules.reduce((acc: Record<string, string[]>, rule: any) => {
-    const inputs = [rule.condition, ...rule.positiveEffects, ...rule.negativeEffects]
+    const inputs = [rule.Condition, ...rule.PositiveEffects, ...rule.NegativeEffects]
     // Validate calling function exists before resolving
-    validateCallingFunctionExists(rule.callingFunction, lookupMaps)
-    const resolvedCallingFunction = resolveCallingFunction(rule.callingFunction, lookupMaps)
+    validateCallingFunctionExists(rule.CallingFunction, lookupMaps)
+    const resolvedCallingFunction = resolveCallingFunction(rule.CallingFunction, lookupMaps)
     if (!acc[resolvedCallingFunction]) {
       acc[resolvedCallingFunction] = inputs
     } else {
@@ -399,12 +394,12 @@ const validateReferencedCalls = (input: any): boolean => {
 
   const groupedFC = input.ForeignCalls.reduce((acc: Record<string, string[]>, fc: any) => {
     // Validate calling function exists before resolving
-    validateCallingFunctionExists(fc.callingFunction, lookupMaps)
-    const resolvedCallingFunction = resolveCallingFunction(fc.callingFunction, lookupMaps)
+    validateCallingFunctionExists(fc.CallingFunction, lookupMaps)
+    const resolvedCallingFunction = resolveCallingFunction(fc.CallingFunction, lookupMaps)
     if (!acc[resolvedCallingFunction]) {
-      acc[resolvedCallingFunction] = [fc.name]
+      acc[resolvedCallingFunction] = [fc.Name]
     } else {
-      acc[resolvedCallingFunction].push(fc.name)
+      acc[resolvedCallingFunction].push(fc.Name)
     }
     return acc
   }, {})
@@ -418,14 +413,14 @@ const validateReferencedCalls = (input: any): boolean => {
 
   const validatedForeignCallValuesToPass = input.ForeignCalls.map((call: any) => {
     // Validate calling function exists before resolving
-    validateCallingFunctionExists(call.callingFunction, lookupMaps)
-    const resolvedCallingFunction = resolveCallingFunction(call.callingFunction, lookupMaps)
+    validateCallingFunctionExists(call.CallingFunction, lookupMaps)
+    const resolvedCallingFunction = resolveCallingFunction(call.CallingFunction, lookupMaps)
     return validateValuesToPass(
       callingFunctionEncodedValues[resolvedCallingFunction],
       foreignCallNames,
       trackerNames,
       mappedTrackerNames,
-      call.valuesToPass
+      call.ValuesToPass
     )
   }).every((isValid: boolean) => isValid)
   return validatedInputs && validatedForeignCallValuesToPass // If any input is invalid, return false
@@ -463,13 +458,13 @@ export const ruleValidator = z.object({
   Id: z.number().optional(),
   Name: z.string().default(EMPTY_STRING),
   Description: z.string().default(EMPTY_STRING),
-  condition: z.string().refine((val) => validateCondition(val), {
+  Condition: z.string().refine((val) => validateCondition(val), {
     error: 'Invalid logical operators in condition',
   }),
-  positiveEffects: z.array(z.string()),
-  negativeEffects: z.array(z.string()),
-  callingFunction: z.string(),
-  order: z.number().optional(), // Optional field for rule ordering
+  PositiveEffects: z.array(z.string()),
+  NegativeEffects: z.array(z.string()),
+  CallingFunction: z.string(),
+  Order: z.number().optional(), // Optional field for rule ordering
 })
 export interface RuleJSON extends z.infer<typeof ruleValidator> {}
 
@@ -525,19 +520,19 @@ export const validateFCFunctionInput = (input: string): boolean => {
 
 export const foreignCallValidator = z.object({
   Id: z.number().optional(),
-  name: z.string(),
-  function: z.string().trim().refine(validateFCFunctionInput, { message: 'Unsupported argument type' }),
-  address: z
+  Name: z.string(),
+  Function: z.string().trim().refine(validateFCFunctionInput, { message: 'Unsupported argument type' }),
+  Address: z
     .string()
     .trim()
     .refine((input) => isAddress(input), {
       message: `Address is invalid`,
     })
     .transform((input) => checksumAddress(input.trim() as Address)),
-  returnType: z.preprocess(trimPossibleString, z.literal(PType, 'Unsupported return type')),
-  valuesToPass: z.string().trim(),
-  mappedTrackerKeyValues: z.string().trim(),
-  callingFunction: z.string().trim(),
+  ReturnType: z.preprocess(trimPossibleString, z.literal(PType, 'Unsupported return type')),
+  ValuesToPass: z.string().trim(),
+  MappedTrackerKeyValues: z.string().trim(),
+  CallingFunction: z.string().trim(),
 })
 
 export interface ForeignCallJSON extends z.infer<typeof foreignCallValidator> {}
@@ -609,15 +604,15 @@ const validateTrackerValue = (type: SupportedTrackers, value: any): boolean => {
 }
 
 const validateTrackerInitialValue = (data: any): boolean => {
-  if (data.type.includes('[]')) {
+  if (data.Type.includes('[]')) {
     // For arrays, we assume initialValue is an array of values
-    if (!Array.isArray(data.initialValue)) {
+    if (!Array.isArray(data.InitialValue)) {
       return false // Initial value must be an array for array types
     }
-    return data.initialValue.every((value: any) => validateTrackerValue(data.type.replace('[]', ''), value))
+    return data.InitialValue.every((value: any) => validateTrackerValue(data.Type.replace('[]', ''), value))
   } else {
     // For non-array types, we validate the single initialValue
-    return validateTrackerValue(data.type, data.initialValue)
+    return validateTrackerValue(data.Type, data.InitialValue)
   }
 }
 
@@ -635,15 +630,15 @@ const validateMappedTrackerInitialInputs = (type: any, inputs: any): boolean => 
 }
 
 const validateMappedTrackerInitialValues = (data: any): boolean => {
-  return validateMappedTrackerInitialInputs(data.valueType, data.initialValues)
+  return validateMappedTrackerInitialInputs(data.ValueType, data.InitialValues)
 }
 
 const validateMappedTrackerInitialKeys = (data: any): boolean => {
-  return validateMappedTrackerInitialInputs(data.keyType, data.initialKeys)
+  return validateMappedTrackerInitialInputs(data.KeyType, data.InitialKeys)
 }
 
 const validateMappedTrackerInitialLengths = (data: any): boolean => {
-  return data.initialKeys.length === data.initialValues.length
+  return data.InitialKeys.length === data.InitialValues.length
 }
 
 const validateUniqueKeys = <T>(keys: T[]): boolean => {
@@ -652,15 +647,15 @@ const validateUniqueKeys = <T>(keys: T[]): boolean => {
 }
 
 const validateMappedTrackerUniqueKeys = (data: any): boolean => {
-  return validateUniqueKeys(data.initialKeys)
+  return validateUniqueKeys(data.InitialKeys)
 }
 
 export const trackerValidator = z
   .object({
     Id: z.number().optional(),
-    name: z.string().trim(),
-    type: z.preprocess(trimPossibleString, z.literal(supportedTrackerTypes, 'Unsupported type')),
-    initialValue: z.union([z.string().trim(), z.array(z.string().trim())]),
+    Name: z.string().trim(),
+    Type: z.preprocess(trimPossibleString, z.literal(supportedTrackerTypes, 'Unsupported type')),
+    InitialValue: z.union([z.string().trim(), z.array(z.string().trim())]),
   })
   .refine(validateTrackerInitialValue, {
     message: "Initial Value doesn't match type",
@@ -673,11 +668,11 @@ export interface MappedTrackerJSON extends z.infer<typeof mappedTrackerValidator
 export const mappedTrackerValidator = z
   .object({
     Id: z.number().optional(),
-    name: z.string().trim(),
-    keyType: z.preprocess(trimPossibleString, z.literal(supportedTrackerKeyTypes, 'Unsupported key type')),
-    valueType: z.preprocess(trimPossibleString, z.literal(supportedTrackerTypes, 'Unsupported type')),
-    initialKeys: z.array(z.string()),
-    initialValues: z.array(z.union([z.string().trim(), z.array(z.string().trim())])),
+    Name: z.string().trim(),
+    KeyType: z.preprocess(trimPossibleString, z.literal(supportedTrackerKeyTypes, 'Unsupported key type')),
+    ValueType: z.preprocess(trimPossibleString, z.literal(supportedTrackerTypes, 'Unsupported type')),
+    InitialKeys: z.array(z.string()),
+    InitialValues: z.array(z.union([z.string().trim(), z.array(z.string().trim())])),
   })
   .refine(validateMappedTrackerInitialValues, {
     message: 'Mapped Tracker Initial Values do not match type',
@@ -740,9 +735,9 @@ export const validateMappedTrackerJSON = (tracker: string): Either<RulesError[],
 }
 
 export const callingFunctionValidator = z.object({
-  name: z.string().trim(),
-  functionSignature: z.string().trim(),
-  encodedValues: z.string().trim(),
+  Name: z.string().trim(),
+  FunctionSignature: z.string().trim(),
+  EncodedValues: z.string().trim(),
 })
 
 export interface CallingFunctionJSON extends z.infer<typeof callingFunctionValidator> {}
@@ -770,19 +765,19 @@ export const validateCallingFunctionJSON = (callingFunction: string): Either<Rul
 }
 
 const groupFCByCallingFunction = (acc: Record<string, string[]>, fc: any) => {
-  const callingFunction = fc.callingFunction
+  const callingFunction = fc.CallingFunction
   if (!acc[callingFunction]) {
-    acc[callingFunction] = [fc.name]
+    acc[callingFunction] = [fc.Name]
   } else {
-    acc[callingFunction].push(fc.name)
+    acc[callingFunction].push(fc.Name)
   }
   return acc
 }
 
 const validateUniqueNames = (input: any): boolean => {
-  const trackerKeys = input.Trackers.map((tracker: any) => tracker.name)
-  const mappedTrackerKeys = input.MappedTrackers.map((tracker: any) => tracker.name)
-  const callingFunctions = input.CallingFunctions.map((fn: any) => fn.name)
+  const trackerKeys = input.Trackers.map((tracker: any) => tracker.Name)
+  const mappedTrackerKeys = input.MappedTrackers.map((tracker: any) => tracker.Name)
+  const callingFunctions = input.CallingFunctions.map((fn: any) => fn.Name)
 
   const foreignCalls = input.ForeignCalls.reduce(groupFCByCallingFunction, {})
 
@@ -808,8 +803,8 @@ export const policyJSONValidator = z
     (data) => {
       // Validate rule ordering consistency: if any rule has an order field, all rules must have it
       // Treat both null and undefined as "no order" for robustness
-      const rulesWithOrder = data.Rules.filter((rule) => rule.order != null)
-      const rulesWithoutOrder = data.Rules.filter((rule) => rule.order == null)
+      const rulesWithOrder = data.Rules.filter((rule) => rule.Order != null)
+      const rulesWithoutOrder = data.Rules.filter((rule) => rule.Order == null)
 
       // If some rules have order and some don't, it's invalid
       if (rulesWithOrder.length > 0 && rulesWithoutOrder.length > 0) {
@@ -818,7 +813,7 @@ export const policyJSONValidator = z
 
       // If all rules have order, validate they are unique
       if (rulesWithOrder.length === data.Rules.length && data.Rules.length > 0) {
-        const orders = rulesWithOrder.map((rule) => rule.order!)
+        const orders = rulesWithOrder.map((rule) => rule.Order!)
 
         // Check for duplicate order values using convenience function
         if (!validateUniqueKeys(orders)) {
