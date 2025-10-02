@@ -364,9 +364,7 @@ export function parseTrackerSyntax(syntax: TrackerJSON): TrackerDefinition {
     trackerInitialValue = getEncodedAddress(syntax.initialValue as string)
     trackerValueType = trackerArrayType.VOID
   } else if (trackerType == 'bytes') {
-    trackerInitialValue = encodeAbiParameters(parseAbiParameters('bytes'), [
-      toHex(stringToBytes(String(syntax.initialValue))),
-    ])
+    trackerInitialValue = getEncodedBytes(syntax.initialValue as string)
     trackerValueType = trackerArrayType.VOID
   } else if (trackerType == 'bool') {
     trackerInitialValue = encodePacked(['uint256'], [getBigIntForBool(syntax.initialValue as string)])

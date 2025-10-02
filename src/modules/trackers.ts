@@ -48,7 +48,7 @@ export const createMappedTracker = async (
   policyId: number,
   mappedTrackerSyntax: string,
   confirmationCount: number
-): Promise<number> => {
+): Promise<{ trackerId: number; transactionHash: `0x${string}` }> => {
   const json = validateMappedTrackerJSON(mappedTrackerSyntax)
   if (isLeft(json)) {
     throw new Error(getRulesErrorMessages(unwrapEither(json)))
@@ -86,7 +86,7 @@ export const createMappedTracker = async (
         if (failureCount < 5) {
           failureCount += 1
         } else {
-          return -1
+          return { trackerId: -1, transactionHash: '0x0' as `0x${string}` }
         }
         await sleep(1000)
       }
@@ -102,10 +102,10 @@ export const createMappedTracker = async (
       })
 
       let trackerResult = addTR.result
-      return trackerResult
+      return { trackerId: trackerResult, transactionHash: returnHash }
     }
   }
-  return -1
+  return { trackerId: -1, transactionHash: '0x0' as `0x${string}` }
 }
 
 /**
@@ -211,7 +211,7 @@ export const updateMappedTracker = async (
   mappedTrackerSyntax: string,
   mappedTrackerId: number,
   confirmationCount: number
-): Promise<number> => {
+): Promise<{ trackerId: number; transactionHash: `0x${string}` }> => {
   const json = validateMappedTrackerJSON(mappedTrackerSyntax)
   if (isLeft(json)) {
     throw new Error(getRulesErrorMessages(unwrapEither(json)))
@@ -255,7 +255,7 @@ export const updateMappedTracker = async (
         if (failureCount < 5) {
           failureCount += 1
         } else {
-          return -1
+          return { trackerId: -1, transactionHash: '0x0' as `0x${string}` }
         }
         await sleep(1000)
       }
@@ -271,10 +271,10 @@ export const updateMappedTracker = async (
       })
 
       let trackerResult = addTR.result
-      return trackerResult
+      return { trackerId: trackerResult, transactionHash: returnHash }
     }
   }
-  return -1
+  return { trackerId: -1, transactionHash: '0x0' as `0x${string}` }
 }
 
 /**

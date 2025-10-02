@@ -651,7 +651,7 @@ export const addAdminToPermissionList = async (
   functionSelector: string,
   policyAdminToAdd: Address,
   confirmationCount: number
-): Promise<number> => {
+): Promise<{ result: number; transactionHash: `0x${string}` }> => {
   var addFC
   try {
     var selector = toFunctionSelector(functionSelector)
@@ -662,7 +662,7 @@ export const addAdminToPermissionList = async (
       args: [foreignCallAddress, policyAdminToAdd, selector],
     })
   } catch (err) {
-    return -1
+    return { result: -1, transactionHash: '0x0' as `0x${string}` }
   }
 
   if (addFC != null) {
@@ -674,9 +674,10 @@ export const addAdminToPermissionList = async (
       confirmations: confirmationCount,
       hash: returnHash,
     })
+    return { result: 0, transactionHash: returnHash }
   }
 
-  return 0
+  return { result: 0, transactionHash: '0x0' as `0x${string}` }
 }
 
 /**
@@ -700,7 +701,7 @@ export const addMultipleAdminsToPermissionList = async (
   functionSelector: string,
   policyAdminsToAdd: Address[],
   confirmationCount: number
-): Promise<number> => {
+): Promise<{ result: number; transactionHash: `0x${string}` }> => {
   var addFC
 
   var addresses = await getForeignCallPermissionList(
@@ -719,7 +720,7 @@ export const addMultipleAdminsToPermissionList = async (
       args: [foreignCallAddress, selector, addresses],
     })
   } catch (err) {
-    return -1
+    return { result: -1, transactionHash: '0x0' as `0x${string}` }
   }
 
   if (addFC != null) {
@@ -731,9 +732,10 @@ export const addMultipleAdminsToPermissionList = async (
       confirmations: confirmationCount,
       hash: returnHash,
     })
+    return { result: 0, transactionHash: returnHash }
   }
 
-  return 0
+  return { result: 0, transactionHash: '0x0' as `0x${string}` }
 }
 
 /**
@@ -757,7 +759,7 @@ export const removeMultipleAdminsFromPermissionList = async (
   functionSelector: string,
   policyAdminsToRemove: Address[],
   confirmationCount: number
-): Promise<number> => {
+): Promise<{ result: number; transactionHash: `0x${string}` }> => {
   var addFC
 
   var addresses = await getForeignCallPermissionList(
@@ -776,7 +778,7 @@ export const removeMultipleAdminsFromPermissionList = async (
       args: [foreignCallAddress, selector, addresses],
     })
   } catch (err) {
-    return -1
+    return { result: -1, transactionHash: '0x0' as `0x${string}` }
   }
 
   if (addFC != null) {
@@ -788,9 +790,10 @@ export const removeMultipleAdminsFromPermissionList = async (
       confirmations: confirmationCount,
       hash: returnHash,
     })
+    return { result: 0, transactionHash: returnHash }
   }
 
-  return 0
+  return { result: 0, transactionHash: '0x0' as `0x${string}` }
 }
 
 /**
@@ -812,7 +815,7 @@ export const removeAllFromPermissionList = async (
   foreignCallAddress: Address,
   functionSelector: string,
   confirmationCount: number
-): Promise<number> => {
+): Promise<{ result: number; transactionHash: `0x${string}` }> => {
   var addFC
   try {
     var selector = toFunctionSelector(functionSelector)
@@ -823,7 +826,7 @@ export const removeAllFromPermissionList = async (
       args: [foreignCallAddress, selector],
     })
   } catch (err) {
-    return -1
+    return { result: -1, transactionHash: '0x0' as `0x${string}` }
   }
 
   if (addFC != null) {
@@ -835,9 +838,10 @@ export const removeAllFromPermissionList = async (
       confirmations: confirmationCount,
       hash: returnHash,
     })
+    return { result: 0, transactionHash: returnHash }
   }
 
-  return 0
+  return { result: 0, transactionHash: '0x0' as `0x${string}` }
 }
 
 /**
@@ -861,7 +865,7 @@ export const removeFromPermissionList = async (
   functionSelector: string,
   adminToRemove: Address,
   confirmationCount: number
-): Promise<number> => {
+): Promise<{ result: number; transactionHash: `0x${string}` }> => {
   var addFC
   try {
     var selector = toFunctionSelector(functionSelector)
@@ -872,7 +876,7 @@ export const removeFromPermissionList = async (
       args: [foreignCallAddress, selector, adminToRemove],
     })
   } catch (err) {
-    return -1
+    return { result: -1, transactionHash: '0x0' as `0x${string}` }
   }
 
   if (addFC != null) {
@@ -884,9 +888,10 @@ export const removeFromPermissionList = async (
       confirmations: confirmationCount,
       hash: returnHash,
     })
+    return { result: 0, transactionHash: returnHash }
   }
 
-  return 0
+  return { result: 0, transactionHash: '0x0' as `0x${string}` }
 }
 
 /**
@@ -908,7 +913,7 @@ export const removeForeignCallPermissions = async (
   foreignCallAddress: Address,
   functionSelector: string,
   confirmationCount: number
-): Promise<number> => {
+): Promise<{ result: number; transactionHash: `0x${string}` }> => {
   var addFC
   try {
     var selector = toFunctionSelector(functionSelector)
@@ -919,7 +924,7 @@ export const removeForeignCallPermissions = async (
       args: [foreignCallAddress, selector],
     })
   } catch (err) {
-    return -1
+    return { result: -1, transactionHash: '0x0' as `0x${string}` }
   }
 
   if (addFC != null) {
@@ -931,7 +936,8 @@ export const removeForeignCallPermissions = async (
       confirmations: confirmationCount,
       hash: returnHash,
     })
+    return { result: 0, transactionHash: returnHash }
   }
 
-  return 0
+  return { result: 0, transactionHash: '0x0' as `0x${string}` }
 }

@@ -405,9 +405,9 @@ const buildTrackers = async (
     for (var mTracker of policyJSON.MappedTrackers) {
       const parsedTracker = parseMappedTrackerSyntax(mTracker)
       let trId = -1
+      let trackerTransactionHash: `0x${string}` = '0x0'
       if (mTracker.Id !== undefined) {
-        // Note: updateMappedTracker currently returns number, needs to be updated later
-        trId = await updateMappedTracker(
+        const trackerResult = await updateMappedTracker(
           config,
           rulesEngineComponentContract,
           policyId,
@@ -415,15 +415,18 @@ const buildTrackers = async (
           mTracker.Id,
           confirmationCount
         )
+        trId = trackerResult.trackerId
+        trackerTransactionHash = trackerResult.transactionHash
       } else {
-        // Note: createMappedTracker currently returns number, needs to be updated later
-        trId = await createMappedTracker(
+        const trackerResult = await createMappedTracker(
           config,
           rulesEngineComponentContract,
           policyId,
           JSON.stringify(mTracker),
           confirmationCount
         )
+        trId = trackerResult.trackerId
+        trackerTransactionHash = trackerResult.transactionHash
       }
       if (trId != -1) {
         var struc: NameToID = {
@@ -432,6 +435,7 @@ const buildTrackers = async (
           type: parsedTracker.valueType,
         }
         trackerIds.push(struc)
+        transactionHashes.push({ trackerId: trId, transactionHash: trackerTransactionHash })
       } else {
         throw new Error(`Invalid mapped tracker syntax: ${JSON.stringify(mTracker)}`)
       }
@@ -947,7 +951,7 @@ export const unsetPolicies = async (
   policyIds: [number],
   contractAddressForPolicy: Address,
   confirmationCount: number
-): Promise<void> => {
+): Promise<{ transactionHash: `0x${string}` }> => {
   var applyPolicy
   while (true) {
     try {
@@ -973,7 +977,10 @@ export const unsetPolicies = async (
       confirmations: confirmationCount,
       hash: returnHash,
     })
+    return { transactionHash: returnHash }
   }
+  
+  return { transactionHash: '0x0' as `0x${string}` }
 }
 
 /**
@@ -1738,7 +1745,7 @@ export const disablePolicy = async (
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyId: number,
   confirmationCount: number
-): Promise<number> => {
+): Promise<{ result: number; transactionHash: `0x${string}` }> => {
   var addFC
   try {
     addFC = await simulateContract(config, {
@@ -1748,7 +1755,7 @@ export const disablePolicy = async (
       args: [policyId],
     })
   } catch (err) {
-    return -1
+    return { result: -1, transactionHash: '0x0' as `0x${string}` }
   }
 
   if (addFC != null) {
@@ -1760,9 +1767,10 @@ export const disablePolicy = async (
       confirmations: confirmationCount,
       hash: returnHash,
     })
+    return { result: 0, transactionHash: returnHash }
   }
 
-  return 0
+  return { result: 0, transactionHash: '0x0' as `0x${string}` }
 }
 
 /**
