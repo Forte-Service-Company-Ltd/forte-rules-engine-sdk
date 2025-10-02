@@ -420,10 +420,10 @@ export class RulesEngine {
   /**
    * Disable a policy on the Rules Engine.
    *
-   * @param policyId - The ID of the policy to open.
-   * @returns `0` if successful, `-1` if an error occurs.
+   * @param policyId - The ID of the policy to disable.
+   * @returns Object with `result` (0 if successful, -1 if error) and `transactionHash`.
    */
-  disablePolicy(policyId: number): Promise<number> {
+  disablePolicy(policyId: number): Promise<{ result: number; transactionHash: `0x${string}` }> {
     return disablePolicyInternal(config, this.rulesEnginePolicyContract, policyId, this.confirmationCount)
   }
 
@@ -782,9 +782,7 @@ export class RulesEngine {
    * @param foreignCallAddress - the address of the contract the foreign call belongs to.
    * @param functionSelector - The selector for the specific foreign call
    * @param policyAdminToAdd - The address of the admin to add to the list
-   * @returns A promise that resolves to a number:
-   *          - `0` if the operation is successful.
-   *          - `-1` if an error occurs during the simulation of the contract interaction.
+   * @returns Object with `result` (0 if successful, -1 if error) and `transactionHash`.
    *
    * @throws Will log an error to the console if the operation fails.
    */
@@ -792,7 +790,7 @@ export class RulesEngine {
     foreignCallAddress: Address,
     functionSelector: string,
     policyAdminToAdd: Address
-  ): Promise<number> {
+  ): Promise<{ result: number; transactionHash: `0x${string}` }> {
     return addAdminToPermissionListInternal(
       config,
       this.rulesEngineForeignCallContract,
@@ -809,9 +807,7 @@ export class RulesEngine {
    * @param foreignCallAddress - the address of the contract the foreign call belongs to.
    * @param functionSelector - The selector for the specific foreign call
    * @param policyAdminsToAdd - The addresses of the admins to add to the list
-   * @returns A promise that resolves to a number:
-   *          - `0` if the operation is successful.
-   *          - `-1` if an error occurs during the simulation of the contract interaction.
+   * @returns Object with `result` (0 if successful, -1 if error) and `transactionHash`.
    *
    * @throws Will log an error to the console if the operation fails.
    */
@@ -819,7 +815,7 @@ export class RulesEngine {
     foreignCallAddress: Address,
     functionSelector: string,
     policyAdminsToAdd: Address[]
-  ): Promise<number> {
+  ): Promise<{ result: number; transactionHash: `0x${string}` }> {
     return addMultipleAdminsToPermissionListInternal(
       config,
       this.rulesEngineForeignCallContract,
@@ -836,9 +832,7 @@ export class RulesEngine {
    * @param foreignCallAddress - the address of the contract the foreign call belongs to.
    * @param functionSelector - The selector for the specific foreign call
    * @param policyAdminsToRemove - The address of the admins to remove from the list
-   * @returns A promise that resolves to a number:
-   *          - `0` if the operation is successful.
-   *          - `-1` if an error occurs during the simulation of the contract interaction.
+   * @returns Object with `result` (0 if successful, -1 if error) and `transactionHash`.
    *
    * @throws Will log an error to the console if the operation fails.
    */
@@ -846,7 +840,7 @@ export class RulesEngine {
     foreignCallAddress: Address,
     functionSelector: string,
     policyAdminsToRemove: Address[]
-  ): Promise<number> {
+  ): Promise<{ result: number; transactionHash: `0x${string}` }> {
     return removeMultipleAdminsFromPermissionListInternal(
       config,
       this.rulesEngineForeignCallContract,
@@ -862,13 +856,11 @@ export class RulesEngine {
    *
    * @param foreignCallAddress - the address of the contract the foreign call belongs to.
    * @param functionSelector - The selector for the specific foreign call
-   * @returns A promise that resolves to a number:
-   *          - `0` if the operation is successful.
-   *          - `-1` if an error occurs during the simulation of the contract interaction.
+   * @returns Object with `result` (0 if successful, -1 if error) and `transactionHash`.
    *
    * @throws Will log an error to the console if the operation fails.
    */
-  removeAllFromPermissionList(foreignCallAddress: Address, functionSelector: string): Promise<number> {
+  removeAllFromPermissionList(foreignCallAddress: Address, functionSelector: string): Promise<{ result: number; transactionHash: `0x${string}` }> {
     return removeAllFromPermissionListInternal(
       config,
       this.rulesEngineForeignCallContract,
@@ -932,17 +924,15 @@ export class RulesEngine {
    * @param foreignCallAddress - The address of the foreign call contract.
    * @param signature - The function signature.
    * @param adminAddress - The address of the admin to remove.
-   * @returns A promise that resolves to a number:
-   *          - `0` if the operation is successful.
-   *          - `-1` if an error occurs during the simulation of the contract interaction.
+   * @returns Object with `result` (0 if successful, -1 if error) and `transactionHash`.
    *
    * @throws Will retry indefinitely with a 1-second delay between attempts if an error occurs during the contract simulation.
    *         Ensure proper error handling or timeout mechanisms are implemented to avoid infinite loops.
    */
-  removeFromPermissionList(foreignCallAddress: Address, signature: string, adminAddress: Address): Promise<number> {
+  removeFromPermissionList(foreignCallAddress: Address, signature: string, adminAddress: Address): Promise<{ result: number; transactionHash: `0x${string}` }> {
     return removeFromPermissionListInternal(
       config,
-      this.rulesEngineComponentContract,
+      this.rulesEngineForeignCallContract,
       foreignCallAddress,
       signature,
       adminAddress,
@@ -955,17 +945,15 @@ export class RulesEngine {
    *
    * @param foreignCallAddress - The address of the foreign call contract.
    * @param signature - The function signature.
-   * @returns A promise that resolves to a number:
-   *          - `0` if the operation is successful.
-   *          - `-1` if an error occurs during the simulation of the contract interaction.
+   * @returns Object with `result` (0 if successful, -1 if error) and `transactionHash`.
    *
    * @throws Will retry indefinitely with a 1-second delay between attempts if an error occurs during the contract simulation.
    *         Ensure proper error handling or timeout mechanisms are implemented to avoid infinite loops.
    */
-  removeForeignCallPermissions(foreignCallAddress: Address, signature: string): Promise<number> {
+  removeForeignCallPermissions(foreignCallAddress: Address, signature: string): Promise<{ result: number; transactionHash: `0x${string}` }> {
     return removeForeignCallPermissionsInternal(
       config,
-      this.rulesEngineComponentContract,
+      this.rulesEngineForeignCallContract,
       foreignCallAddress,
       signature,
       this.confirmationCount
@@ -990,11 +978,10 @@ export class RulesEngine {
    * Asynchronously creates a mapped tracker in the rules engine component contract.
    *
    * @param policyId - The ID of the policy associated with the tracker.
-   * @param trSyntax - A JSON string representing the tracker syntax.
-   * @param confirmationCount - The number of confirmations to wait for after writing the contract.
-   * @returns A promise that resolves to the new tracker ID
+   * @param mappedTrackerSyntax - A JSON string representing the tracker syntax.
+   * @returns Object with `trackerId` and `transactionHash`.
    */
-  createMappedTracker(policyId: number, mappedTrackerSyntax: string): Promise<number> {
+  createMappedTracker(policyId: number, mappedTrackerSyntax: string): Promise<{ trackerId: number; transactionHash: `0x${string}` }> {
     return createMappedTrackerInternal(
       config,
       this.rulesEngineComponentContract,
@@ -1010,10 +997,9 @@ export class RulesEngine {
    * @param policyId - The ID of the policy associated with the tracker.
    * @param mappedTrackerId - The ID of the tracker to update.
    * @param mappedTrackerSyntax - A JSON string representing the tracker syntax.
-   * @param confirmationCount - The number of confirmations to wait for after writing the contract.
-   * @returns A promise that resolves to the new tracker ID
+   * @returns Object with `trackerId` and `transactionHash`.
    */
-  updateMappedTracker(policyId: number, mappedTrackerId: number, mappedTrackerSyntax: string): Promise<number> {
+  updateMappedTracker(policyId: number, mappedTrackerId: number, mappedTrackerSyntax: string): Promise<{ trackerId: number; transactionHash: `0x${string}` }> {
     return updateMappedTrackerInternal(
       config,
       this.rulesEngineComponentContract,

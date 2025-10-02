@@ -2871,4 +2871,360 @@ describe('Rules Engine Interactions', async () => {
     const uniqueHashes = new Set(allHashes)
     expect(uniqueHashes.size).toBeGreaterThan(1) // Should have multiple unique transaction hashes
   }, 60000) // 60 second timeout
+
+  test('Can create and use bytes tracker in policy rules', options, async () => {
+    const bytesTrackerPolicyJSON = `{
+      "Policy": "Bytes Tracker Test Policy",
+      "Description": "Test policy with bytes tracker functionality",
+      "PolicyType": "open",
+      "CallingFunctions": [
+        {
+          "name": "addData",
+          "function": "addData(bytes data)",
+          "functionSignature": "addData(bytes)",
+          "encodedValues": "bytes data"
+        }
+      ],
+      "ForeignCalls": [],
+      "Trackers": [
+        {
+          "name": "dataTracker",
+          "type": "bytes",
+          "initialValue": "0xdeadbeef"
+        }
+      ],
+      "MappedTrackers": [],
+      "Rules": [
+        {
+          "Name": "Data Rule",
+          "Description": "Rule that uses bytes tracker in condition",
+          "condition": "TR:dataTracker == \\"0xdeadbeef\\"",
+          "positiveEffects": ["TR:dataTracker = \\"0xdeadbeefdeadbeef\\""],
+          "negativeEffects": ["revert(\\"Data comparison failed\\")"],
+          "callingFunction": "addData"
+        }
+      ]
+    }`
+
+    console.log('Creating policy with bytes tracker and rule...')
+    
+    // Create policy with bytes tracker and rule
+    const createResult = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      bytesTrackerPolicyJSON
+    )
+
+    expect(createResult.policyId).toBeGreaterThan(0)
+    expect(createResult.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
+    console.log('Policy created successfully with ID:', createResult.policyId)
+
+    // Verify tracker was created successfully
+    expect(createResult.trackers.length).toBe(1)
+    expect(createResult.trackers[0].trackerId).toBeGreaterThan(0)
+    expect(createResult.trackers[0].transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
+    console.log('Bytes tracker created:', createResult.trackers[0])
+
+    // Retrieve the created tracker to verify its properties
+    const trackerDetails = await getTracker(
+      config,
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      createResult.policyId,
+      createResult.trackers[0].trackerId
+    )
+    
+    expect(trackerDetails).not.toBeNull()
+    expect(trackerDetails?.pType).toBe(5) // pTypeEnum.BYTES
+    expect(trackerDetails?.mapped).toBe(false)
+    console.log('Bytes tracker verified - type:', trackerDetails?.pType)
+    
+    // Verify tracker metadata
+    const trackerMetadata = await getTrackerMetadata(
+      config,
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      createResult.policyId,
+      createResult.trackers[0].trackerId
+    )
+    
+    expect(trackerMetadata?.trackerName).toBe('dataTracker')
+    console.log('Tracker metadata verified:', trackerMetadata?.trackerName)
+
+    // Verify rule was created with bytes tracker reference
+    expect(createResult.rules.length).toBe(1)
+    expect(createResult.rules[0].ruleId).toBeGreaterThan(0)
+    expect(createResult.rules[0].transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
+    console.log('Rule created with bytes tracker reference:', createResult.rules[0])
+
+    // Retrieve rule metadata to verify it references the bytes tracker
+    const ruleMetadata = await getRuleMetadata(
+      config,
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      createResult.policyId,
+      createResult.rules[0].ruleId
+    )
+    
+    expect(ruleMetadata).not.toBeNull()
+    expect(ruleMetadata?.ruleName).toBe('Data Rule')
+    console.log('Rule metadata verified:', ruleMetadata?.ruleName)
+
+    // Test creating an additional bytes tracker with different data
+    const additionalBytesTracker = `{
+      "name": "anotherDataTracker",
+      "type": "bytes",
+      "initialValue": "different data"
+    }`
+
+    console.log('Creating additional bytes tracker...')
+    const additionalTrackerId = await createTracker(
+      config,
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      createResult.policyId,
+      additionalBytesTracker,
+      1
+    )
+
+    expect(additionalTrackerId.trackerId).toBeGreaterThan(0)
+    expect(additionalTrackerId.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
+    console.log('Additional bytes tracker created:', additionalTrackerId)
+
+    // Verify the additional tracker
+    const additionalTrackerDetails = await getTracker(
+      config,
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      createResult.policyId,
+      additionalTrackerId.trackerId
+    )
+    
+    expect(additionalTrackerDetails).not.toBeNull()
+    expect(additionalTrackerDetails?.pType).toBe(5) // pTypeEnum.BYTES
+    
+    // Verify we can get all trackers including our bytes trackers
+    const allTrackers = await getAllTrackers(
+      config,
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      createResult.policyId
+    )
+    
+    expect(allTrackers.length).toBe(2)
+    const bytesTrackers = allTrackers.filter(tracker => tracker.pType === 5)
+    expect(bytesTrackers.length).toBe(2)
+    console.log('All bytes trackers verified:', bytesTrackers.length)
+
+    // Test updating a bytes tracker
+    const updatedBytesTracker = `{
+      "name": "dataTracker",
+      "type": "bytes",
+      "initialValue": "updated test data"
+    }`
+
+    console.log('Updating bytes tracker...')
+    const updateResult = await updateTracker(
+      config,
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      createResult.policyId,
+      createResult.trackers[0].trackerId,
+      updatedBytesTracker,
+      1
+    )
+
+    expect(updateResult.trackerId).toBeGreaterThan(0)
+    expect(updateResult.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
+    console.log('Bytes tracker updated successfully:', updateResult)
+
+    // Verify the update worked
+    const updatedTrackerDetails = await getTracker(
+      config,
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      createResult.policyId,
+      createResult.trackers[0].trackerId
+    )
+    
+    expect(updatedTrackerDetails).not.toBeNull()
+    expect(updatedTrackerDetails?.pType).toBe(5) // Still bytes type
+    console.log('Bytes tracker update verified successfully')
+
+    console.log('✅ All bytes tracker functionality verified successfully!')
+  })
+
+  test('Can create and use string tracker in policy rules', options, async () => {
+    const stringTrackerPolicyJSON = `{
+      "Policy": "String Tracker Test Policy",
+      "Description": "Test policy with string tracker functionality",
+      "PolicyType": "open",
+      "CallingFunctions": [
+        {
+          "name": "setMessage",
+          "function": "setMessage(string message)",
+          "functionSignature": "setMessage(string)",
+          "encodedValues": "string message"
+        }
+      ],
+      "ForeignCalls": [],
+      "Trackers": [
+        {
+          "name": "messageTracker",
+          "type": "string",
+          "initialValue": "hello world"
+        }
+      ],
+      "MappedTrackers": [],
+      "Rules": [
+        {
+          "Name": "Message Rule",
+          "Description": "Rule that uses string tracker in condition",
+          "condition": "TR:messageTracker != TR:messageTracker",
+          "positiveEffects": ["emit \\"String comparison works\\""],
+          "negativeEffects": ["revert(\\"String comparison failed\\")"],
+          "callingFunction": "setMessage"
+        }
+      ]
+    }`
+
+    console.log('Creating policy with string tracker and rule...')
+    
+    // Create policy with string tracker and rule
+    const createResult = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      stringTrackerPolicyJSON
+    )
+
+    expect(createResult.policyId).toBeGreaterThan(0)
+    expect(createResult.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
+    console.log('Policy created successfully with ID:', createResult.policyId)
+
+    // Verify tracker was created successfully
+    expect(createResult.trackers.length).toBe(1)
+    expect(createResult.trackers[0].trackerId).toBeGreaterThan(0)
+    expect(createResult.trackers[0].transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
+    console.log('String tracker created:', createResult.trackers[0])
+
+    // Retrieve the created tracker to verify its properties
+    const trackerDetails = await getTracker(
+      config,
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      createResult.policyId,
+      createResult.trackers[0].trackerId
+    )
+    
+    expect(trackerDetails).not.toBeNull()
+    expect(trackerDetails?.pType).toBe(1) // pTypeEnum.STRING
+    expect(trackerDetails?.mapped).toBe(false)
+    console.log('String tracker verified - type:', trackerDetails?.pType)
+    
+    // Verify tracker metadata
+    const trackerMetadata = await getTrackerMetadata(
+      config,
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      createResult.policyId,
+      createResult.trackers[0].trackerId
+    )
+    
+    expect(trackerMetadata?.trackerName).toBe('messageTracker')
+    console.log('Tracker metadata verified:', trackerMetadata?.trackerName)
+
+    // Verify rule was created with string tracker reference
+    expect(createResult.rules.length).toBe(1)
+    expect(createResult.rules[0].ruleId).toBeGreaterThan(0)
+    expect(createResult.rules[0].transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
+    console.log('Rule created with string tracker reference:', createResult.rules[0])
+
+    // Retrieve rule metadata to verify it references the string tracker
+    const ruleMetadata = await getRuleMetadata(
+      config,
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      createResult.policyId,
+      createResult.rules[0].ruleId
+    )
+    
+    expect(ruleMetadata).not.toBeNull()
+    expect(ruleMetadata?.ruleName).toBe('Message Rule')
+    console.log('Rule metadata verified:', ruleMetadata?.ruleName)
+
+    // Test creating an additional string tracker with different data
+    const additionalStringTracker = `{
+      "name": "anotherMessageTracker",
+      "type": "string",
+      "initialValue": "different message"
+    }`
+
+    console.log('Creating additional string tracker...')
+    const additionalTrackerId = await createTracker(
+      config,
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      createResult.policyId,
+      additionalStringTracker,
+      1
+    )
+
+    expect(additionalTrackerId.trackerId).toBeGreaterThan(0)
+    expect(additionalTrackerId.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
+    console.log('Additional string tracker created:', additionalTrackerId)
+
+    // Verify the additional tracker
+    const additionalTrackerDetails = await getTracker(
+      config,
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      createResult.policyId,
+      additionalTrackerId.trackerId
+    )
+    
+    expect(additionalTrackerDetails).not.toBeNull()
+    expect(additionalTrackerDetails?.pType).toBe(1) // pTypeEnum.STRING
+    
+    // Verify we can get all trackers including our string trackers
+    const allTrackers = await getAllTrackers(
+      config,
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      createResult.policyId
+    )
+    
+    expect(allTrackers.length).toBe(2)
+    const stringTrackers = allTrackers.filter(tracker => tracker.pType === 1)
+    expect(stringTrackers.length).toBe(2)
+    console.log('All string trackers verified:', stringTrackers.length)
+
+    // Test updating a string tracker
+    const updatedStringTracker = `{
+      "name": "messageTracker",
+      "type": "string",
+      "initialValue": "updated hello world"
+    }`
+
+    console.log('Updating string tracker...')
+    const updateResult = await updateTracker(
+      config,
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      createResult.policyId,
+      createResult.trackers[0].trackerId,
+      updatedStringTracker,
+      1
+    )
+
+    expect(updateResult.trackerId).toBeGreaterThan(0)
+    expect(updateResult.transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
+    console.log('String tracker updated successfully:', updateResult)
+
+    // Verify the update worked
+    const updatedTrackerDetails = await getTracker(
+      config,
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      createResult.policyId,
+      createResult.trackers[0].trackerId
+    )
+    
+    expect(updatedTrackerDetails).not.toBeNull()
+    expect(updatedTrackerDetails?.pType).toBe(1) // Still string type
+    console.log('String tracker update verified successfully')
+
+    console.log('✅ All string tracker functionality verified successfully!')
+  })
 })
