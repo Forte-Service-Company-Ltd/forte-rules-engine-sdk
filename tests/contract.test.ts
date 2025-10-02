@@ -2890,7 +2890,7 @@ describe('Rules Engine Interactions', async () => {
         {
           "name": "dataTracker",
           "type": "bytes",
-          "initialValue": "test data"
+          "initialValue": "0xdeadbeef"
         }
       ],
       "MappedTrackers": [],
@@ -2898,8 +2898,8 @@ describe('Rules Engine Interactions', async () => {
         {
           "Name": "Data Rule",
           "Description": "Rule that uses bytes tracker in condition",
-          "condition": "TR:dataTracker != TR:dataTracker",
-          "positiveEffects": ["emit \\"Data comparison works\\""],
+          "condition": "TR:dataTracker == \\"0xdeadbeef\\"",
+          "positiveEffects": ["TR:dataTracker = \\"0xdeadbeefdeadbeef\\""],
           "negativeEffects": ["revert(\\"Data comparison failed\\")"],
           "callingFunction": "addData"
         }
