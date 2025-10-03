@@ -29,27 +29,27 @@ test('Code Generation test)', () => {
         "PolicyType": "open",
         "CallingFunctions": [
             {
-              "name": "transfer",
-              "functionSignature": "transfer(address to, uint256 value)",
-              "encodedValues": "address to, uint256 value"
+              "Name": "transfer",
+              "FunctionSignature": "transfer(address to, uint256 value)",
+              "EncodedValues": "address to, uint256 value"
             }
         ],
         "ForeignCalls": [
             {
-                "name": "Simple Foreign Call",
-                "address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                "function": "testSig(address)",
-                "returnType": "uint256",
-                "valuesToPass": "to",
-                "mappedTrackerKeyValues": "",
-                "callingFunction": "transfer"
+                "Name": "Simple Foreign Call",
+                "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                "Function": "testSig(address)",
+                "ReturnType": "uint256",
+                "ValuesToPass": "to",
+                "MappedTrackerKeyValues": "",
+                "CallingFunction": "transfer"
             }
         ], 
         "Trackers": [
         {
-            "name": "Simple String Tracker",
-            "type": "string",
-            "initialValue": "test" 
+            "Name": "Simple String Tracker",
+            "Type": "string",
+            "InitialValue": "test" 
         }
         ],
         "MappedTrackers": [],
@@ -57,10 +57,10 @@ test('Code Generation test)', () => {
             {
                 "Name": "Rule A",
                 "Description": "Rule A Description",
-                "condition": "value > 500",
-                "positiveEffects": ["emit Success"],
-                "negativeEffects": ["revert()"],
-                "callingFunction": "transfer"
+                "Condition": "value > 500",
+                "PositiveEffects": ["emit Success"],
+                "NegativeEffects": ["revert()"],
+                "CallingFunction": "transfer"
             }
         ]
         }`

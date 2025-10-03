@@ -64,9 +64,9 @@ export function generateModifier(policyS: string, outputFileName: string): void 
   var count = 0
   var countArray: string[] = []
   for (var rule of policySyntax.Rules) {
-    if (!countArray.includes(rule.callingFunction)) {
+    if (!countArray.includes(rule.CallingFunction)) {
       count += 1
-      countArray.push(rule.callingFunction)
+      countArray.push(rule.CallingFunction)
     }
   }
 
@@ -80,12 +80,12 @@ export function generateModifier(policyS: string, outputFileName: string): void 
   for (var syntax of policySyntax.Rules) {
     var argList = ''
     for (var fCall of policySyntax.CallingFunctions) {
-      if (fCall.name.trim() == syntax.callingFunction.trim()) {
-        argList = fCall.encodedValues
+      if (fCall.Name.trim() == syntax.CallingFunction.trim()) {
+        argList = fCall.EncodedValues
         break
       }
     }
-    var callingFunction = syntax.callingFunction.trim()
+    var callingFunction = syntax.CallingFunction.trim()
     if (functionNames.includes(callingFunction)) {
       continue
     } else {

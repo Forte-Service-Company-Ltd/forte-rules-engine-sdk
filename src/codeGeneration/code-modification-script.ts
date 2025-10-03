@@ -91,15 +91,14 @@ export function policyModifierGeneration(configPath: string, outputFile: string,
   // Process each rule
   policyConfig.Rules.forEach((rule, index) => {
     // Since rule.callingFunction is now just the function name, use it directly
-    const functionName = rule.callingFunction.trim()
+    const functionName = rule.CallingFunction.trim()
 
     // Find files that contain the calling function and inject the modifier
     let injectionCount = 0
     for (const filePath of validFiles) {
-      if (fileContainsFunction(filePath, rule.callingFunction)) {
+      if (fileContainsFunction(filePath, rule.CallingFunction)) {
         console.log(`Found matching function in ${filePath}`)
-        const encodedValues =
-          policyConfig.CallingFunctions.find((cf) => cf.name === functionName)?.encodedValues || ''
+        const encodedValues = policyConfig.CallingFunctions.find((cf) => cf.Name === functionName)?.EncodedValues || ''
 
         // Inject the modifier (without creating a diff file)
         injectModifier(
@@ -115,7 +114,7 @@ export function policyModifierGeneration(configPath: string, outputFile: string,
     }
 
     if (injectionCount === 0) {
-      console.warn(`Warning: No files found containing function ${rule.callingFunction}`)
+      console.warn(`Warning: No files found containing function ${rule.CallingFunction}`)
     } else {
       console.log(`Injected modifier for ${functionName} into ${injectionCount} files`)
     }

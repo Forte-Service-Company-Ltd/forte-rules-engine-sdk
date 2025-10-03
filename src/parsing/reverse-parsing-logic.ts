@@ -550,19 +550,19 @@ export function convertOnChainRuleStructToString(
       Id: ruleId,
       Name: ruleM.ruleName,
       Description: ruleM.ruleDescription,
-      condition: '',
-      positiveEffects: [],
-      negativeEffects: [],
-      callingFunction: '',
+      Condition: '',
+      PositiveEffects: [],
+      NegativeEffects: [],
+      CallingFunction: '',
     }
   } else {
     rJSON = {
       Name: ruleM.ruleName,
       Description: ruleM.ruleDescription,
-      condition: '',
-      positiveEffects: [],
-      negativeEffects: [],
-      callingFunction: '',
+      Condition: '',
+      PositiveEffects: [],
+      NegativeEffects: [],
+      CallingFunction: '',
     }
   }
 
@@ -579,8 +579,8 @@ export function convertOnChainRuleStructToString(
     }
     stringReplacements.push(strRep)
   }
-  rJSON.condition = reverseParseInstructionSet(ruleS!.instructionSet, plhArray, stringReplacements, 0)
-  rJSON.callingFunction = functionString
+  rJSON.Condition = reverseParseInstructionSet(ruleS!.instructionSet, plhArray, stringReplacements, 0)
+  rJSON.CallingFunction = functionString
   const posEffectPlhArray = ruleS.positiveEffectPlaceHolders.map((placeholder) =>
     reverseParsePlaceholder(placeholder, names, foreignCalls, trackers, mappings)
   )
@@ -591,11 +591,11 @@ export function convertOnChainRuleStructToString(
 
   var rawDataIndex = 1
   for (var effect of ruleS.posEffects) {
-    rJSON.positiveEffects.push(reverseParseEffect(effect, posEffectPlhArray, rawDataIndex, ruleS))
+    rJSON.PositiveEffects.push(reverseParseEffect(effect, posEffectPlhArray, rawDataIndex, ruleS))
     rawDataIndex += 1
   }
   for (var effect of ruleS.negEffects) {
-    rJSON.negativeEffects.push(reverseParseEffect(effect, negEffectPlhArray, rawDataIndex, ruleS))
+    rJSON.NegativeEffects.push(reverseParseEffect(effect, negEffectPlhArray, rawDataIndex, ruleS))
     rawDataIndex += 1
   }
 
@@ -635,23 +635,23 @@ export function convertForeignCallStructsToStrings(
     if (call.foreignCallIndex > 0) {
       inputs = {
         Id: call.foreignCallIndex,
-        name: names[iter],
-        address: call.foreignCallAddress as Address,
-        function: functionMeta?.functionString || '',
-        returnType: returnTypeString || 'string',
-        valuesToPass: functionMeta?.encodedValues || '',
-        mappedTrackerKeyValues: '',
-        callingFunction: callingFunction?.name || '',
+        Name: names[iter],
+        Address: call.foreignCallAddress as Address,
+        Function: functionMeta?.functionString || '',
+        ReturnType: returnTypeString || 'string',
+        ValuesToPass: functionMeta?.encodedValues || '',
+        MappedTrackerKeyValues: '',
+        CallingFunction: callingFunction?.name || '',
       }
     } else {
       inputs = {
-        name: names[iter],
-        address: call.foreignCallAddress as Address,
-        function: functionMeta?.functionString || '',
-        returnType: returnTypeString || 'string',
-        valuesToPass: functionMeta?.encodedValues || '',
-        mappedTrackerKeyValues: '',
-        callingFunction: callingFunction?.name || '',
+        Name: names[iter],
+        Address: call.foreignCallAddress as Address,
+        Function: functionMeta?.functionString || '',
+        ReturnType: returnTypeString || 'string',
+        ValuesToPass: functionMeta?.encodedValues || '',
+        MappedTrackerKeyValues: '',
+        CallingFunction: callingFunction?.name || '',
       }
     }
     return inputs
@@ -705,15 +705,15 @@ export function convertTrackerStructsToStrings(
       if (tracker.trackerIndex > 0) {
         inputs = {
           Id: tracker.trackerIndex,
-          name: trackerNames[iter].trackerName,
-          type: trackerType,
-          initialValue: initialValue,
+          Name: trackerNames[iter].trackerName,
+          Type: trackerType,
+          InitialValue: initialValue,
         }
       } else {
         inputs = {
-          name: trackerNames[iter].trackerName,
-          type: trackerType,
-          initialValue: initialValue,
+          Name: trackerNames[iter].trackerName,
+          Type: trackerType,
+          InitialValue: initialValue,
         }
       }
       return inputs
@@ -742,19 +742,19 @@ export function convertTrackerStructsToStrings(
       if (tracker.trackerIndex > 0) {
         inputs = {
           Id: tracker.trackerIndex,
-          name: mappedTrackerNames[iter].trackerName,
-          valueType,
-          keyType,
-          initialKeys: keys,
-          initialValues: values,
+          Name: mappedTrackerNames[iter].trackerName,
+          ValueType: valueType,
+          KeyType: keyType,
+          InitialKeys: keys,
+          InitialValues: values,
         }
       } else {
         inputs = {
-          name: mappedTrackerNames[iter].trackerName,
-          valueType,
-          keyType,
-          initialKeys: keys,
-          initialValues: values,
+          Name: mappedTrackerNames[iter].trackerName,
+          ValueType: valueType,
+          KeyType: keyType,
+          InitialKeys: keys,
+          InitialValues: values,
         }
       }
       return inputs
