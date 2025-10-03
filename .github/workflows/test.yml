@@ -12,9 +12,10 @@ env:
   FOUNDRY_PROFILE: ci
 
 jobs:
-  build:
+  test:
 
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     strategy:
       matrix:
@@ -22,27 +23,21 @@ jobs:
         # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
-      with:
-        version: v1.2.1
-    - name: Install NPM Dependencies
-      run: |
-        npm install
-    - name: Build
-      run: |
-        npm run build
-    - name: Start Anvil with State File
-      run: |
-        anvil -p 8545 --load-state tests/diamondDeployedAnvilState.json &
-        sleep 3
-    - name: Run Tests
-      run: npm run test
-    - name: Run Typedoc Check
-      run: npx typedoc --options typedoc.json
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: v1.2.1
+      - uses: Forte-Service-Company-Ltd/infrastructure-tooling/.github/actions/typescript-build@v0.0.4
+        with:
+          node-version: ${{ matrix['node-version'] }}
+          package-manager: npm
+      - name: Start Anvil with State File
+        run: |
+          anvil -p 8545 --load-state tests/diamondDeployedAnvilState.json &
+          sleep 3
+      # Runs `npm run test`
+      - uses: Forte-Service-Company-Ltd/infrastructure-tooling/.github/actions/typescript-test@v0.0.4
+        with:
+          package-manager: npm
+      - name: Run Typedoc Check
+        run: npx typedoc --options typedoc.json
