@@ -2884,18 +2884,18 @@ describe('Rules Engine Interactions', async () => {
       "PolicyType": "open",
       "CallingFunctions": [
         {
-          "name": "addData",
-          "function": "addData(bytes data)",
-          "functionSignature": "addData(bytes)",
-          "encodedValues": "bytes data"
+          "Name": "addData",
+          "Function": "addData(bytes data)",
+          "FunctionSignature": "addData(bytes)",
+          "EncodedValues": "bytes data"
         }
       ],
       "ForeignCalls": [],
       "Trackers": [
         {
-          "name": "dataTracker",
-          "type": "bytes",
-          "initialValue": "0xdeadbeef"
+          "Name": "dataTracker",
+          "Type": "bytes",
+          "InitialValue": "0xdeadbeef"
         }
       ],
       "MappedTrackers": [],
@@ -2903,16 +2903,16 @@ describe('Rules Engine Interactions', async () => {
         {
           "Name": "Data Rule",
           "Description": "Rule that uses bytes tracker in condition",
-          "condition": "TR:dataTracker == \\"0xdeadbeef\\"",
-          "positiveEffects": ["TR:dataTracker = \\"0xdeadbeefdeadbeef\\""],
-          "negativeEffects": ["revert(\\"Data comparison failed\\")"],
-          "callingFunction": "addData"
+          "Condition": "TR:dataTracker == \\"0xdeadbeef\\"",
+          "PositiveEffects": ["TR:dataTracker = \\"0xdeadbeefdeadbeef\\""],
+          "NegativeEffects": ["revert(\\"Data comparison failed\\")"],
+          "CallingFunction": "addData"
         }
       ]
     }`
 
     console.log('Creating policy with bytes tracker and rule...')
-    
+
     // Create policy with bytes tracker and rule
     const createResult = await createPolicy(
       config,
@@ -2941,12 +2941,12 @@ describe('Rules Engine Interactions', async () => {
       createResult.policyId,
       createResult.trackers[0].trackerId
     )
-    
+
     expect(trackerDetails).not.toBeNull()
     expect(trackerDetails?.pType).toBe(5) // pTypeEnum.BYTES
     expect(trackerDetails?.mapped).toBe(false)
     console.log('Bytes tracker verified - type:', trackerDetails?.pType)
-    
+
     // Verify tracker metadata
     const trackerMetadata = await getTrackerMetadata(
       config,
@@ -2954,7 +2954,7 @@ describe('Rules Engine Interactions', async () => {
       createResult.policyId,
       createResult.trackers[0].trackerId
     )
-    
+
     expect(trackerMetadata?.trackerName).toBe('dataTracker')
     console.log('Tracker metadata verified:', trackerMetadata?.trackerName)
 
@@ -2971,16 +2971,16 @@ describe('Rules Engine Interactions', async () => {
       createResult.policyId,
       createResult.rules[0].ruleId
     )
-    
+
     expect(ruleMetadata).not.toBeNull()
     expect(ruleMetadata?.ruleName).toBe('Data Rule')
     console.log('Rule metadata verified:', ruleMetadata?.ruleName)
 
     // Test creating an additional bytes tracker with different data
     const additionalBytesTracker = `{
-      "name": "anotherDataTracker",
-      "type": "bytes",
-      "initialValue": "different data"
+      "Name": "anotherDataTracker",
+      "Type": "bytes",
+      "InitialValue": "different data"
     }`
 
     console.log('Creating additional bytes tracker...')
@@ -3003,27 +3003,27 @@ describe('Rules Engine Interactions', async () => {
       createResult.policyId,
       additionalTrackerId.trackerId
     )
-    
+
     expect(additionalTrackerDetails).not.toBeNull()
     expect(additionalTrackerDetails?.pType).toBe(5) // pTypeEnum.BYTES
-    
+
     // Verify we can get all trackers including our bytes trackers
     const allTrackers = await getAllTrackers(
       config,
       getRulesEngineComponentContract(rulesEngineContract, client),
       createResult.policyId
     )
-    
+
     expect(allTrackers.length).toBe(2)
-    const bytesTrackers = allTrackers.filter(tracker => tracker.pType === 5)
+    const bytesTrackers = allTrackers.filter((tracker) => tracker.pType === 5)
     expect(bytesTrackers.length).toBe(2)
     console.log('All bytes trackers verified:', bytesTrackers.length)
 
     // Test updating a bytes tracker
     const updatedBytesTracker = `{
-      "name": "dataTracker",
-      "type": "bytes",
-      "initialValue": "updated test data"
+      "Name": "dataTracker",
+      "Type": "bytes",
+      "InitialValue": "updated test data"
     }`
 
     console.log('Updating bytes tracker...')
@@ -3047,7 +3047,7 @@ describe('Rules Engine Interactions', async () => {
       createResult.policyId,
       createResult.trackers[0].trackerId
     )
-    
+
     expect(updatedTrackerDetails).not.toBeNull()
     expect(updatedTrackerDetails?.pType).toBe(5) // Still bytes type
     console.log('Bytes tracker update verified successfully')
@@ -3062,18 +3062,18 @@ describe('Rules Engine Interactions', async () => {
       "PolicyType": "open",
       "CallingFunctions": [
         {
-          "name": "setMessage",
-          "function": "setMessage(string message)",
-          "functionSignature": "setMessage(string)",
-          "encodedValues": "string message"
+          "Name": "setMessage",
+          "Function": "setMessage(string message)",
+          "FunctionSignature": "setMessage(string)",
+          "EncodedValues": "string message"
         }
       ],
       "ForeignCalls": [],
       "Trackers": [
         {
-          "name": "messageTracker",
-          "type": "string",
-          "initialValue": "hello world"
+          "Name": "messageTracker",
+          "Type": "string",
+          "InitialValue": "hello world"
         }
       ],
       "MappedTrackers": [],
@@ -3081,16 +3081,16 @@ describe('Rules Engine Interactions', async () => {
         {
           "Name": "Message Rule",
           "Description": "Rule that uses string tracker in condition",
-          "condition": "TR:messageTracker != TR:messageTracker",
-          "positiveEffects": ["emit \\"String comparison works\\""],
-          "negativeEffects": ["revert(\\"String comparison failed\\")"],
-          "callingFunction": "setMessage"
+          "Condition": "TR:messageTracker != TR:messageTracker",
+          "PositiveEffects": ["emit \\"String comparison works\\""],
+          "NegativeEffects": ["revert(\\"String comparison failed\\")"],
+          "CallingFunction": "setMessage"
         }
       ]
     }`
 
     console.log('Creating policy with string tracker and rule...')
-    
+
     // Create policy with string tracker and rule
     const createResult = await createPolicy(
       config,
@@ -3119,12 +3119,12 @@ describe('Rules Engine Interactions', async () => {
       createResult.policyId,
       createResult.trackers[0].trackerId
     )
-    
+
     expect(trackerDetails).not.toBeNull()
     expect(trackerDetails?.pType).toBe(1) // pTypeEnum.STRING
     expect(trackerDetails?.mapped).toBe(false)
     console.log('String tracker verified - type:', trackerDetails?.pType)
-    
+
     // Verify tracker metadata
     const trackerMetadata = await getTrackerMetadata(
       config,
@@ -3132,7 +3132,7 @@ describe('Rules Engine Interactions', async () => {
       createResult.policyId,
       createResult.trackers[0].trackerId
     )
-    
+
     expect(trackerMetadata?.trackerName).toBe('messageTracker')
     console.log('Tracker metadata verified:', trackerMetadata?.trackerName)
 
@@ -3149,16 +3149,16 @@ describe('Rules Engine Interactions', async () => {
       createResult.policyId,
       createResult.rules[0].ruleId
     )
-    
+
     expect(ruleMetadata).not.toBeNull()
     expect(ruleMetadata?.ruleName).toBe('Message Rule')
     console.log('Rule metadata verified:', ruleMetadata?.ruleName)
 
     // Test creating an additional string tracker with different data
     const additionalStringTracker = `{
-      "name": "anotherMessageTracker",
-      "type": "string",
-      "initialValue": "different message"
+      "Name": "anotherMessageTracker",
+      "Type": "string",
+      "InitialValue": "different message"
     }`
 
     console.log('Creating additional string tracker...')
@@ -3181,27 +3181,27 @@ describe('Rules Engine Interactions', async () => {
       createResult.policyId,
       additionalTrackerId.trackerId
     )
-    
+
     expect(additionalTrackerDetails).not.toBeNull()
     expect(additionalTrackerDetails?.pType).toBe(1) // pTypeEnum.STRING
-    
+
     // Verify we can get all trackers including our string trackers
     const allTrackers = await getAllTrackers(
       config,
       getRulesEngineComponentContract(rulesEngineContract, client),
       createResult.policyId
     )
-    
+
     expect(allTrackers.length).toBe(2)
-    const stringTrackers = allTrackers.filter(tracker => tracker.pType === 1)
+    const stringTrackers = allTrackers.filter((tracker) => tracker.pType === 1)
     expect(stringTrackers.length).toBe(2)
     console.log('All string trackers verified:', stringTrackers.length)
 
     // Test updating a string tracker
     const updatedStringTracker = `{
-      "name": "messageTracker",
-      "type": "string",
-      "initialValue": "updated hello world"
+      "Name": "messageTracker",
+      "Type": "string",
+      "InitialValue": "updated hello world"
     }`
 
     console.log('Updating string tracker...')
@@ -3225,7 +3225,7 @@ describe('Rules Engine Interactions', async () => {
       createResult.policyId,
       createResult.trackers[0].trackerId
     )
-    
+
     expect(updatedTrackerDetails).not.toBeNull()
     expect(updatedTrackerDetails?.pType).toBe(1) // Still string type
     console.log('String tracker update verified successfully')
