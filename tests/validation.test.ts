@@ -1403,7 +1403,243 @@ test('Policy JSON validation should fail when duplicate Rule Ids are provided', 
     const errors = unwrapEither(parsed)
     expect(
       errors.some((err) =>
-        err.message.includes('Rule Id validation failed: only one instance of each Id is allowed within a policy.')
+        err.message.includes(
+          'Id validation failed: only one instance of each Id is allowed per component within a policy.'
+        )
+      )
+    ).toBeTruthy()
+  }
+})
+
+test('Policy JSON validation should fail when duplicate Foreign Call Ids are provided', () => {
+  const policy = {
+    Policy: 'Rule Ordering Test Policy',
+    Description: 'Test mixed rule ordering',
+    PolicyType: 'open',
+    CallingFunctions: [
+      {
+        Name: 'transfer(address to, uint256 value)',
+        FunctionSignature: 'transfer(address to, uint256 value)',
+        EncodedValues: 'address to, uint256 value',
+      },
+    ],
+    ForeignCalls: [
+      {
+        Id: 1,
+        Name: 'UseSpender',
+        Address: '0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC',
+        Function: 'testSig(address)',
+        ReturnType: 'uint256',
+        ValuesToPass: 'spender',
+        MappedTrackerKeyValues: '',
+        CallingFunction: 'transfer(address to, uint256 value, address spender)',
+      },
+      {
+        Id: 1,
+        Name: 'UseSpenderTwo',
+        Address: '0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC',
+        Function: 'testSig(address)',
+        ReturnType: 'uint256',
+        ValuesToPass: 'spender',
+        MappedTrackerKeyValues: '',
+        CallingFunction: 'transfer(address to, uint256 value, address spender)',
+      },
+    ],
+    Trackers: [],
+    MappedTrackers: [],
+    Rules: [
+      {
+        Id: 1,
+        Name: 'Rule A',
+        Description: 'First rule with order',
+        Condition: '1 == 1',
+        PositiveEffects: ['emit Success'],
+        NegativeEffects: [],
+        CallingFunction: 'transfer(address to, uint256 value)',
+        Order: 1,
+      },
+      {
+        Id: 2,
+        Name: 'Rule B',
+        Description: 'Second rule without order',
+        Condition: '2 == 2',
+        PositiveEffects: ['emit Success'],
+        NegativeEffects: [],
+        CallingFunction: 'transfer(address to, uint256 value)',
+        Order: 2,
+      },
+    ],
+  }
+  const parsed = validatePolicyJSON(JSON.stringify(policy))
+  expect(isLeft(parsed)).toBeTruthy()
+
+  if (isLeft(parsed)) {
+    const errors = unwrapEither(parsed)
+    expect(
+      errors.some((err) =>
+        err.message.includes(
+          'Id validation failed: only one instance of each Id is allowed per component within a policy.'
+        )
+      )
+    ).toBeTruthy()
+  }
+})
+
+test('Policy JSON validation should fail when duplicate Tracker Ids are provided', () => {
+  const policy = {
+    Policy: 'Rule Ordering Test Policy',
+    Description: 'Test mixed rule ordering',
+    PolicyType: 'open',
+    CallingFunctions: [
+      {
+        Name: 'transfer(address to, uint256 value)',
+        FunctionSignature: 'transfer(address to, uint256 value)',
+        EncodedValues: 'address to, uint256 value',
+      },
+    ],
+    ForeignCalls: [
+      {
+        Id: 1,
+        Name: 'UseSpender',
+        Address: '0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC',
+        Function: 'testSig(address)',
+        ReturnType: 'uint256',
+        ValuesToPass: 'spender',
+        MappedTrackerKeyValues: '',
+        CallingFunction: 'transfer(address to, uint256 value, address spender)',
+      },
+    ],
+    Trackers: [
+      {
+        Id: 1,
+        Name: 'trackerOne',
+        Type: 'uint256',
+        InitialValue: '123',
+      },
+      {
+        Id: 1,
+        Name: 'trackerTwo',
+        Type: 'uint256',
+        InitialValue: '123',
+      },
+    ],
+    MappedTrackers: [],
+    Rules: [
+      {
+        Id: 1,
+        Name: 'Rule A',
+        Description: 'First rule with order',
+        Condition: '1 == 1',
+        PositiveEffects: ['emit Success'],
+        NegativeEffects: [],
+        CallingFunction: 'transfer(address to, uint256 value)',
+        Order: 1,
+      },
+      {
+        Id: 2,
+        Name: 'Rule B',
+        Description: 'Second rule without order',
+        Condition: '2 == 2',
+        PositiveEffects: ['emit Success'],
+        NegativeEffects: [],
+        CallingFunction: 'transfer(address to, uint256 value)',
+        Order: 2,
+      },
+    ],
+  }
+
+  const parsed = validatePolicyJSON(JSON.stringify(policy))
+  expect(isLeft(parsed)).toBeTruthy()
+
+  if (isLeft(parsed)) {
+    const errors = unwrapEither(parsed)
+    expect(
+      errors.some((err) =>
+        err.message.includes(
+          'Id validation failed: only one instance of each Id is allowed per component within a policy.'
+        )
+      )
+    ).toBeTruthy()
+  }
+})
+
+test('Policy JSON validation should fail when duplicate Mapped Tracker Ids are provided', () => {
+  const policy = {
+    Policy: 'Rule Ordering Test Policy',
+    Description: 'Test mixed rule ordering',
+    PolicyType: 'open',
+    CallingFunctions: [
+      {
+        Name: 'transfer(address to, uint256 value)',
+        FunctionSignature: 'transfer(address to, uint256 value)',
+        EncodedValues: 'address to, uint256 value',
+      },
+    ],
+    ForeignCalls: [
+      {
+        Id: 1,
+        Name: 'UseSpender',
+        Address: '0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC',
+        Function: 'testSig(address)',
+        ReturnType: 'uint256',
+        ValuesToPass: 'spender',
+        MappedTrackerKeyValues: '',
+        CallingFunction: 'transfer(address to, uint256 value, address spender)',
+      },
+    ],
+    Trackers: [],
+    MappedTrackers: [
+      {
+        Id: 1,
+        Name: 'mappedTrackerOne',
+        KeyType: 'address',
+        ValueType: 'uint256',
+        InitialKeys: ['0xb7f8bc63bbcad18155201308c8f3540b07f84f5e'],
+        InitialValues: ['1'],
+      },
+      {
+        Id: 1,
+        Name: 'mappedTrackerTwo',
+        KeyType: 'address',
+        ValueType: 'uint256',
+        InitialKeys: ['0xb7f8bc63bbcad18155201308c8f3540b07f84f5e'],
+        InitialValues: ['1'],
+      },
+    ],
+    Rules: [
+      {
+        Id: 1,
+        Name: 'Rule A',
+        Description: 'First rule with order',
+        Condition: '1 == 1',
+        PositiveEffects: ['emit Success'],
+        NegativeEffects: [],
+        CallingFunction: 'transfer(address to, uint256 value)',
+        Order: 1,
+      },
+      {
+        Id: 2,
+        Name: 'Rule B',
+        Description: 'Second rule without order',
+        Condition: '2 == 2',
+        PositiveEffects: ['emit Success'],
+        NegativeEffects: [],
+        CallingFunction: 'transfer(address to, uint256 value)',
+        Order: 2,
+      },
+    ],
+  }
+
+  const parsed = validatePolicyJSON(JSON.stringify(policy))
+  expect(isLeft(parsed)).toBeTruthy()
+
+  if (isLeft(parsed)) {
+    const errors = unwrapEither(parsed)
+    expect(
+      errors.some((err) =>
+        err.message.includes(
+          'Id validation failed: only one instance of each Id is allowed per component within a policy.'
+        )
       )
     ).toBeTruthy()
   }

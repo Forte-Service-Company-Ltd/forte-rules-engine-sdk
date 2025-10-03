@@ -831,14 +831,33 @@ export const policyJSONValidator = z
   .refine(
     (data) => {
       const rulesWithIds = data.Rules.filter((rule) => rule.Id != null)
-      const ids = rulesWithIds.map((rule) => rule.Id!)
+      let ids = rulesWithIds.map((rule) => rule.Id!)
       if (!validateUniqueKeys(ids)) {
         return false
       }
+
+      const fcWithIds = data.ForeignCalls.filter((fc) => fc.Id != null)
+      ids = fcWithIds.map((fc) => fc.Id!)
+      if (!validateUniqueKeys(ids)) {
+        return false
+      }
+
+      const trackersWithIds = data.Trackers.filter((tracker) => tracker.Id != null)
+      ids = trackersWithIds.map((tracker) => tracker.Id!)
+      if (!validateUniqueKeys(ids)) {
+        return false
+      }
+
+      const mappedTrackersWithIds = data.MappedTrackers.filter((tracker) => tracker.Id != null)
+      ids = mappedTrackersWithIds.map((tracker) => tracker.Id!)
+      if (!validateUniqueKeys(ids)) {
+        return false
+      }
+
       return true
     },
     {
-      message: 'Rule Id validation failed: only one instance of each Id is allowed within a policy.',
+      message: 'Id validation failed: only one instance of each Id is allowed per component within a policy.',
     }
   )
 
