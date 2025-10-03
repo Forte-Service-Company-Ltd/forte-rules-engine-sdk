@@ -810,7 +810,6 @@ export const policyJSONValidator = z
       if (rulesWithOrder.length > 0 && rulesWithoutOrder.length > 0) {
         return false
       }
-
       // If all rules have order, validate they are unique
       if (rulesWithOrder.length === data.Rules.length && data.Rules.length > 0) {
         const orders = rulesWithOrder.map((rule) => rule.Order!)
@@ -829,6 +828,38 @@ export const policyJSONValidator = z
     }
   )
   .refine(validateUniqueNames, { message: 'Names cannot be duplicated' })
+  .refine(
+    (data) => {
+      const rulesWithIds = data.Rules.filter((rule) => rule.Id != null)
+      let ids = rulesWithIds.map((rule) => rule.Id!)
+      if (!validateUniqueKeys(ids)) {
+        return false
+      }
+
+      const fcWithIds = data.ForeignCalls.filter((fc) => fc.Id != null)
+      ids = fcWithIds.map((fc) => fc.Id!)
+      if (!validateUniqueKeys(ids)) {
+        return false
+      }
+
+      const trackersWithIds = data.Trackers.filter((tracker) => tracker.Id != null)
+      ids = trackersWithIds.map((tracker) => tracker.Id!)
+      if (!validateUniqueKeys(ids)) {
+        return false
+      }
+
+      const mappedTrackersWithIds = data.MappedTrackers.filter((tracker) => tracker.Id != null)
+      ids = mappedTrackersWithIds.map((tracker) => tracker.Id!)
+      if (!validateUniqueKeys(ids)) {
+        return false
+      }
+
+      return true
+    },
+    {
+      message: 'Id validation failed: only one instance of each Id is allowed per component within a policy.',
+    }
+  )
 
 export interface PolicyJSON extends z.infer<typeof policyJSONValidator> {}
 
