@@ -1357,6 +1357,58 @@ test("Policy JSON validation should fail when some rules have order and others d
   }
 })
 
+test('Policy JSON validation should fail when duplicate Rule Ids are provided', () => {
+  const policy = {
+    Policy: 'Rule Ordering Test Policy',
+    Description: 'Test mixed rule ordering',
+    PolicyType: 'open',
+    CallingFunctions: [
+      {
+        Name: 'transfer(address to, uint256 value)',
+        FunctionSignature: 'transfer(address to, uint256 value)',
+        EncodedValues: 'address to, uint256 value',
+      },
+    ],
+    ForeignCalls: [],
+    Trackers: [],
+    MappedTrackers: [],
+    Rules: [
+      {
+        Id: 1,
+        Name: 'Rule A',
+        Description: 'First rule with order',
+        Condition: '1 == 1',
+        PositiveEffects: ['emit Success'],
+        NegativeEffects: [],
+        CallingFunction: 'transfer(address to, uint256 value)',
+        Order: 1,
+      },
+      {
+        Id: 1,
+        Name: 'Rule B',
+        Description: 'Second rule without order',
+        Condition: '2 == 2',
+        PositiveEffects: ['emit Success'],
+        NegativeEffects: [],
+        CallingFunction: 'transfer(address to, uint256 value)',
+        Order: 2,
+      },
+    ],
+  }
+
+  const parsed = validatePolicyJSON(JSON.stringify(policy))
+  expect(isLeft(parsed)).toBeTruthy()
+
+  if (isLeft(parsed)) {
+    const errors = unwrapEither(parsed)
+    expect(
+      errors.some((err) =>
+        err.message.includes('Rule Id validation failed: only one instance of each Id is allowed within a policy.')
+      )
+    ).toBeTruthy()
+  }
+})
+
 test('Policy JSON validation should pass when all rules have order', () => {
   const policy = {
     Policy: 'Rule Ordering Test Policy',

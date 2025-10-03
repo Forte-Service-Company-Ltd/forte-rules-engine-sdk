@@ -810,7 +810,6 @@ export const policyJSONValidator = z
       if (rulesWithOrder.length > 0 && rulesWithoutOrder.length > 0) {
         return false
       }
-
       // If all rules have order, validate they are unique
       if (rulesWithOrder.length === data.Rules.length && data.Rules.length > 0) {
         const orders = rulesWithOrder.map((rule) => rule.Order!)
@@ -829,6 +828,19 @@ export const policyJSONValidator = z
     }
   )
   .refine(validateUniqueNames, { message: 'Names cannot be duplicated' })
+  .refine(
+    (data) => {
+      const rulesWithIds = data.Rules.filter((rule) => rule.Id != null)
+      const ids = rulesWithIds.map((rule) => rule.Id!)
+      if (!validateUniqueKeys(ids)) {
+        return false
+      }
+      return true
+    },
+    {
+      message: 'Rule Id validation failed: only one instance of each Id is allowed within a policy.',
+    }
+  )
 
 export interface PolicyJSON extends z.infer<typeof policyJSONValidator> {}
 
