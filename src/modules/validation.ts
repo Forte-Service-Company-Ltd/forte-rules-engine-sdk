@@ -183,7 +183,7 @@ export const validateConditionGroup = (condition: string[]): boolean => {
   const andTerms = validateLogicalOperatorGroup(andOperator, condition)
   const orTerms = validateLogicalOperatorGroup(orOperator, condition)
 
-  return (andTerms || orTerms) && !(andTerms && orTerms)
+  return andTerms || orTerms
 }
 
 export const handleCloseParenthesis = (acc: ConditionGroups, term: string, coreGroup: boolean) => {

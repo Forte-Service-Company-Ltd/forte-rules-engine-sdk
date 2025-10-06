@@ -1217,7 +1217,7 @@ describe('Rules Engine Interactions', async () => {
                            {
                                "Name": "Rule A",
                                "Description": "Rule A Description",
-                               "Condition": "FC:ATestForeignCall > 1000 AND someValue == true",
+                               "Condition": "GV:TX_ORIGIN == GV:BLOCK_TIMESTAMP AND ( GV:MSG_DATA == 2 AND ( someValue == true AND GV:BLOCK_NUMBER == 4 ) )",
                                "PositiveEffects": ["emit \\"Success\\"", "FC:AnotherTestForeignCall", "TRU:mappedTrackerOne(to) += 1"],
                                "NegativeEffects": ["revert(\\"Negative\\")", "TRU:trackerOne += 12"],
                                "CallingFunction": "transfer"
@@ -1234,7 +1234,6 @@ describe('Rules Engine Interactions', async () => {
       1,
       policyJSON
     )
-    // console.log('Created policy with ID:', result.policyId)
     expect(result.policyId).toBeGreaterThanOrEqual(0)
     var resultFC = await getAllForeignCalls(
       config,
@@ -1272,6 +1271,69 @@ describe('Rules Engine Interactions', async () => {
   })
 
   test('Can retrieve policy metadata', options, async () => {
+    var policyJSON = `
+                              {
+                              "Policy": "Test Policy",
+                              "Description": "Test Policy Description",
+                              "PolicyType": "open",
+                              "CallingFunctions": [
+                                {
+                                  "Name": "transfer",
+                                  "FunctionSignature": "transfer(address to, uint256 value)",
+                                  "EncodedValues": "address to, uint256 value"
+                                }
+                              ],
+                              "ForeignCalls": [
+                                  {
+                                      "Name": "testSig",
+                                      "Function": "testSig(address)",
+                                      "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                                      "ReturnType": "uint256",
+                                      "ValuesToPass": "to",
+                                      "MappedTrackerKeyValues": "",
+                                      "CallingFunction": "transfer"
+                                  }
+                              ],
+                              "Trackers": [
+                              {
+                                  "Name": "testTracker",
+                                  "Type": "string",
+                                  "InitialValue": "test"
+                              }
+                              ],
+                              "MappedTrackers": [],
+                              "Rules": [
+                                  {
+                                      "Name": "Rule A",
+                                      "Description": "Rule A Description",
+                                      "Condition": "TR:testTracker > 500",
+                                      "PositiveEffects": ["emit \\"Success\\""],
+                                      "NegativeEffects": ["revert()"],
+                                      "CallingFunction": "transfer"
+                                  }
+                              ]
+                              }`
+
+    var result = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      policyJSON
+    )
+    expect(result.policyId).toBeGreaterThanOrEqual(0)
+    var retVal = await getPolicyMetadata(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      result.policyId
+    )
+    expect(retVal?.policyName).toEqual('Test Policy')
+    expect(retVal?.policyDescription).toEqual('Test Policy Description')
+  })
+
+  test('Can retrieve historical metadata', options, async () => {
     var policyJSON = `
                             {
                             "Policy": "Test Policy",
@@ -1324,69 +1386,6 @@ describe('Rules Engine Interactions', async () => {
       1,
       policyJSON
     )
-    expect(result.policyId).toBeGreaterThanOrEqual(0)
-    var retVal = await getPolicyMetadata(
-      config,
-      getRulesEnginePolicyContract(rulesEngineContract, client),
-      result.policyId
-    )
-    expect(retVal?.policyName).toEqual('Test Policy')
-    expect(retVal?.policyDescription).toEqual('Test Policy Description')
-  })
-
-  test('Can retrieve historical metadata', options, async () => {
-    var policyJSON = `
-                          {
-                          "Policy": "Test Policy",
-                          "Description": "Test Policy Description",
-                          "PolicyType": "open",
-                          "CallingFunctions": [
-                            {
-                              "Name": "transfer",
-                              "FunctionSignature": "transfer(address to, uint256 value)",
-                              "EncodedValues": "address to, uint256 value"
-                            }
-                          ],
-                          "ForeignCalls": [
-                              {
-                                  "Name": "testSig",
-                                  "Function": "testSig(address)",
-                                  "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                                  "ReturnType": "uint256",
-                                  "ValuesToPass": "to",
-                                  "MappedTrackerKeyValues": "",
-                                  "CallingFunction": "transfer"
-                              }
-                          ],
-                          "Trackers": [
-                          {
-                              "Name": "testTracker",
-                              "Type": "string",
-                              "InitialValue": "test"
-                          }
-                          ],
-                          "MappedTrackers": [],
-                          "Rules": [
-                              {
-                                  "Name": "Rule A",
-                                  "Description": "Rule A Description",
-                                  "Condition": "TR:testTracker > 500",
-                                  "PositiveEffects": ["emit \\"Success\\""],
-                                  "NegativeEffects": ["revert()"],
-                                  "CallingFunction": "transfer"
-                              }
-                          ]
-                          }`
-
-    var result = await createPolicy(
-      config,
-      getRulesEnginePolicyContract(rulesEngineContract, client),
-      getRulesEngineRulesContract(rulesEngineContract, client),
-      getRulesEngineComponentContract(rulesEngineContract, client),
-      getRulesEngineForeignCallContract(rulesEngineContract, client),
-      1,
-      policyJSON
-    )
 
     const blockNumber = await getBlockNumber(config)
 
@@ -1399,50 +1398,50 @@ describe('Rules Engine Interactions', async () => {
     expect(retVal?.policyName).toEqual('Test Policy')
     expect(retVal?.policyDescription).toEqual('Test Policy Description')
     var updatedPolicyJSON = `
-                          {
-                          "Policy": "Updated Policy",
-                          "Description": "Updated Policy Description",
-                          "PolicyType": "open",
-                          "CallingFunctions": [
                             {
-                              "Name": "transfer",
-                              "FunctionSignature": "transfer(address to, uint256 value)",
-                              "EncodedValues": "address to, uint256 value"
+                            "Policy": "Updated Policy",
+                            "Description": "Updated Policy Description",
+                            "PolicyType": "open",
+                            "CallingFunctions": [
+                              {
+                                "Name": "transfer",
+                                "FunctionSignature": "transfer(address to, uint256 value)",
+                                "EncodedValues": "address to, uint256 value"
+                              }
+                            ],
+                            "ForeignCalls": [
+                                {
+                                    "Id": 1,
+                                    "Name": "testSig",
+                                    "Function": "testSig(address)",
+                                    "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                                    "ReturnType": "uint256",
+                                    "ValuesToPass": "to",
+                                    "MappedTrackerKeyValues": "",
+                                    "CallingFunction": "transfer"
+                                }
+                            ],
+                            "Trackers": [
+                            {
+                                "Id": 1,
+                                "Name": "testTracker",
+                                "Type": "string",
+                                "InitialValue": "test"
                             }
-                          ],
-                          "ForeignCalls": [
-                              {
-                                  "Id": 1,
-                                  "Name": "testSig",
-                                  "Function": "testSig(address)",
-                                  "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                                  "ReturnType": "uint256",
-                                  "ValuesToPass": "to",
-                                  "MappedTrackerKeyValues": "",
-                                  "CallingFunction": "transfer"
-                              }
-                          ],
-                          "Trackers": [
-                          {
-                              "Id": 1,
-                              "Name": "testTracker",
-                              "Type": "string",
-                              "InitialValue": "test"
-                          }
-                          ],
-                          "MappedTrackers": [],
-                          "Rules": [
-                              {
-                                  "Id": 1,
-                                  "Name": "Rule A",
-                                  "Description": "Rule A Description",
-                                  "Condition": "TR:testTracker > 500",
-                                  "PositiveEffects": ["emit \\"Success\\""],
-                                  "NegativeEffects": ["revert()"],
-                                  "CallingFunction": "transfer"
-                              }
-                          ]
-                          }`
+                            ],
+                            "MappedTrackers": [],
+                            "Rules": [
+                                {
+                                    "Id": 1,
+                                    "Name": "Rule A",
+                                    "Description": "Rule A Description",
+                                    "Condition": "TR:testTracker > 500",
+                                    "PositiveEffects": ["emit \\"Success\\""],
+                                    "NegativeEffects": ["revert()"],
+                                    "CallingFunction": "transfer"
+                                }
+                            ]
+                            }`
     var updateResult = await updatePolicy(
       config,
       getRulesEnginePolicyContract(rulesEngineContract, client),
@@ -1473,55 +1472,55 @@ describe('Rules Engine Interactions', async () => {
 
   test('Can check if a policy exists', options, async () => {
     var policyJSON = `
-                    {
-                    "Policy": "Test Policy",
-                    "Description": "Test Policy Description",
-                    "PolicyType": "open",
-                    "CallingFunctions": [
                       {
-                        "Name": "transfer",
-                        "FunctionSignature": "transfer(address to, uint256 value)",
-                        "EncodedValues": "address to, uint256 value"
-                      }
-                    ],
-                    "ForeignCalls": [
-                    {
-                            "Name": "testSigTwo",
-                            "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                            "Function": "testSigTwo(uint256)",
-                            "ReturnType": "uint256",
-                            "ValuesToPass": "TR:SimpleStringTracker",
-                            "MappedTrackerKeyValues": "",
-                            "CallingFunction": "transfer"
-                    },{
-                            "Name": "testSig",
-                            "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                            "Function": "testSig(uint256)",
-                            "ReturnType": "uint256",
-                            "ValuesToPass": "FC:testSigTwo",
-                            "MappedTrackerKeyValues": "",
-                            "CallingFunction": "transfer"
-                        }
-                    ],
-                    "Trackers": [
-                    {
-                        "Name": "SimpleStringTracker",
-                        "Type": "string",
-                        "InitialValue": "test"
-                    }
-                    ],
-                    "MappedTrackers": [],
-                    "Rules": [
+                      "Policy": "Test Policy",
+                      "Description": "Test Policy Description",
+                      "PolicyType": "open",
+                      "CallingFunctions": [
                         {
-                            "Name": "Rule A",
-                            "Description": "Rule A Description",
-                            "Condition": "value > 500",
-                            "PositiveEffects": ["emit \\"Success\\""],
-                            "NegativeEffects": ["revert()"],
-                            "CallingFunction": "transfer"
+                          "Name": "transfer",
+                          "FunctionSignature": "transfer(address to, uint256 value)",
+                          "EncodedValues": "address to, uint256 value"
                         }
-                        ]
-                        }`
+                      ],
+                      "ForeignCalls": [
+                      {
+                              "Name": "testSigTwo",
+                              "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                              "Function": "testSigTwo(uint256)",
+                              "ReturnType": "uint256",
+                              "ValuesToPass": "TR:SimpleStringTracker",
+                              "MappedTrackerKeyValues": "",
+                              "CallingFunction": "transfer"
+                      },{
+                              "Name": "testSig",
+                              "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                              "Function": "testSig(uint256)",
+                              "ReturnType": "uint256",
+                              "ValuesToPass": "FC:testSigTwo",
+                              "MappedTrackerKeyValues": "",
+                              "CallingFunction": "transfer"
+                          }
+                      ],
+                      "Trackers": [
+                      {
+                          "Name": "SimpleStringTracker",
+                          "Type": "string",
+                          "InitialValue": "test"
+                      }
+                      ],
+                      "MappedTrackers": [],
+                      "Rules": [
+                          {
+                              "Name": "Rule A",
+                              "Description": "Rule A Description",
+                              "Condition": "value > 500",
+                              "PositiveEffects": ["emit \\"Success\\""],
+                              "NegativeEffects": ["revert()"],
+                              "CallingFunction": "transfer"
+                          }
+                          ]
+                          }`
     var result = await createPolicy(
       config,
       getRulesEnginePolicyContract(rulesEngineContract, client),
@@ -1536,47 +1535,47 @@ describe('Rules Engine Interactions', async () => {
   })
   test('Can delete a full policy', options, async () => {
     var policyJSON = `
-                              {
-                              "Policy": "Test Policy",
-                              "Description": "Test Policy Description",
-                              "PolicyType": "open",
-                              "CallingFunctions": [
                                 {
-                                  "Name": "transfer",
-                                  "FunctionSignature": "transfer(address to, uint256 value)",
-                                  "EncodedValues": "address to, uint256 value"
+                                "Policy": "Test Policy",
+                                "Description": "Test Policy Description",
+                                "PolicyType": "open",
+                                "CallingFunctions": [
+                                  {
+                                    "Name": "transfer",
+                                    "FunctionSignature": "transfer(address to, uint256 value)",
+                                    "EncodedValues": "address to, uint256 value"
+                                  }
+                                ],
+                                "ForeignCalls": [
+                                    {
+                                        "Name": "Simple Foreign Call",
+                                        "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                                        "Function": "testSig(address)",
+                                        "ReturnType": "uint256",
+                                        "ValuesToPass": "to",
+                                        "MappedTrackerKeyValues": "",
+                                        "CallingFunction": "transfer"
+                                    }
+                                ],
+                                "Trackers": [
+                                {
+                                    "Name": "Simple String Tracker",
+                                    "Type": "string",
+                                    "InitialValue": "test"
                                 }
-                              ],
-                              "ForeignCalls": [
-                                  {
-                                      "Name": "Simple Foreign Call",
-                                      "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                                      "Function": "testSig(address)",
-                                      "ReturnType": "uint256",
-                                      "ValuesToPass": "to",
-                                      "MappedTrackerKeyValues": "",
-                                      "CallingFunction": "transfer"
-                                  }
-                              ],
-                              "Trackers": [
-                              {
-                                  "Name": "Simple String Tracker",
-                                  "Type": "string",
-                                  "InitialValue": "test"
-                              }
-                              ],
-                              "MappedTrackers": [],
-                              "Rules": [
-                                  {
-                                      "Name": "Rule A",
-                                      "Description": "Rule A Description",
-                                      "Condition": "value > 500",
-                                      "PositiveEffects": ["emit \\"Success\\""],
-                                      "NegativeEffects": ["revert()"],
-                                      "CallingFunction": "transfer"
-                                  }
-                              ]
-                              }`
+                                ],
+                                "MappedTrackers": [],
+                                "Rules": [
+                                    {
+                                        "Name": "Rule A",
+                                        "Description": "Rule A Description",
+                                        "Condition": "value > 500",
+                                        "PositiveEffects": ["emit \\"Success\\""],
+                                        "NegativeEffects": ["revert()"],
+                                        "CallingFunction": "transfer"
+                                    }
+                                ]
+                                }`
     var result = await createPolicy(
       config,
       getRulesEnginePolicyContract(rulesEngineContract, client),
@@ -1614,47 +1613,47 @@ describe('Rules Engine Interactions', async () => {
   })
   test('Can check if address is admin', async () => {
     var policyJSON = `
-                            {
-                            "Policy": "Test Policy",
-                            "Description": "Test Policy Description",
-                            "PolicyType": "open",
-                            "CallingFunctions": [
-                                {
-                                  "Name": "transfer",
-                                  "FunctionSignature": "transfer(address to, uint256 value)",
-                                  "EncodedValues": "address to, uint256 value"
-                                }
-                            ],
-                            "ForeignCalls": [
-                                {
-                                    "Name": "Simple Foreign Call",
-                                    "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                                    "Function": "testSig(address)",
-                                    "ReturnType": "uint256",
-                                    "ValuesToPass": "to",
-                                    "MappedTrackerKeyValues": "",
-                                    "CallingFunction": "transfer"
-                                }
-                            ],
-                            "Trackers": [
-                            {
-                                "Name": "Simple String Tracker",
-                                "Type": "string",
-                                "InitialValue": "test"
-                            }
-                            ],
-                            "MappedTrackers": [],
-                            "Rules": [
-                                {
-                                    "Name": "Rule A",
-                                    "Description": "Rule A Description",
-                                    "Condition": "value > 500",
-                                    "PositiveEffects": ["emit \\"Success\\""],
-                                    "NegativeEffects": ["revert()"],
-                                    "CallingFunction": "transfer"
-                                }
-                                ]
-                                }`
+                              {
+                              "Policy": "Test Policy",
+                              "Description": "Test Policy Description",
+                              "PolicyType": "open",
+                              "CallingFunctions": [
+                                  {
+                                    "Name": "transfer",
+                                    "FunctionSignature": "transfer(address to, uint256 value)",
+                                    "EncodedValues": "address to, uint256 value"
+                                  }
+                              ],
+                              "ForeignCalls": [
+                                  {
+                                      "Name": "Simple Foreign Call",
+                                      "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                                      "Function": "testSig(address)",
+                                      "ReturnType": "uint256",
+                                      "ValuesToPass": "to",
+                                      "MappedTrackerKeyValues": "",
+                                      "CallingFunction": "transfer"
+                                  }
+                              ],
+                              "Trackers": [
+                              {
+                                  "Name": "Simple String Tracker",
+                                  "Type": "string",
+                                  "InitialValue": "test"
+                              }
+                              ],
+                              "MappedTrackers": [],
+                              "Rules": [
+                                  {
+                                      "Name": "Rule A",
+                                      "Description": "Rule A Description",
+                                      "Condition": "value > 500",
+                                      "PositiveEffects": ["emit \\"Success\\""],
+                                      "NegativeEffects": ["revert()"],
+                                      "CallingFunction": "transfer"
+                                  }
+                                  ]
+                                  }`
     var result = await createPolicy(
       config,
       getRulesEnginePolicyContract(rulesEngineContract, client),
@@ -1674,47 +1673,47 @@ describe('Rules Engine Interactions', async () => {
   }, 150000)
   test('Cannot create duplicate calling functions', options, async () => {
     var policyJSON = `
-                                {
-                                "Policy": "Test Policy",
-                                "Description": "Test Policy Description",
-                                "PolicyType": "open",
-                                "CallingFunctions": [
                                   {
-                                    "Name": "transfer",
-                                    "FunctionSignature": "transfer(address to, uint256 value)",
-                                    "EncodedValues": "address to, uint256 value"
+                                  "Policy": "Test Policy",
+                                  "Description": "Test Policy Description",
+                                  "PolicyType": "open",
+                                  "CallingFunctions": [
+                                    {
+                                      "Name": "transfer",
+                                      "FunctionSignature": "transfer(address to, uint256 value)",
+                                      "EncodedValues": "address to, uint256 value"
+                                    }
+                                  ],
+                                  "ForeignCalls": [
+                                      {
+                                          "Name": "testSig",
+                                          "Function": "testSig(address)",
+                                          "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                                          "ReturnType": "uint256",
+                                          "ValuesToPass": "to",
+                                          "MappedTrackerKeyValues": "",
+                                          "CallingFunction": "transfer"
+                                      }
+                                  ],
+                                  "Trackers": [
+                                  {
+                                      "Name": "testTracker",
+                                      "Type": "string",
+                                      "InitialValue": "test"
                                   }
-                                ],
-                                "ForeignCalls": [
-                                    {
-                                        "Name": "testSig",
-                                        "Function": "testSig(address)",
-                                        "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                                        "ReturnType": "uint256",
-                                        "ValuesToPass": "to",
-                                        "MappedTrackerKeyValues": "",
-                                        "CallingFunction": "transfer"
-                                    }
-                                ],
-                                "Trackers": [
-                                {
-                                    "Name": "testTracker",
-                                    "Type": "string",
-                                    "InitialValue": "test"
-                                }
-                                ],
-                                "MappedTrackers": [],
-                                "Rules": [
-                                    {
-                                        "Name": "Rule A",
-                                        "Description": "Rule A Description",
-                                        "Condition": "TR:testTracker > 500",
-                                        "PositiveEffects": ["emit \\"Success\\""],
-                                        "NegativeEffects": ["revert()"],
-                                        "CallingFunction": "transfer"
-                                    }
-                                ]
-                                }`
+                                  ],
+                                  "MappedTrackers": [],
+                                  "Rules": [
+                                      {
+                                          "Name": "Rule A",
+                                          "Description": "Rule A Description",
+                                          "Condition": "TR:testTracker > 500",
+                                          "PositiveEffects": ["emit \\"Success\\""],
+                                          "NegativeEffects": ["revert()"],
+                                          "CallingFunction": "transfer"
+                                      }
+                                  ]
+                                  }`
 
     var result = await createPolicy(
       config,
@@ -1736,55 +1735,55 @@ describe('Rules Engine Interactions', async () => {
 
   test('Cannot create duplicate trackers', options, async () => {
     var policyJSON = `
-                      {
-                      "Policy": "Test Policy",
-                      "Description": "Test Policy Description",
-                      "PolicyType": "open",
-                      "CallingFunctions": [
                         {
-                          "Name": "transfer",
-                          "FunctionSignature": "transfer(address to, uint256 value)",
-                          "EncodedValues": "address to, uint256 value"
-                        }
-                      ],
-                      "ForeignCalls": [
-                      {
-                              "Name": "testSigTwo",
-                              "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                              "Function": "testSigTwo(uint256)",
-                              "ReturnType": "uint256",
-                              "ValuesToPass": "value",
-                              "MappedTrackerKeyValues": "",
-                              "CallingFunction": "transfer"
-                      },{
-                              "Name": "testSig",
-                              "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                              "Function": "testSig(uint256)",
-                              "ReturnType": "uint256",
-                              "ValuesToPass": "FC:testSigTwo",
-                              "MappedTrackerKeyValues": "",
-                              "CallingFunction": "transfer"
-                          }
-                      ],
-                      "Trackers": [
-                      {
-                              "Name": "testTracker",
-                              "Type": "uint256",
-                              "InitialValue": "4"
-                      }
-                      ],
-                      "MappedTrackers": [],
-                      "Rules": [
+                        "Policy": "Test Policy",
+                        "Description": "Test Policy Description",
+                        "PolicyType": "open",
+                        "CallingFunctions": [
                           {
-                              "Name": "Rule A",
-                              "Description": "Rule A Description",
-                              "Condition": "value > 500",
-                              "PositiveEffects": ["emit \\"Success\\""],
-                              "NegativeEffects": ["revert()"],
-                              "CallingFunction": "transfer"
+                            "Name": "transfer",
+                            "FunctionSignature": "transfer(address to, uint256 value)",
+                            "EncodedValues": "address to, uint256 value"
                           }
-                          ]
-                          }`
+                        ],
+                        "ForeignCalls": [
+                        {
+                                "Name": "testSigTwo",
+                                "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                                "Function": "testSigTwo(uint256)",
+                                "ReturnType": "uint256",
+                                "ValuesToPass": "value",
+                                "MappedTrackerKeyValues": "",
+                                "CallingFunction": "transfer"
+                        },{
+                                "Name": "testSig",
+                                "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                                "Function": "testSig(uint256)",
+                                "ReturnType": "uint256",
+                                "ValuesToPass": "FC:testSigTwo",
+                                "MappedTrackerKeyValues": "",
+                                "CallingFunction": "transfer"
+                            }
+                        ],
+                        "Trackers": [
+                        {
+                                "Name": "testTracker",
+                                "Type": "uint256",
+                                "InitialValue": "4"
+                        }
+                        ],
+                        "MappedTrackers": [],
+                        "Rules": [
+                            {
+                                "Name": "Rule A",
+                                "Description": "Rule A Description",
+                                "Condition": "value > 500",
+                                "PositiveEffects": ["emit \\"Success\\""],
+                                "NegativeEffects": ["revert()"],
+                                "CallingFunction": "transfer"
+                            }
+                            ]
+                            }`
 
     var result = await createPolicy(
       config,
@@ -1804,10 +1803,10 @@ describe('Rules Engine Interactions', async () => {
     expect(callingFunctions.length).toEqual(1)
 
     var trSyntax = `{
-                              "Name": "testTracker",
-                              "Type": "uint256",
-                              "InitialValue": "4"
-                          }`
+                                "Name": "testTracker",
+                                "Type": "uint256",
+                                "InitialValue": "4"
+                            }`
     var trId = await createTracker(
       config,
       getRulesEngineComponentContract(rulesEngineContract, client),
@@ -1821,47 +1820,47 @@ describe('Rules Engine Interactions', async () => {
 
   test('Cannot create duplicate foreign calls', options, async () => {
     var policyJSON = `
-                    {
-                    "Policy": "Test Policy",
-                    "Description": "Test Policy Description",
-                    "PolicyType": "open",
-                    "CallingFunctions": [
                       {
-                        "Name": "transfer",
-                        "FunctionSignature": "transfer(address to, uint256 value)",
-                        "EncodedValues": "address to, uint256 value"
+                      "Policy": "Test Policy",
+                      "Description": "Test Policy Description",
+                      "PolicyType": "open",
+                      "CallingFunctions": [
+                        {
+                          "Name": "transfer",
+                          "FunctionSignature": "transfer(address to, uint256 value)",
+                          "EncodedValues": "address to, uint256 value"
+                        }
+                      ],
+                      "ForeignCalls": [
+                          {
+                              "Name": "testSig",
+                              "Function": "testSig(address)",
+                              "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                              "ReturnType": "uint256",
+                              "ValuesToPass": "to",
+                              "MappedTrackerKeyValues": "",
+                              "CallingFunction": "transfer"
+                          }
+                      ],
+                      "Trackers": [
+                      {
+                          "Name": "testTracker",
+                          "Type": "string",
+                          "InitialValue": "test"
                       }
-                    ],
-                    "ForeignCalls": [
-                        {
-                            "Name": "testSig",
-                            "Function": "testSig(address)",
-                            "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                            "ReturnType": "uint256",
-                            "ValuesToPass": "to",
-                            "MappedTrackerKeyValues": "",
-                            "CallingFunction": "transfer"
-                        }
-                    ],
-                    "Trackers": [
-                    {
-                        "Name": "testTracker",
-                        "Type": "string",
-                        "InitialValue": "test"
-                    }
-                    ],
-                    "MappedTrackers": [],
-                    "Rules": [
-                        {
-                            "Name": "Rule A",
-                            "Description": "Rule A Description",
-                            "Condition": "TR:testTracker > 500",
-                            "PositiveEffects": ["emit \\"Success\\""],
-                            "NegativeEffects": ["revert()"],
-                            "CallingFunction": "transfer"
-                        }
-                    ]
-                    }`
+                      ],
+                      "MappedTrackers": [],
+                      "Rules": [
+                          {
+                              "Name": "Rule A",
+                              "Description": "Rule A Description",
+                              "Condition": "TR:testTracker > 500",
+                              "PositiveEffects": ["emit \\"Success\\""],
+                              "NegativeEffects": ["revert()"],
+                              "CallingFunction": "transfer"
+                          }
+                      ]
+                      }`
     var result = await createPolicy(
       config,
       getRulesEnginePolicyContract(rulesEngineContract, client),
@@ -1880,14 +1879,14 @@ describe('Rules Engine Interactions', async () => {
     expect(callingFunctions.length).toEqual(1)
 
     var trSyntax = `{
-                            "Name": "testSig",
-                            "Function": "testSig(address)",
-                            "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                            "ReturnType": "uint256",
-                            "ValuesToPass": "to",
-                            "MappedTrackerKeyValues": "",
-                            "CallingFunction": "transfer"
-                          }`
+                              "Name": "testSig",
+                              "Function": "testSig(address)",
+                              "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                              "ReturnType": "uint256",
+                              "ValuesToPass": "to",
+                              "MappedTrackerKeyValues": "",
+                              "CallingFunction": "transfer"
+                            }`
     var trId = await createForeignCall(
       config,
       getRulesEngineForeignCallContract(rulesEngineContract, client),
@@ -1902,47 +1901,47 @@ describe('Rules Engine Interactions', async () => {
   })
   test('Can update a policies admin', options, async () => {
     var policyJSON = `
-                            {
-                            "Policy": "Test Policy",
-                            "Description": "Test Policy Description",
-                            "PolicyType": "open",
-                            "CallingFunctions": [
-                                {
-                                  "Name": "transfer",
-                                  "FunctionSignature": "transfer(address to, uint256 value)",
-                                  "EncodedValues": "address to, uint256 value"
-                                }
-                            ],
-                            "ForeignCalls": [
-                                {
-                                    "Name": "Simple Foreign Call",
-                                    "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                                    "Function": "testSig(address)",
-                                    "ReturnType": "uint256",
-                                    "ValuesToPass": "to",
-                                    "MappedTrackerKeyValues": "",
-                                    "CallingFunction": "transfer"
-                                }
-                            ],
-                            "Trackers": [
-                            {
-                                "Name": "Simple String Tracker",
-                                "Type": "string",
-                                "InitialValue": "test"
-                            }
-                            ],
-                            "MappedTrackers": [],
-                            "Rules": [
-                                {
-                                    "Name": "Rule A",
-                                    "Description": "Rule A Description",
-                                    "Condition": "value > 500",
-                                    "PositiveEffects": ["emit \\"Success\\""],
-                                    "NegativeEffects": ["revert()"],
-                                    "CallingFunction": "transfer"
-                                }
-                                ]
-                                }`
+                              {
+                              "Policy": "Test Policy",
+                              "Description": "Test Policy Description",
+                              "PolicyType": "open",
+                              "CallingFunctions": [
+                                  {
+                                    "Name": "transfer",
+                                    "FunctionSignature": "transfer(address to, uint256 value)",
+                                    "EncodedValues": "address to, uint256 value"
+                                  }
+                              ],
+                              "ForeignCalls": [
+                                  {
+                                      "Name": "Simple Foreign Call",
+                                      "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                                      "Function": "testSig(address)",
+                                      "ReturnType": "uint256",
+                                      "ValuesToPass": "to",
+                                      "MappedTrackerKeyValues": "",
+                                      "CallingFunction": "transfer"
+                                  }
+                              ],
+                              "Trackers": [
+                              {
+                                  "Name": "Simple String Tracker",
+                                  "Type": "string",
+                                  "InitialValue": "test"
+                              }
+                              ],
+                              "MappedTrackers": [],
+                              "Rules": [
+                                  {
+                                      "Name": "Rule A",
+                                      "Description": "Rule A Description",
+                                      "Condition": "value > 500",
+                                      "PositiveEffects": ["emit \\"Success\\""],
+                                      "NegativeEffects": ["revert()"],
+                                      "CallingFunction": "transfer"
+                                  }
+                                  ]
+                                  }`
     var result = await createPolicy(
       config,
       getRulesEnginePolicyContract(rulesEngineContract, client),
@@ -1977,47 +1976,47 @@ describe('Rules Engine Interactions', async () => {
   })
   test('Can cement a policy', options, async () => {
     var policyJSON = `
-                          {
-                          "Policy": "Test Policy",
-                          "Description": "Test Policy Description",
-                          "PolicyType": "open",
-                          "CallingFunctions": [
                             {
-                              "Name": "transfer",
-                              "FunctionSignature": "transfer(address to, uint256 value)",
-                              "EncodedValues": "address to, uint256 value"
+                            "Policy": "Test Policy",
+                            "Description": "Test Policy Description",
+                            "PolicyType": "open",
+                            "CallingFunctions": [
+                              {
+                                "Name": "transfer",
+                                "FunctionSignature": "transfer(address to, uint256 value)",
+                                "EncodedValues": "address to, uint256 value"
+                              }
+                            ],
+                            "ForeignCalls": [
+                                {
+                                    "Name": "Simple Foreign Call",
+                                    "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                                    "Function": "testSig(address)",
+                                    "ReturnType": "uint256",
+                                    "ValuesToPass": "to",
+                                    "MappedTrackerKeyValues": "",
+                                    "CallingFunction": "transfer"
+                                }
+                            ],
+                            "Trackers": [
+                            {
+                                "Name": "Simple String Tracker",
+                                "Type": "string",
+                                "InitialValue": "test"
                             }
-                          ],
-                          "ForeignCalls": [
-                              {
-                                  "Name": "Simple Foreign Call",
-                                  "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                                  "Function": "testSig(address)",
-                                  "ReturnType": "uint256",
-                                  "ValuesToPass": "to",
-                                  "MappedTrackerKeyValues": "",
-                                  "CallingFunction": "transfer"
-                              }
-                          ],
-                          "Trackers": [
-                          {
-                              "Name": "Simple String Tracker",
-                              "Type": "string",
-                              "InitialValue": "test"
-                          }
-                          ],
-                          "MappedTrackers": [],
-                          "Rules": [
-                              {
-                                  "Name": "Rule A",
-                                  "Description": "Rule A Description",
-                                  "Condition": "value > 500",
-                                  "PositiveEffects": ["emit \\"Success\\""],
-                                  "NegativeEffects": ["revert()"],
-                                  "CallingFunction": "transfer"
-                              }
-                              ]
-                              }`
+                            ],
+                            "MappedTrackers": [],
+                            "Rules": [
+                                {
+                                    "Name": "Rule A",
+                                    "Description": "Rule A Description",
+                                    "Condition": "value > 500",
+                                    "PositiveEffects": ["emit \\"Success\\""],
+                                    "NegativeEffects": ["revert()"],
+                                    "CallingFunction": "transfer"
+                                }
+                                ]
+                                }`
     var result = await createPolicy(
       config,
       getRulesEnginePolicyContract(rulesEngineContract, client),
@@ -2051,47 +2050,47 @@ describe('Rules Engine Interactions', async () => {
   })
   test('Can manipulate closed subscriber list for a policy', options, async () => {
     var policyJSON = `
-                          {
-                          "Policy": "Test Policy",
-                          "Description": "Test Policy Description",
-                          "PolicyType": "open",
-                          "CallingFunctions": [
-                              {
-                                "Name": "transfer",
-                                "FunctionSignature": "transfer(address to, uint256 value)",
-                                "EncodedValues": "address to, uint256 value"
-                              }
-                          ],
-                          "ForeignCalls": [
-                              {
-                                  "Name": "Simple Foreign Call",
-                                  "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                                  "Function": "testSig(address)",
-                                  "ReturnType": "uint256",
-                                  "ValuesToPass": "to",
-                                  "MappedTrackerKeyValues": "",
-                                  "CallingFunction": "transfer"
-                              }
-                          ],
-                          "Trackers": [
-                          {
-                              "Name": "Simple String Tracker",
-                              "Type": "string",
-                              "InitialValue": "test"
-                          }
-                          ],
-                          "MappedTrackers": [],
-                          "Rules": [
-                              {
-                                  "Name": "Rule A",
-                                  "Description": "Rule A Description",
-                                  "Condition": "value > 500",
-                                  "PositiveEffects": ["emit \\"Success\\""],
-                                  "NegativeEffects": ["revert()"],
-                                  "CallingFunction": "transfer"
-                              }
-                              ]
-                              }`
+                            {
+                            "Policy": "Test Policy",
+                            "Description": "Test Policy Description",
+                            "PolicyType": "open",
+                            "CallingFunctions": [
+                                {
+                                  "Name": "transfer",
+                                  "FunctionSignature": "transfer(address to, uint256 value)",
+                                  "EncodedValues": "address to, uint256 value"
+                                }
+                            ],
+                            "ForeignCalls": [
+                                {
+                                    "Name": "Simple Foreign Call",
+                                    "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                                    "Function": "testSig(address)",
+                                    "ReturnType": "uint256",
+                                    "ValuesToPass": "to",
+                                    "MappedTrackerKeyValues": "",
+                                    "CallingFunction": "transfer"
+                                }
+                            ],
+                            "Trackers": [
+                            {
+                                "Name": "Simple String Tracker",
+                                "Type": "string",
+                                "InitialValue": "test"
+                            }
+                            ],
+                            "MappedTrackers": [],
+                            "Rules": [
+                                {
+                                    "Name": "Rule A",
+                                    "Description": "Rule A Description",
+                                    "Condition": "value > 500",
+                                    "PositiveEffects": ["emit \\"Success\\""],
+                                    "NegativeEffects": ["revert()"],
+                                    "CallingFunction": "transfer"
+                                }
+                                ]
+                                }`
     var result = await createPolicy(
       config,
       getRulesEnginePolicyContract(rulesEngineContract, client),
@@ -2139,63 +2138,63 @@ describe('Rules Engine Interactions', async () => {
 
   test('Can retrieve tracker array value types', options, async () => {
     var policyJSON = `
-                               {
-                               "Policy": "Test Policy",
-                               "Description": "Test Policy Description",
-                               "PolicyType": "open",
-                               "CallingFunctions": [
                                  {
-                                   "Name": "transfer",
-                                   "FunctionSignature": "transfer(address to, uint256 value)",
-                                   "EncodedValues": "address to, uint256 value"
-                                 }
-                               ],
-                               "ForeignCalls": [
-                                 {
-                                     "Name": "AnotherTestForeignCall",
-                                     "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                                     "Function": "AnotherTestForeignCall(address)",
-                                     "ReturnType": "uint256",
-                                     "ValuesToPass": "to",
-                                     "MappedTrackerKeyValues": "",
-                                     "CallingFunction": "transfer"
-                                 },
-                                 {
-                                     "Name": "ATestForeignCall",
-                                     "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                                     "Function": "ATestForeignCall(address, uint256)",
-                                     "ReturnType": "uint256",
-                                     "ValuesToPass": "FC:AnotherTestForeignCall, TR:trackerOne",
-                                     "MappedTrackerKeyValues": "",
-                                     "CallingFunction": "transfer"
-                                 }
-
-                               ],
-                               "Trackers": [
-                               {
-                                "Name": "trackerOne",
-                                "Type": "uint256[]",
-                                "InitialValue": ["123"]
-                                }],
-                               "MappedTrackers": [
+                                 "Policy": "Test Policy",
+                                 "Description": "Test Policy Description",
+                                 "PolicyType": "open",
+                                 "CallingFunctions": [
                                    {
-                                    "Name": "mappedTrackerOne",
-                                    "KeyType": "address",
-                                    "ValueType": "uint256[]",
-                                    "InitialKeys": ["0xb7f8bc63bbcad18155201308c8f3540b07f84f5e"],
-                                    "InitialValues": [["1"]]
-                                    }],
-                               "Rules": [
+                                     "Name": "transfer",
+                                     "FunctionSignature": "transfer(address to, uint256 value)",
+                                     "EncodedValues": "address to, uint256 value"
+                                   }
+                                 ],
+                                 "ForeignCalls": [
                                    {
-                                       "Name": "Rule A",
-                                       "Description": "Rule A Description",
-                                       "Condition": "FC:ATestForeignCall > 1000",
-                                       "PositiveEffects": ["emit \\"Success\\"", "FC:AnotherTestForeignCall", "TRU:mappedTrackerOne(to) += 1"],
-                                       "NegativeEffects": ["revert(\\\"Negative\\\")", "TRU:trackerOne += 12"],
+                                       "Name": "AnotherTestForeignCall",
+                                       "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                                       "Function": "AnotherTestForeignCall(address)",
+                                       "ReturnType": "uint256",
+                                       "ValuesToPass": "to",
+                                       "MappedTrackerKeyValues": "",
+                                       "CallingFunction": "transfer"
+                                   },
+                                   {
+                                       "Name": "ATestForeignCall",
+                                       "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                                       "Function": "ATestForeignCall(address, uint256)",
+                                       "ReturnType": "uint256",
+                                       "ValuesToPass": "FC:AnotherTestForeignCall, TR:trackerOne",
+                                       "MappedTrackerKeyValues": "",
                                        "CallingFunction": "transfer"
                                    }
-                               ]
-                               }`
+
+                                 ],
+                                 "Trackers": [
+                                 {
+                                  "Name": "trackerOne",
+                                  "Type": "uint256[]",
+                                  "InitialValue": ["123"]
+                                  }],
+                                 "MappedTrackers": [
+                                     {
+                                      "Name": "mappedTrackerOne",
+                                      "KeyType": "address",
+                                      "ValueType": "uint256[]",
+                                      "InitialKeys": ["0xb7f8bc63bbcad18155201308c8f3540b07f84f5e"],
+                                      "InitialValues": [["1"]]
+                                      }],
+                                 "Rules": [
+                                     {
+                                         "Name": "Rule A",
+                                         "Description": "Rule A Description",
+                                         "Condition": "FC:ATestForeignCall > 1000",
+                                         "PositiveEffects": ["emit \\"Success\\"", "FC:AnotherTestForeignCall", "TRU:mappedTrackerOne(to) += 1"],
+                                         "NegativeEffects": ["revert(\\\"Negative\\\")", "TRU:trackerOne += 12"],
+                                         "CallingFunction": "transfer"
+                                     }
+                                 ]
+                                 }`
     validatePolicyJSON(policyJSON)
     var result = await createPolicy(
       config,
@@ -2232,49 +2231,49 @@ describe('Rules Engine Interactions', async () => {
 
   test('Can create rules with custom ordering', async () => {
     var policyJSON = `{
-                      "Policy": "Test Rule Ordering",
-                      "Description": "Test that rules are created in specified order",
-                      "PolicyType": "open",
-                      "CallingFunctions": [
-                        {
-                          "Name": "transfer",
-                          "FunctionSignature": "transfer(address to, uint256 value)",
-                          "EncodedValues": "address to, uint256 value"
-                        }
-                      ],
-                      "ForeignCalls": [],
-                      "Trackers": [],
-                      "MappedTrackers": [],
-                      "Rules": [
-                        {
-                          "Name": "Rule C - Should be Third",
-                          "Description": "Third rule by order",
-                          "Condition": "value > 300",
-                          "PositiveEffects": ["emit \\"RuleC\\""],
-                          "NegativeEffects": ["revert()"],
-                          "CallingFunction": "transfer",
-                          "Order": 3
-                        },
-                        {
-                          "Name": "Rule A - Should be First",
-                          "Description": "First rule by order",
-                          "Condition": "value > 100",
-                          "PositiveEffects": ["emit \\"RuleA\\""],
-                          "NegativeEffects": ["revert()"],
-                          "CallingFunction": "transfer",
-                          "Order": 1
-                        },
-                        {
-                          "Name": "Rule B - Should be Second",
-                          "Description": "Second rule by order",
-                          "Condition": "value > 200",
-                          "PositiveEffects": ["emit \\"RuleB\\""],
-                          "NegativeEffects": ["revert()"],
-                          "CallingFunction": "transfer",
-                          "Order": 2
-                        }
-                      ]
-                    }`
+                        "Policy": "Test Rule Ordering",
+                        "Description": "Test that rules are created in specified order",
+                        "PolicyType": "open",
+                        "CallingFunctions": [
+                          {
+                            "Name": "transfer",
+                            "FunctionSignature": "transfer(address to, uint256 value)",
+                            "EncodedValues": "address to, uint256 value"
+                          }
+                        ],
+                        "ForeignCalls": [],
+                        "Trackers": [],
+                        "MappedTrackers": [],
+                        "Rules": [
+                          {
+                            "Name": "Rule C - Should be Third",
+                            "Description": "Third rule by order",
+                            "Condition": "value > 300",
+                            "PositiveEffects": ["emit \\"RuleC\\""],
+                            "NegativeEffects": ["revert()"],
+                            "CallingFunction": "transfer",
+                            "Order": 3
+                          },
+                          {
+                            "Name": "Rule A - Should be First",
+                            "Description": "First rule by order",
+                            "Condition": "value > 100",
+                            "PositiveEffects": ["emit \\"RuleA\\""],
+                            "NegativeEffects": ["revert()"],
+                            "CallingFunction": "transfer",
+                            "Order": 1
+                          },
+                          {
+                            "Name": "Rule B - Should be Second",
+                            "Description": "Second rule by order",
+                            "Condition": "value > 200",
+                            "PositiveEffects": ["emit \\"RuleB\\""],
+                            "NegativeEffects": ["revert()"],
+                            "CallingFunction": "transfer",
+                            "Order": 2
+                          }
+                        ]
+                      }`
 
     var result = await createPolicy(
       config,
@@ -2317,55 +2316,55 @@ describe('Rules Engine Interactions', async () => {
 
   test('Can create policy with foreign calls having empty parameters and void return type', options, async () => {
     var policyJSON = `{
-          "Policy": "Empty Params and Void Return Test",
-          "Description": "Test policy with foreign calls: one with no params, one with uint256 param and void return",
-          "PolicyType": "open",
-          "CallingFunctions": [
-            {
-              "Name": "transfer",
-              "FunctionSignature": "transfer(address to, uint256 value)",
-              "EncodedValues": "address to, uint256 value"
-            }
-          ],
-          "ForeignCalls": [
-            {
-              "Name": "EmptyParamCall",
-              "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-              "Function": "checkStatus()",
-              "ReturnType": "bool",
-              "ValuesToPass": "",
-              "MappedTrackerKeyValues": "",
-              "CallingFunction": "transfer"
-            },
-            {
-              "Name": "VoidReturnCall",
-              "Address": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
-              "Function": "updateCounter(uint256)",
-              "ReturnType": "void",
-              "ValuesToPass": "value",
-              "MappedTrackerKeyValues": "",
-              "CallingFunction": "transfer"
-            }
-          ],
-          "Trackers": [
-            {
-              "Name": "statusTracker",
-              "Type": "bool",
-              "InitialValue": "true"
-            }
-          ],
-          "MappedTrackers": [],
-          "Rules": [
-            {
-              "Name": "Empty Param and Void Return Rule",
-              "Description": "Test rule using both foreign calls",
-              "Condition": "FC:EmptyParamCall == true",
-              "PositiveEffects": ["emit \\"Status OK\\""],
-              "NegativeEffects": ["revert()"],
-              "CallingFunction": "transfer"
-            }
-          ]
-        }`
+            "Policy": "Empty Params and Void Return Test",
+            "Description": "Test policy with foreign calls: one with no params, one with uint256 param and void return",
+            "PolicyType": "open",
+            "CallingFunctions": [
+              {
+                "Name": "transfer",
+                "FunctionSignature": "transfer(address to, uint256 value)",
+                "EncodedValues": "address to, uint256 value"
+              }
+            ],
+            "ForeignCalls": [
+              {
+                "Name": "EmptyParamCall",
+                "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                "Function": "checkStatus()",
+                "ReturnType": "bool",
+                "ValuesToPass": "",
+                "MappedTrackerKeyValues": "",
+                "CallingFunction": "transfer"
+              },
+              {
+                "Name": "VoidReturnCall",
+                "Address": "0xb7f8bc63bbcad18155201308c8f3540b07f84f5e",
+                "Function": "updateCounter(uint256)",
+                "ReturnType": "void",
+                "ValuesToPass": "value",
+                "MappedTrackerKeyValues": "",
+                "CallingFunction": "transfer"
+              }
+            ],
+            "Trackers": [
+              {
+                "Name": "statusTracker",
+                "Type": "bool",
+                "InitialValue": "true"
+              }
+            ],
+            "MappedTrackers": [],
+            "Rules": [
+              {
+                "Name": "Empty Param and Void Return Rule",
+                "Description": "Test rule using both foreign calls",
+                "Condition": "FC:EmptyParamCall == true",
+                "PositiveEffects": ["emit \\"Status OK\\""],
+                "NegativeEffects": ["revert()"],
+                "CallingFunction": "transfer"
+              }
+            ]
+          }`
 
     var result = await createPolicy(
       config,
@@ -2432,32 +2431,32 @@ describe('Rules Engine Interactions', async () => {
 
   test('Receive Error for incorrectly formated rule.', async () => {
     let failingPolicyJSON = `
-              {
-              "Policy": "Test Policy",
-              "Description": "This is a test policy",
-              "PolicyType": "open",
-              "CallingFunctions": [{
-                "Name": "addValue",
-                "FunctionSignature": "addValue(uint256 value)",
-                "EncodedValues": "uint256 value"
-              }
-              ],
-              "ForeignCalls": [
-              ],
-              "Trackers": [
+                {
+                "Policy": "Test Policy",
+                "Description": "This is a test policy",
+                "PolicyType": "open",
+                "CallingFunctions": [{
+                  "Name": "addValue",
+                  "FunctionSignature": "addValue(uint256 value)",
+                  "EncodedValues": "uint256 value"
+                }
+                ],
+                "ForeignCalls": [
+                ],
+                "Trackers": [
 
-              ],
-              "MappedTrackers": [],
-              "Rules": [{
-                "Name": "rule A",
-                "Description": "rule A Description",
-                "Condition": "value == test",
-                "PositiveEffects": ["revert"],
-                "NegativeEffects": [],
-                "CallingFunction": "addValue"
-              }
-                  ]
-                  }`
+                ],
+                "MappedTrackers": [],
+                "Rules": [{
+                  "Name": "rule A",
+                  "Description": "rule A Description",
+                  "Condition": "value == test",
+                  "PositiveEffects": ["revert"],
+                  "NegativeEffects": [],
+                  "CallingFunction": "addValue"
+                }
+                    ]
+                    }`
     await expect(
       createPolicy(
         config,
@@ -2473,33 +2472,33 @@ describe('Rules Engine Interactions', async () => {
 
   test('Receive Error for incorrectly formated Calling Function.', async () => {
     let failingPolicyJSON = `
-              {
-              "Policy": "Test Policy",
-              "Description": "This is a test policy",
-              "PolicyType": "open",
-              "CallingFunctions": [{
-                "Name": "addValue",
-                "FunctionSignature": "addValue uin",
-                "EncodedValues": "uint256 value"
-              }
-              ],
-              "ForeignCalls": [
+                {
+                "Policy": "Test Policy",
+                "Description": "This is a test policy",
+                "PolicyType": "open",
+                "CallingFunctions": [{
+                  "Name": "addValue",
+                  "FunctionSignature": "addValue uin",
+                  "EncodedValues": "uint256 value"
+                }
+                ],
+                "ForeignCalls": [
 
-              ],
-              "Trackers": [
+                ],
+                "Trackers": [
 
-              ],
-              "MappedTrackers": [],
-              "Rules": [{
-                "Name": "rule A",
-                "Description": "rule A Description",
-                "Condition": "value == 1234",
-                "PositiveEffects": ["revert"],
-                "NegativeEffects": [],
-                "CallingFunction": "addValue"
-              }
-                  ]
-                  }`
+                ],
+                "MappedTrackers": [],
+                "Rules": [{
+                  "Name": "rule A",
+                  "Description": "rule A Description",
+                  "Condition": "value == 1234",
+                  "PositiveEffects": ["revert"],
+                  "NegativeEffects": [],
+                  "CallingFunction": "addValue"
+                }
+                    ]
+                    }`
     await expect(
       createPolicy(
         config,
@@ -2515,41 +2514,41 @@ describe('Rules Engine Interactions', async () => {
 
   test('Receive Error for incorrectly formated Foreign Call.', async () => {
     let failingPolicyJSON = `
-              {
-              "Policy": "Test Policy",
-              "Description": "This is a test policy",
-              "PolicyType": "open",
-              "CallingFunctions": [{
-                "Name": "addValue",
-                "FunctionSignature": "addValue(uint256 value)",
-                "EncodedValues": "uint256 value"
-              }
-              ],
-              "ForeignCalls": [
                 {
-                    "Name": "AnotherTestForeignCall",
-                    "Address": "1234",
-                    "Function": "AnotherTestForeignCall(uint256)",
-                    "ReturnType": "uint256",
-                    "ValuesToPass": "value",
-                    "MappedTrackerKeyValues": "",
-                    "CallingFunction": "addValue"
+                "Policy": "Test Policy",
+                "Description": "This is a test policy",
+                "PolicyType": "open",
+                "CallingFunctions": [{
+                  "Name": "addValue",
+                  "FunctionSignature": "addValue(uint256 value)",
+                  "EncodedValues": "uint256 value"
                 }
-              ],
-              "Trackers": [
+                ],
+                "ForeignCalls": [
+                  {
+                      "Name": "AnotherTestForeignCall",
+                      "Address": "1234",
+                      "Function": "AnotherTestForeignCall(uint256)",
+                      "ReturnType": "uint256",
+                      "ValuesToPass": "value",
+                      "MappedTrackerKeyValues": "",
+                      "CallingFunction": "addValue"
+                  }
+                ],
+                "Trackers": [
 
-              ],
-              "MappedTrackers": [],
-              "Rules": [{
-                "Name": "rule A",
-                "Description": "rule A Description",
-                "Condition": "value == 1234",
-                "PositiveEffects": ["revert"],
-                "NegativeEffects": [],
-                "CallingFunction": "addValue"
-              }
-                  ]
-                  }`
+                ],
+                "MappedTrackers": [],
+                "Rules": [{
+                  "Name": "rule A",
+                  "Description": "rule A Description",
+                  "Condition": "value == 1234",
+                  "PositiveEffects": ["revert"],
+                  "NegativeEffects": [],
+                  "CallingFunction": "addValue"
+                }
+                    ]
+                    }`
     await expect(
       createPolicy(
         config,
@@ -2565,45 +2564,45 @@ describe('Rules Engine Interactions', async () => {
 
   test('Receive Error for incorrectly formated Tracker.', async () => {
     let failingPolicyJSON = `
-              {
-              "Policy": "Test Policy",
-              "Description": "This is a test policy",
-              "PolicyType": "open",
-              "CallingFunctions": [{
-                "Name": "addValue",
-                "FunctionSignature": "addValue(uint256 value)",
-                "EncodedValues": "uint256 value"
-              }
-              ],
-              "ForeignCalls": [
                 {
-                    "Name": "AnotherTestForeignCall",
-                    "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                    "Function": "AnotherTestForeignCall(uint256)",
-                    "ReturnType": "uint256",
-                    "ValuesToPass": "value",
-                    "MappedTrackerKeyValues": "",
-                    "CallingFunction": "addValue"
+                "Policy": "Test Policy",
+                "Description": "This is a test policy",
+                "PolicyType": "open",
+                "CallingFunctions": [{
+                  "Name": "addValue",
+                  "FunctionSignature": "addValue(uint256 value)",
+                  "EncodedValues": "uint256 value"
                 }
-              ],
-              "Trackers": [
-                {
-                  "Name": "Simple String Tracker",
-                  "Type": "uin",
-                  "InitialValue": "test"
-              }
-              ],
-              "MappedTrackers": [],
-              "Rules": [{
-                "Name": "rule A",
-                "Description": "rule A Description",
-                "Condition": "value == 1234",
-                "PositiveEffects": ["revert"],
-                "NegativeEffects": [],
-                "CallingFunction": "addValue"
-              }
-                  ]
-                  }`
+                ],
+                "ForeignCalls": [
+                  {
+                      "Name": "AnotherTestForeignCall",
+                      "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                      "Function": "AnotherTestForeignCall(uint256)",
+                      "ReturnType": "uint256",
+                      "ValuesToPass": "value",
+                      "MappedTrackerKeyValues": "",
+                      "CallingFunction": "addValue"
+                  }
+                ],
+                "Trackers": [
+                  {
+                    "Name": "Simple String Tracker",
+                    "Type": "uin",
+                    "InitialValue": "test"
+                }
+                ],
+                "MappedTrackers": [],
+                "Rules": [{
+                  "Name": "rule A",
+                  "Description": "rule A Description",
+                  "Condition": "value == 1234",
+                  "PositiveEffects": ["revert"],
+                  "NegativeEffects": [],
+                  "CallingFunction": "addValue"
+                }
+                    ]
+                    }`
     await expect(
       createPolicy(
         config,
@@ -2618,52 +2617,52 @@ describe('Rules Engine Interactions', async () => {
   }, 1000000)
   test('Receive Error for incorrectly formated Mapped Tracker.', async () => {
     let failingPolicyJSON = `
-              {
-              "Policy": "Test Policy",
-              "Description": "This is a test policy",
-              "PolicyType": "open",
-              "CallingFunctions": [{
-                "Name": "addValue",
-                "FunctionSignature": "addValue(uint256 value)",
-                "EncodedValues": "uint256 value"
-              }
-              ],
-              "ForeignCalls": [
                 {
-                    "Name": "AnotherTestForeignCall",
-                    "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                    "Function": "AnotherTestForeignCall(uint256)",
-                    "ReturnType": "uint256",
-                    "ValuesToPass": "value",
-                    "MappedTrackerKeyValues": "",
-                    "CallingFunction": "addValue"
+                "Policy": "Test Policy",
+                "Description": "This is a test policy",
+                "PolicyType": "open",
+                "CallingFunctions": [{
+                  "Name": "addValue",
+                  "FunctionSignature": "addValue(uint256 value)",
+                  "EncodedValues": "uint256 value"
                 }
-              ],
-              "Trackers": [
-                {
-                  "Name": "Simple String Tracker",
-                  "Type": "string",
-                  "InitialValue": "test"
-              }
-              ],
-              "MappedTrackers": [
-                {
-                "Name": "mappedTrackerOne",
-                "KeyType": "address",
-                "ValueType": "uin[]",
-                "InitialKeys": ["0xb7f8bc63bbcad18155201308c8f3540b07f84f5e"],
-                "InitialValues": [["1"]]
-                }],
-              "Rules": [{
-                "Name": "rule A",
-                "Description": "rule A Description",
-                "Condition": "value == 1234",
-                "PositiveEffects": ["revert"],
-                "NegativeEffects": [],
-                "CallingFunction": "addValue"
-              }
-                  ]
-                  }`
+                ],
+                "ForeignCalls": [
+                  {
+                      "Name": "AnotherTestForeignCall",
+                      "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                      "Function": "AnotherTestForeignCall(uint256)",
+                      "ReturnType": "uint256",
+                      "ValuesToPass": "value",
+                      "MappedTrackerKeyValues": "",
+                      "CallingFunction": "addValue"
+                  }
+                ],
+                "Trackers": [
+                  {
+                    "Name": "Simple String Tracker",
+                    "Type": "string",
+                    "InitialValue": "test"
+                }
+                ],
+                "MappedTrackers": [
+                  {
+                  "Name": "mappedTrackerOne",
+                  "KeyType": "address",
+                  "ValueType": "uin[]",
+                  "InitialKeys": ["0xb7f8bc63bbcad18155201308c8f3540b07f84f5e"],
+                  "InitialValues": [["1"]]
+                  }],
+                "Rules": [{
+                  "Name": "rule A",
+                  "Description": "rule A Description",
+                  "Condition": "value == 1234",
+                  "PositiveEffects": ["revert"],
+                  "NegativeEffects": [],
+                  "CallingFunction": "addValue"
+                }
+                    ]
+                    }`
     await expect(
       createPolicy(
         config,
@@ -2680,21 +2679,21 @@ describe('Rules Engine Interactions', async () => {
   test('Functions return transaction hashes', async () => {
     // Test createPolicy returns transaction hash
     var policyJSON = `{
-        "Policy": "Transaction Hash Test Policy",
-        "Description": "Test policy to verify transaction hash is returned",
-        "PolicyType": "open",
-        "CallingFunctions": [
-          {
-            "Name": "transfer",
-            "FunctionSignature": "transfer(address to, uint256 value)",
-            "EncodedValues": "address to, uint256 value"
-          }
-        ],
-        "ForeignCalls": [],
-        "Trackers": [],
-        "MappedTrackers": [],
-        "Rules": []
-      }`
+          "Policy": "Transaction Hash Test Policy",
+          "Description": "Test policy to verify transaction hash is returned",
+          "PolicyType": "open",
+          "CallingFunctions": [
+            {
+              "Name": "transfer",
+              "FunctionSignature": "transfer(address to, uint256 value)",
+              "EncodedValues": "address to, uint256 value"
+            }
+          ],
+          "ForeignCalls": [],
+          "Trackers": [],
+          "MappedTrackers": [],
+          "Rules": []
+        }`
 
     var createResult = await createPolicy(
       config,
@@ -2750,51 +2749,51 @@ describe('Rules Engine Interactions', async () => {
   test('CreatePolicy returns comprehensive transaction hashes for all components', async () => {
     // Test createPolicy with all component types to verify individual transaction hash collection
     var comprehensivePolicyJSON = `{
-        "Policy": "Comprehensive Transaction Hash Test Policy",
-        "Description": "Test policy to verify individual transaction hashes are captured for all components",
-        "PolicyType": "open",
-        "CallingFunctions": [
-          {
-            "Name": "transfer",
-            "FunctionSignature": "transfer(address to, uint256 value)",
-            "EncodedValues": "address to, uint256 value"
-          },
-          {
-            "Name": "approve",
-            "FunctionSignature": "approve(address spender, uint256 amount)",
-            "EncodedValues": "address spender, uint256 amount"
-          }
-        ],
-        "ForeignCalls": [
-          {
-            "Name": "TestForeignCall",
-            "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-            "Function": "testFunction(uint256)",
-            "ReturnType": "uint256",
-            "ValuesToPass": "value",
-            "MappedTrackerKeyValues": "",
-            "CallingFunction": "transfer"
-          }
-        ],
-        "Trackers": [
-          {
-            "Name": "TestTracker",
-            "Type": "uint256",
-            "InitialValue": "0"
-          }
-        ],
-        "MappedTrackers": [],
-        "Rules": [
-          {
-            "Name": "Test Rule",
-            "Description": "A test rule",
-            "Condition": "FC:TestForeignCall > 100",
-            "PositiveEffects": ["emit \\"Rule triggered\\""],
-            "NegativeEffects": ["revert()"],
-            "CallingFunction": "transfer"
-          }
-        ]
-      }`
+          "Policy": "Comprehensive Transaction Hash Test Policy",
+          "Description": "Test policy to verify individual transaction hashes are captured for all components",
+          "PolicyType": "open",
+          "CallingFunctions": [
+            {
+              "Name": "transfer",
+              "FunctionSignature": "transfer(address to, uint256 value)",
+              "EncodedValues": "address to, uint256 value"
+            },
+            {
+              "Name": "approve",
+              "FunctionSignature": "approve(address spender, uint256 amount)",
+              "EncodedValues": "address spender, uint256 amount"
+            }
+          ],
+          "ForeignCalls": [
+            {
+              "Name": "TestForeignCall",
+              "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+              "Function": "testFunction(uint256)",
+              "ReturnType": "uint256",
+              "ValuesToPass": "value",
+              "MappedTrackerKeyValues": "",
+              "CallingFunction": "transfer"
+            }
+          ],
+          "Trackers": [
+            {
+              "Name": "TestTracker",
+              "Type": "uint256",
+              "InitialValue": "0"
+            }
+          ],
+          "MappedTrackers": [],
+          "Rules": [
+            {
+              "Name": "Test Rule",
+              "Description": "A test rule",
+              "Condition": "FC:TestForeignCall > 100",
+              "PositiveEffects": ["emit \\"Rule triggered\\""],
+              "NegativeEffects": ["revert()"],
+              "CallingFunction": "transfer"
+            }
+          ]
+        }`
 
     var createResult = await createPolicy(
       config,
@@ -2879,37 +2878,37 @@ describe('Rules Engine Interactions', async () => {
 
   test('Can create and use bytes tracker in policy rules', options, async () => {
     const bytesTrackerPolicyJSON = `{
-      "Policy": "Bytes Tracker Test Policy",
-      "Description": "Test policy with bytes tracker functionality",
-      "PolicyType": "open",
-      "CallingFunctions": [
-        {
-          "Name": "addData",
-          "Function": "addData(bytes data)",
-          "FunctionSignature": "addData(bytes)",
-          "EncodedValues": "bytes data"
-        }
-      ],
-      "ForeignCalls": [],
-      "Trackers": [
-        {
-          "Name": "dataTracker",
-          "Type": "bytes",
-          "InitialValue": "0xdeadbeef"
-        }
-      ],
-      "MappedTrackers": [],
-      "Rules": [
-        {
-          "Name": "Data Rule",
-          "Description": "Rule that uses bytes tracker in condition",
-          "Condition": "TR:dataTracker == \\"0xdeadbeef\\"",
-          "PositiveEffects": ["TR:dataTracker = \\"0xdeadbeefdeadbeef\\""],
-          "NegativeEffects": ["revert(\\"Data comparison failed\\")"],
-          "CallingFunction": "addData"
-        }
-      ]
-    }`
+        "Policy": "Bytes Tracker Test Policy",
+        "Description": "Test policy with bytes tracker functionality",
+        "PolicyType": "open",
+        "CallingFunctions": [
+          {
+            "Name": "addData",
+            "Function": "addData(bytes data)",
+            "FunctionSignature": "addData(bytes)",
+            "EncodedValues": "bytes data"
+          }
+        ],
+        "ForeignCalls": [],
+        "Trackers": [
+          {
+            "Name": "dataTracker",
+            "Type": "bytes",
+            "InitialValue": "0xdeadbeef"
+          }
+        ],
+        "MappedTrackers": [],
+        "Rules": [
+          {
+            "Name": "Data Rule",
+            "Description": "Rule that uses bytes tracker in condition",
+            "Condition": "TR:dataTracker == \\"0xdeadbeef\\"",
+            "PositiveEffects": ["TR:dataTracker = \\"0xdeadbeefdeadbeef\\""],
+            "NegativeEffects": ["revert(\\"Data comparison failed\\")"],
+            "CallingFunction": "addData"
+          }
+        ]
+      }`
 
     console.log('Creating policy with bytes tracker and rule...')
 
@@ -2978,10 +2977,10 @@ describe('Rules Engine Interactions', async () => {
 
     // Test creating an additional bytes tracker with different data
     const additionalBytesTracker = `{
-      "Name": "anotherDataTracker",
-      "Type": "bytes",
-      "InitialValue": "different data"
-    }`
+        "Name": "anotherDataTracker",
+        "Type": "bytes",
+        "InitialValue": "different data"
+      }`
 
     console.log('Creating additional bytes tracker...')
     const additionalTrackerId = await createTracker(
@@ -3021,10 +3020,10 @@ describe('Rules Engine Interactions', async () => {
 
     // Test updating a bytes tracker
     const updatedBytesTracker = `{
-      "Name": "dataTracker",
-      "Type": "bytes",
-      "InitialValue": "updated test data"
-    }`
+        "Name": "dataTracker",
+        "Type": "bytes",
+        "InitialValue": "updated test data"
+      }`
 
     console.log('Updating bytes tracker...')
     const updateResult = await updateTracker(
@@ -3057,37 +3056,37 @@ describe('Rules Engine Interactions', async () => {
 
   test('Can create and use string tracker in policy rules', options, async () => {
     const stringTrackerPolicyJSON = `{
-      "Policy": "String Tracker Test Policy",
-      "Description": "Test policy with string tracker functionality",
-      "PolicyType": "open",
-      "CallingFunctions": [
-        {
-          "Name": "setMessage",
-          "Function": "setMessage(string message)",
-          "FunctionSignature": "setMessage(string)",
-          "EncodedValues": "string message"
-        }
-      ],
-      "ForeignCalls": [],
-      "Trackers": [
-        {
-          "Name": "messageTracker",
-          "Type": "string",
-          "InitialValue": "hello world"
-        }
-      ],
-      "MappedTrackers": [],
-      "Rules": [
-        {
-          "Name": "Message Rule",
-          "Description": "Rule that uses string tracker in condition",
-          "Condition": "TR:messageTracker != TR:messageTracker",
-          "PositiveEffects": ["emit \\"String comparison works\\""],
-          "NegativeEffects": ["revert(\\"String comparison failed\\")"],
-          "CallingFunction": "setMessage"
-        }
-      ]
-    }`
+        "Policy": "String Tracker Test Policy",
+        "Description": "Test policy with string tracker functionality",
+        "PolicyType": "open",
+        "CallingFunctions": [
+          {
+            "Name": "setMessage",
+            "Function": "setMessage(string message)",
+            "FunctionSignature": "setMessage(string)",
+            "EncodedValues": "string message"
+          }
+        ],
+        "ForeignCalls": [],
+        "Trackers": [
+          {
+            "Name": "messageTracker",
+            "Type": "string",
+            "InitialValue": "hello world"
+          }
+        ],
+        "MappedTrackers": [],
+        "Rules": [
+          {
+            "Name": "Message Rule",
+            "Description": "Rule that uses string tracker in condition",
+            "Condition": "TR:messageTracker != TR:messageTracker",
+            "PositiveEffects": ["emit \\"String comparison works\\""],
+            "NegativeEffects": ["revert(\\"String comparison failed\\")"],
+            "CallingFunction": "setMessage"
+          }
+        ]
+      }`
 
     console.log('Creating policy with string tracker and rule...')
 
@@ -3156,10 +3155,10 @@ describe('Rules Engine Interactions', async () => {
 
     // Test creating an additional string tracker with different data
     const additionalStringTracker = `{
-      "Name": "anotherMessageTracker",
-      "Type": "string",
-      "InitialValue": "different message"
-    }`
+        "Name": "anotherMessageTracker",
+        "Type": "string",
+        "InitialValue": "different message"
+      }`
 
     console.log('Creating additional string tracker...')
     const additionalTrackerId = await createTracker(
@@ -3199,10 +3198,10 @@ describe('Rules Engine Interactions', async () => {
 
     // Test updating a string tracker
     const updatedStringTracker = `{
-      "Name": "messageTracker",
-      "Type": "string",
-      "InitialValue": "updated hello world"
-    }`
+        "Name": "messageTracker",
+        "Type": "string",
+        "InitialValue": "updated hello world"
+      }`
 
     console.log('Updating string tracker...')
     const updateResult = await updateTracker(

@@ -78,6 +78,12 @@ export function processSyntax(
   syntax: string
 ): [string, RuleComponent[]] {
   let components: RuleComponent[] = [...parseFunctionArguments(encodedValues, syntax)]
+  var currentIndex = 0
+  for (let arg of components) {
+    if (arg.tIndex > currentIndex) {
+      currentIndex = arg.tIndex
+    }
+  }
   let [updatedSyntax, effectCalls] = parseForeignCalls(
     syntax,
     components,
@@ -88,8 +94,7 @@ export function processSyntax(
   components = [...components, ...effectCalls]
 
   const [finalSyntax, effectTrackers] = parseTrackers(updatedSyntax, components, trackerNameToID)
-  const gvEComponents = parseGlobalVariables(finalSyntax)
-
+  const gvEComponents = parseGlobalVariables(finalSyntax, currentIndex)
   return [finalSyntax, [...components, ...effectTrackers, ...gvEComponents]]
 }
 
@@ -159,7 +164,6 @@ export function parseRuleSyntax(
   )
 
   const placeHolders = buildPlaceholderList(ruleComponents)
-
   const processedEffect = getProcessedEffects(
     encodedValues,
     foreignCallNameToID,
