@@ -197,12 +197,52 @@ function convertASTToInstructionSet(
                 break
               }
             } else {
-              if (place.typeSpecificIndex == parameter.tIndex && place.flags != 0x01 && place.flags != 0x02) {
+              if (place.typeSpecificIndex == parameter.tIndex && place.flags == 0x0 && parameter.rawType != 'Global') {
                 acc.instructionSet.push('PLH')
                 acc.instructionSet.push(plhIter)
                 previousIndex = acc.iterator.value
                 copyFound = true
                 break
+              } else if (place.typeSpecificIndex == parameter.tIndex && place.flags == 0x04) {
+                if (parameter.name == 'GV:MSG_SENDER') {
+                  acc.instructionSet.push('PLH')
+                  acc.instructionSet.push(plhIter)
+                  previousIndex = acc.iterator.value
+                  copyFound = true
+                  break
+                }
+              } else if (place.typeSpecificIndex == parameter.tIndex && place.flags == 0x08) {
+                if (parameter.name == 'GV:BLOCK_TIMESTAMP') {
+                  acc.instructionSet.push('PLH')
+                  acc.instructionSet.push(plhIter)
+                  previousIndex = acc.iterator.value
+                  copyFound = true
+                  break
+                }
+              } else if (place.typeSpecificIndex == parameter.tIndex && place.flags == 0x0c) {
+                if (parameter.name == 'GV:MSG_DATA') {
+                  acc.instructionSet.push('PLH')
+                  acc.instructionSet.push(plhIter)
+                  previousIndex = acc.iterator.value
+                  copyFound = true
+                  break
+                }
+              } else if (place.typeSpecificIndex == parameter.tIndex && place.flags == 0x10) {
+                if (parameter.name == 'GV:BLOCK_NUMBER') {
+                  acc.instructionSet.push('PLH')
+                  acc.instructionSet.push(plhIter)
+                  previousIndex = acc.iterator.value
+                  copyFound = true
+                  break
+                }
+              } else if (place.typeSpecificIndex == parameter.tIndex && place.flags == 0x14) {
+                if (parameter.name == 'GV:TX_ORIGIN') {
+                  acc.instructionSet.push('PLH')
+                  acc.instructionSet.push(plhIter)
+                  previousIndex = acc.iterator.value
+                  copyFound = true
+                  break
+                }
               }
             }
             plhIter += 1

@@ -163,7 +163,7 @@ export function parseTrackers(
   return [trCondition, [...trackers, ...updatedTrackers]]
 }
 
-export function parseGlobalVariables(condition: string): RuleComponent[] {
+export function parseGlobalVariables(condition: string, currentIndex: number): RuleComponent[] {
   const fcRegex = /GV:[a-zA-Z]+[^\s]+/g
 
   // Convert matches iterator to array to process all at once

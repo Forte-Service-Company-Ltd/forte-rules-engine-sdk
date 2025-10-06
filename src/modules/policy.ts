@@ -979,7 +979,7 @@ export const unsetPolicies = async (
     })
     return { transactionHash: returnHash }
   }
-  
+
   return { transactionHash: '0x0' as `0x${string}` }
 }
 
