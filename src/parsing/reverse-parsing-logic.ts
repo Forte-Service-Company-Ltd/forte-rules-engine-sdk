@@ -1,6 +1,6 @@
 /// SPDX-License-Identifier: BUSL-1.1
 
-import { Address, decodeAbiParameters, hexToString, parseAbiParameters, toHex } from 'viem'
+import { Address, decodeAbiParameters, fromHex, hexToString, parseAbiParameters, toHex } from 'viem'
 import {
   stringReplacement,
   RuleOnChain,
@@ -463,18 +463,15 @@ export const reverseParsePlaceholder = (
  * @param hexString - The hex-encoded string to decode
  * @returns The decoded human-readable string
  */
-function decodeHexString(hexString: string): string {
+function decodeHexString(hexString: `0x${string}`): string {
   // If it's already a regular string (not hex), return it as is
   if (!hexString.startsWith('0x') && !/^[0-9a-fA-F]+$/.test(hexString)) {
     return hexString
   }
 
-  // Remove '0x' prefix if present
-  const cleanHex = hexString.startsWith('0x') ? hexString.slice(2) : hexString
-
   try {
-    // Convert hex to buffer and then to string, removing null padding
-    const decoded = Buffer.from(cleanHex, 'hex').toString('utf8').replace(/\0+$/, '')
+    // Convert hex to string using viem's fromHex, assuming 32-byte chunks for UTF-8
+    const decoded = fromHex(hexString, { size: 32, to: 'string' })
     return decoded || hexString // Return original if decoding results in empty string
   } catch (error) {
     // If decoding fails, return the original string
