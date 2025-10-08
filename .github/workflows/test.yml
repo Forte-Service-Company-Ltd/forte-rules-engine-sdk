@@ -30,13 +30,14 @@ jobs:
         with:
           node-version: ${{ matrix['node-version'] }}
           package-manager: npm
-      ############.   REENABLE AFTER TESTING DOCS!   #########
-      # - name: Start Anvil with State File
-      #   run: |
-      #     anvil -p 8545 --load-state tests/diamondDeployedAnvilState.json &
-      #     sleep 3
-      # # Runs `npm run test`
-      # - uses: Forte-Service-Company-Ltd/infrastructure-tooling/.github/actions/typescript-test@v0.0.6
-      #   with:
-      #     package-manager: npm
+      # Anvil provides a local Ethereum node service during tests
+      - name: Start Anvil with State File
+        run: |
+          anvil -p 8545 --load-state tests/diamondDeployedAnvilState.json &
+          sleep 3
+      # Runs `npm run test`
+      - uses: Forte-Service-Company-Ltd/infrastructure-tooling/.github/actions/typescript-test@v0.0.6
+        with:
+          package-manager: npm
+      # Test TypeDoc build works (but doesn't upload anywhere)
       - uses: Forte-Service-Company-Ltd/infrastructure-tooling/.github/actions/typescript-docs@INF-150-Composite-GitHub-Actions-for-TypeScript--typescript-docs
