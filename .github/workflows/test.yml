@@ -26,7 +26,7 @@ jobs:
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: v1.2.1
-      - uses: Forte-Service-Company-Ltd/infrastructure-tooling/.github/actions/typescript-build@v0.0.6
+      - uses: Forte-Service-Company-Ltd/infrastructure-tooling/.github/actions/typescript-build@v0.0.7
         with:
           node-version: ${{ matrix['node-version'] }}
           package-manager: npm
@@ -36,8 +36,8 @@ jobs:
           anvil -p 8545 --load-state tests/diamondDeployedAnvilState.json &
           sleep 3
       # Runs `npm run test`
-      - uses: Forte-Service-Company-Ltd/infrastructure-tooling/.github/actions/typescript-test@v0.0.6
+      - uses: Forte-Service-Company-Ltd/infrastructure-tooling/.github/actions/typescript-test@v0.0.7
         with:
           package-manager: npm
       # Test TypeDoc build works (but doesn't upload anywhere)
-      - uses: Forte-Service-Company-Ltd/infrastructure-tooling/.github/actions/typescript-docs@INF-150-Composite-GitHub-Actions-for-TypeScript--typescript-docs
+      - uses: Forte-Service-Company-Ltd/infrastructure-tooling/.github/actions/typescript-docs@v0.0.7
