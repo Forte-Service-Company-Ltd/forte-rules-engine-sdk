@@ -437,25 +437,45 @@ export function parseEffect(
 
       var iter = 0
       for (var plh of names) {
-        if (plh.name == spli[1].trim()) {
+        const paramString = spli[1].trim()
+        // Check both the original name and the fcPlaceholder for foreign call matching
+        if (plh.name == paramString || plh.fcPlaceholder == paramString) {
           dynamic = true
           plhIndex = iter
           break
         }
         iter += 1
       }
-      if (isAddress(spli[1].trim())) {
+      
+      // For dynamic parameters, generate instruction set for foreign call execution
+      if (dynamic) {
+        const paramString = spli[1].trim()
+        effectInstructionSet = ['PLH', plhIndex]
+      }
+      
+      // Check for :bytes suffix first
+      let paramString = spli[1].trim()
+      
+      if (paramString.endsWith(':bytes')) {
+        pType = 5  // bytes
+        parameterValue = paramString.slice(0, -6).trim()  // Remove ':bytes' suffix
+      } else if (isAddress(paramString)) {
         pType = 0
-        parameterValue = spli[1].trim()
-      } else if (!isNaN(Number(spli[1].trim()))) {
+        parameterValue = paramString
+      } else if (!isNaN(Number(paramString))) {
         pType = 2
-        parameterValue = BigInt(spli[1].trim())
+        parameterValue = BigInt(paramString)
+      } else if (paramString.toLowerCase() === 'true' || paramString.toLowerCase() === 'false') {
+        pType = 3  // bool detection
+        parameterValue = paramString.toLowerCase() === 'true'
       } else {
-        pType = 1
-        parameterValue = spli[1].trim()
+        pType = 1  // string
+        parameterValue = paramString
       }
     } else {
+      // No parameter case - leave defaults but set parameterValue to null
       effectText = spli[0]
+      parameterValue = null
     }
     // Regex check ^".*"$
     const quotesCheck = /^".*"$/g

@@ -3231,4 +3231,206 @@ describe('Rules Engine Interactions', async () => {
 
     console.log('✅ All string tracker functionality verified successfully!')
   })
+
+  test('Can create policy with bool and bytes event parameters', options, async () => {
+    var policyJSON = `
+                              {
+                              "Policy": "Bool and Bytes Events Policy",
+                              "Description": "Test policy for bool and bytes event parameters",
+                              "PolicyType": "open",
+                              "CallingFunctions": [
+                                {
+                                  "Name": "transfer",
+                                  "Description": "Test Transfer",
+                                  "Parameters": "address to, uint256 value",
+                                  "FunctionSignature": "transfer(address to, uint256 value)",
+                                  "EncodedValues": "address to, uint256 value"
+                                }
+                              ],
+                              "ForeignCalls": [],
+                              "Trackers": [],
+                              "MappedTrackers": [],
+                              "Rules": [
+                                  {
+                                      "Name": "Bool and Bytes Events Rule",
+                                      "Description": "Rule with bool positive effect and bytes negative effect",
+                                      "Condition": "value > 100",
+                                      "PositiveEffects": ["emit \\"SuccessEvent\\", true"],
+                                      "NegativeEffects": ["emit \\"ErrorEvent\\", failed transaction:bytes"],
+                                      "CallingFunction": "transfer"
+                                  }
+                              ]
+                              }`
+
+    var input = JSON.parse(policyJSON)
+    var result = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      policyJSON
+    )
+
+    expect(result.policyId).toBeGreaterThanOrEqual(0)
+
+    var retVal = await getPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      result.policyId
+    )
+
+    expect(retVal).toBeDefined()
+    assertPolicyDataMatchesInput(retVal!, input)
+  })
+
+  test('Can create policy with tracker parameter in event', options, async () => {
+    var policyJSON = `
+                              {
+                              "Policy": "Tracker Event Parameter Policy",
+                              "Description": "Test policy for tracker parameter in event",
+                              "PolicyType": "open",
+                              "CallingFunctions": [
+                                {
+                                  "Name": "transfer",
+                                  "Description": "Test Transfer",
+                                  "Parameters": "address to, uint256 value",
+                                  "FunctionSignature": "transfer(address to, uint256 value)",
+                                  "EncodedValues": "address to, uint256 value"
+                                }
+                              ],
+                              "ForeignCalls": [],
+                              "Trackers": [
+                                {
+                                  "Name": "balanceTracker",
+                                  "Type": "uint256",
+                                  "InitialValue": "1000"
+                                }
+                              ],
+                              "MappedTrackers": [],
+                              "Rules": [
+                                  {
+                                      "Name": "Tracker Event Rule",
+                                      "Description": "Rule with tracker parameter in event",
+                                      "Condition": "value > 0",
+                                      "PositiveEffects": ["emit \\"BalanceUpdate\\", TR:balanceTracker"],
+                                      "NegativeEffects": [],
+                                      "CallingFunction": "transfer"
+                                  }
+                              ]
+                              }`
+
+    var input = JSON.parse(policyJSON)
+    var result = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      policyJSON
+    )
+
+    expect(result.policyId).toBeGreaterThanOrEqual(0)
+
+    var retVal = await getPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      result.policyId
+    )
+
+    expect(retVal).toBeDefined()
+    assertPolicyDataMatchesInput(retVal!, input)
+  })
+
+  test('Can create policy with foreign call return parameter in event', options, async () => {
+    var policyJSON = `
+                              {
+                              "Policy": "Foreign Call Event Parameter Policy",
+                              "Description": "Test policy for foreign call return parameter in event",
+                              "PolicyType": "open",
+                              "CallingFunctions": [
+                                {
+                                  "Name": "transfer",
+                                  "Description": "Test Transfer",
+                                  "Parameters": "address to, uint256 value",
+                                  "FunctionSignature": "transfer(address to, uint256 value)",
+                                  "EncodedValues": "address to, uint256 value"
+                                }
+                              ],
+                              "ForeignCalls": [
+                                {
+                                  "Name": "GetBalance",
+                                  "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+                                  "Function": "GetBalance(address)",
+                                  "ReturnType": "uint256",
+                                  "ValuesToPass": "to",
+                                  "MappedTrackerKeyValues": "",
+                                  "CallingFunction": "transfer"
+                                }
+                              ],
+                              "Trackers": [],
+                              "MappedTrackers": [],
+                              "Rules": [
+                                  {
+                                      "Name": "Foreign Call Event Rule",
+                                      "Description": "Rule with foreign call return parameter in event",
+                                      "Condition": "value > 0",
+                                      "PositiveEffects": ["emit \\"BalanceCheck\\", FC:GetBalance"],
+                                      "NegativeEffects": [],
+                                      "CallingFunction": "transfer"
+                                  }
+                              ]
+                              }`
+
+    var input = JSON.parse(policyJSON)
+    var result = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      policyJSON
+    )
+
+    expect(result.policyId).toBeGreaterThanOrEqual(0)
+
+    var retVal = await getPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      result.policyId
+    )
+
+    expect(retVal).toBeDefined()
+    
+    // Verify core policy structure 
+    expect(retVal!.Policy).toEqual(input.Policy)
+    expect(retVal!.Description).toEqual(input.Description)
+    expect(retVal!.PolicyType).toEqual(input.PolicyType)
+    
+    // Verify foreign call was created
+    expect(retVal!.ForeignCalls.length).toEqual(1)
+    expect(retVal!.ForeignCalls[0].Name).toEqual('GetBalance')
+    
+    // Verify rule structure and that the event contains the expected structure
+    expect(retVal!.Rules.length).toEqual(1)
+    expect(retVal!.Rules[0].Name).toEqual(input.Rules[0].Name)
+    expect(retVal!.Rules[0].Condition).toEqual(input.Rules[0].Condition)
+    expect(retVal!.Rules[0].CallingFunction).toEqual(input.Rules[0].CallingFunction)
+    
+    // Verify that the positive effect is an emit with BalanceCheck and some parameter (foreign call placeholder)
+    expect(retVal!.Rules[0].PositiveEffects.length).toEqual(1)
+    expect(retVal!.Rules[0].PositiveEffects[0]).toMatch(/emit "BalanceCheck"/)
+  })
 })

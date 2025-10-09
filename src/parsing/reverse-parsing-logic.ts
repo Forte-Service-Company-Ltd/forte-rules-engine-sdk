@@ -500,6 +500,32 @@ export const reverseParseEffect = (
     var param = ''
     if (effect.dynamicParam) {
       param = ', ' + placeholders[effect.eventPlaceholderIndex]
+    } else if (effect.param && effect.param !== '0x') {
+      // Static parameter - decode based on pType and add suffix if needed
+      let decodedParam = ''
+      if (effect.pType == 0) {
+        // address
+        decodedParam = decodeAbiParameters(parseAbiParameters('address'), effect.param as `0x${string}`)[0]
+      } else if (effect.pType == 1) {
+        // string
+        decodedParam = decodeAbiParameters(parseAbiParameters('string'), effect.param as `0x${string}`)[0]
+      } else if (effect.pType == 2) {
+        // uint256
+        decodedParam = String(decodeAbiParameters(parseAbiParameters('uint256'), effect.param as `0x${string}`)[0])
+      } else if (effect.pType == 3) {
+        // bool
+        const boolValue = decodeAbiParameters(parseAbiParameters('bool'), effect.param as `0x${string}`)[0]
+        decodedParam = boolValue ? 'true' : 'false'
+      } else if (effect.pType == 5) {
+        // bytes - decode and add :bytes suffix
+        const bytesValue = decodeAbiParameters(parseAbiParameters('bytes'), effect.param as `0x${string}`)[0]
+        // Convert hex bytes back to string for display
+        decodedParam = hexToString(bytesValue) + ':bytes'
+      } else {
+        // fallback
+        decodedParam = String(effect.param)
+      }
+      param = ', ' + decodedParam
     }
     return 'emit ' + '"' + decodedText + '"' + param
   } else {

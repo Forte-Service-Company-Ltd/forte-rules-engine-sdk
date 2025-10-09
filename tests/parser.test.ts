@@ -7,7 +7,9 @@ import {
   matchArray,
   pTypeEnum,
   RulesError,
-  TrackerDefinition,
+  TrackerDefinition, 
+  NameToID, 
+  PlaceholderStruct,
 } from '../src/modules/types.js'
 import {
   keccak256,
@@ -26,7 +28,9 @@ import {
   parseTrackerSyntax,
   parseForeignCallDefinition,
   parseMappedTrackerSyntax,
+  processSyntax,
 } from '../src/parsing/parser.js'
+import { parseEffect } from '../src/parsing/parsing-utilities.js'
 import { reverseParseInstructionSet } from '../src/parsing/reverse-parsing-logic.js'
 import {
   convertASTToInstructionSet,
@@ -2745,6 +2749,102 @@ test('Test Parsing Event Effect with Dynamic Parameter', () => {
   var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'bytes value, uint256 sAND, address lORe', [], [])
 })
 
+test('Test Parsing Event Effect with Bool Parameter - True', () => {
+  var ruleStringA = `{
+    "Condition": "value > 100",
+      "PositiveEffects": ["emit \\"BoolEvent\\", true"],
+        "NegativeEffects": [],
+          "CallingFunction": "transfer"
+  } `
+
+  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
+  expect(retVal).not.toBeNull()
+  expect(retVal!.positiveEffects[0].type).toBe(EffectType.EVENT)
+  expect(retVal!.positiveEffects[0].text).toEqual('BoolEvent')
+  expect(retVal!.positiveEffects[0].pType).toBe(3) // bool
+  expect(retVal!.positiveEffects[0].parameterValue).toBe(true)
+})
+
+test('Test Parsing Event Effect with Bool Parameter - False', () => {
+  var ruleStringA = `{
+    "Condition": "value > 100",
+      "PositiveEffects": ["emit \\"BoolEvent\\", false"],
+        "NegativeEffects": [],
+          "CallingFunction": "transfer"
+  } `
+
+  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
+  expect(retVal).not.toBeNull()
+  expect(retVal!.positiveEffects[0].type).toBe(EffectType.EVENT)
+  expect(retVal!.positiveEffects[0].text).toEqual('BoolEvent')
+  expect(retVal!.positiveEffects[0].pType).toBe(3) // bool
+  expect(retVal!.positiveEffects[0].parameterValue).toBe(false)
+})
+
+test('Test Parsing Event Effect with Bytes Parameter', () => {
+  var ruleStringA = `{
+    "Condition": "value > 100",
+      "PositiveEffects": ["emit \\"BytesEvent\\", hello world:bytes"],
+        "NegativeEffects": [],
+          "CallingFunction": "transfer"
+  } `
+
+  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
+  expect(retVal).not.toBeNull()
+  expect(retVal!.positiveEffects[0].type).toBe(EffectType.EVENT)
+  expect(retVal!.positiveEffects[0].text).toEqual('BytesEvent')
+  expect(retVal!.positiveEffects[0].pType).toBe(5) // bytes
+  expect(retVal!.positiveEffects[0].parameterValue).toBe('hello world')
+})
+
+test('Test Parsing Event Effect with String Parameter (Regular)', () => {
+  var ruleStringA = `{
+    "Condition": "value > 100",
+      "PositiveEffects": ["emit \\"StringEvent\\", hello world"],
+        "NegativeEffects": [],
+          "CallingFunction": "transfer"
+  } `
+
+  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
+  expect(retVal).not.toBeNull()
+  expect(retVal!.positiveEffects[0].type).toBe(EffectType.EVENT)
+  expect(retVal!.positiveEffects[0].text).toEqual('StringEvent')
+  expect(retVal!.positiveEffects[0].pType).toBe(1) // string
+  expect(retVal!.positiveEffects[0].parameterValue).toBe('hello world')
+})
+
+test('Test Parsing Event Effect with Negative Bool Effect', () => {
+  var ruleStringA = `{
+    "Condition": "value > 100",
+      "PositiveEffects": [],
+        "NegativeEffects": ["emit \\"FailureEvent\\", true"],
+          "CallingFunction": "transfer"
+  } `
+
+  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
+  expect(retVal).not.toBeNull()
+  expect(retVal!.negativeEffects[0].type).toBe(EffectType.EVENT)
+  expect(retVal!.negativeEffects[0].text).toEqual('FailureEvent')
+  expect(retVal!.negativeEffects[0].pType).toBe(3) // bool
+  expect(retVal!.negativeEffects[0].parameterValue).toBe(true)
+})
+
+test('Test Parsing Event Effect with Negative Bytes Effect', () => {
+  var ruleStringA = `{
+    "Condition": "value > 100",
+      "PositiveEffects": [],
+        "NegativeEffects": ["emit \\"ErrorData\\", failed transfer:bytes"],
+          "CallingFunction": "transfer"
+  } `
+
+  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
+  expect(retVal).not.toBeNull()
+  expect(retVal!.negativeEffects[0].type).toBe(EffectType.EVENT)
+  expect(retVal!.negativeEffects[0].text).toEqual('ErrorData')
+  expect(retVal!.negativeEffects[0].pType).toBe(5) // bytes
+  expect(retVal!.negativeEffects[0].parameterValue).toBe('failed transfer')
+})
+
 test('Should parse foreign call with empty parameters correctly', () => {
   const fcJSON = {
     Name: 'EmptyParamCall',
@@ -2775,6 +2875,54 @@ test('Should parse foreign call with void return type correctly', () => {
   const result = parseForeignCallDefinition(fcJSON, [], [], ['value'])
   expect(result.ParameterTypes).toEqual([2]) // uint256
   expect(result.ReturnType).toBe(4) // void
+})
+
+test('Test Event with Foreign Call Parameter - processSyntax Integration', () => {
+  const foreignCallNameToID: NameToID[] = [
+    {
+      name: 'compare',
+      id: 0,
+      type: 1
+    }
+  ];
+  
+  const trackerNameToID: NameToID[] = []
+  const additionalForeignCalls = ['FC:compare']
+  const encodedValues = 'address to, uint256 value'
+  
+  // Test event effect that contains a foreign call parameter
+  const eventEffect = 'emit "Foreign Call Update", FC:compare'
+  const [updatedEffect, effectComponents] = processSyntax(
+    encodedValues,
+    foreignCallNameToID,
+    trackerNameToID,
+    additionalForeignCalls,
+    eventEffect
+  )
+  
+  // Verify processSyntax transforms FC:compare to a placeholder
+  expect(updatedEffect).toContain('FC:')
+  expect(updatedEffect).not.toContain('FC:compare') // Original name should be replaced
+  
+  // Test parseEffect with the transformed components
+  const placeholders: PlaceholderStruct[] = []
+  const eventResult = parseEffect(updatedEffect, effectComponents, placeholders, trackerNameToID)
+  
+  expect(eventResult).toBeDefined()
+  expect(eventResult?.type).toBe(EffectType.EVENT)
+  expect(eventResult?.text).toBe('Foreign Call Update')
+  expect(eventResult?.eventPlaceholderIndex).toBeDefined()
+  
+  // Verify the foreign call parameter is properly detected as dynamic
+  if (eventResult?.eventPlaceholderIndex !== undefined && effectComponents[eventResult.eventPlaceholderIndex]) {
+    const referencedComponent = effectComponents[eventResult.eventPlaceholderIndex]
+    expect(referencedComponent.rawType).toBe('foreign call')
+    // Type cast to access fcPlaceholder property
+    if ('fcPlaceholder' in referencedComponent) {
+      expect(referencedComponent.fcPlaceholder).toBeDefined()
+      expect(referencedComponent.name).toBe('FC:compare') // Name includes FC: prefix
+    }
+  }
 })
 
 test('Complex calculated values test #1', () => {
