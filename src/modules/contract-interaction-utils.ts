@@ -149,6 +149,43 @@ export function buildAnOnChainRule(
 }
 
 /**
+ * Encodes a parameter value based on its type for contract interaction.
+ *
+ * @param pType - The parameter type (0: address, 1: string, 3: bool, 5: bytes, default: uint256).
+ * @param parameterValue - The value to encode.
+ * @param dynamicParam - Whether the parameter is dynamic (resolved by contract).
+ * @returns The encoded parameter as a hex string or '0x' for dynamic/empty parameters.
+ */
+function encodeEffectParameter(pType: number, parameterValue: any, dynamicParam: boolean): string {
+  // For dynamic parameters, don't encode the parameterValue - let the contract resolve it
+  if (dynamicParam) {
+    return '0x'
+  }
+
+  if (parameterValue !== null && parameterValue !== undefined) {
+    if (pType == 0) {
+      // address
+      return encodeAbiParameters(parseAbiParameters('address'), [getAddress(String(parameterValue))])
+    } else if (pType == 1) {
+      // string
+      return encodeAbiParameters(parseAbiParameters('string'), [String(parameterValue)])
+    } else if (pType == 3) {
+      // bool
+      return encodeAbiParameters(parseAbiParameters('bool'), [Boolean(parameterValue)])
+    } else if (pType == 5) {
+      // bytes
+      return encodeAbiParameters(parseAbiParameters('bytes'), [toHex(stringToBytes(String(parameterValue)))])
+    } else {
+      // uint
+      return encodeAbiParameters(parseAbiParameters('uint256'), [BigInt(parameterValue)])
+    }
+  } else {
+    // No parameter - use empty bytes
+    return '0x'
+  }
+}
+
+/**
  * Builds a structured representation of positive and negative effects based on the provided rule syntax and tracker mappings.
  *
  * @param ruleSyntax - The JSON representation of the rule syntax to parse.
@@ -194,21 +231,7 @@ export function buildOnChainEffects(
 
   for (var pEffect of output.positiveEffects) {
     const instructionSet = cleanInstructionSet(pEffect.instructionSet)
-    var param: any
-
-    if (pEffect.pType == 0) {
-      // address
-      param = encodeAbiParameters(parseAbiParameters('address'), [getAddress(String(pEffect.parameterValue))])
-    } else if (pEffect.pType == 1) {
-      // string
-      param = encodeAbiParameters(parseAbiParameters('string'), [String(pEffect.parameterValue)])
-    } else if (pEffect.pType == 5) {
-      // bytes
-      param = encodeAbiParameters(parseAbiParameters('bytes'), [toHex(stringToBytes(String(pEffect.parameterValue)))])
-    } else {
-      // uint
-      param = encodeAbiParameters(parseAbiParameters('uint256'), [BigInt(pEffect.parameterValue)])
-    }
+    const param = encodeEffectParameter(pEffect.pType, pEffect.parameterValue, pEffect.dynamicParam)
 
     const effect: EffectOnChain = {
       valid: true,
@@ -224,21 +247,9 @@ export function buildOnChainEffects(
     pEffects.push(effect)
   }
   for (var nEffect of output.negativeEffects) {
-    var param: any
-    if (nEffect.pType == 0) {
-      // address
-      param = encodeAbiParameters(parseAbiParameters('address'), [getAddress(String(nEffect.parameterValue))])
-    } else if (nEffect.pType == 1) {
-      // string
-      param = encodeAbiParameters(parseAbiParameters('string'), [String(nEffect.parameterValue)])
-    } else if (nEffect.pType == 5) {
-      // bytes
-      param = encodeAbiParameters(parseAbiParameters('bytes'), [toHex(stringToBytes(String(nEffect.parameterValue)))])
-    } else {
-      // uint
-      param = encodeAbiParameters(parseAbiParameters('uint256'), [BigInt(nEffect.parameterValue)])
-    }
+    const param = encodeEffectParameter(nEffect.pType, nEffect.parameterValue, nEffect.dynamicParam)
     const instructionSet = cleanInstructionSet(nEffect.instructionSet)
+    
     const effect: EffectOnChain = {
       valid: true,
       dynamicParam: nEffect.dynamicParam,
