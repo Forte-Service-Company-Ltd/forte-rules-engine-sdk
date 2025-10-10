@@ -69,10 +69,6 @@ export function reverseParseInstructionSet(
   var truUpdated = false
   var keyIndex = -1
   var valueIndex = -1
-  var valueCount = 0
-  var opCount = 0
-  var left = false
-  var right = false
   var instructionCount = instructionSet.length
   for (var instruction of instructionSet) {
     if (currentAction == -1) {
@@ -148,7 +144,6 @@ export function reverseParseInstructionSet(
             })
           }
           currentMemAddress += 1
-          valueCount += 1
           break
         case 1:
           for (var memValue of memAddressesMap) {
@@ -166,7 +161,6 @@ export function reverseParseInstructionSet(
             currentMemAddress += 1
             currentInstructionValues = []
           }
-          valueCount = 0
           break
         case 2:
           memAddressesMap.push({
@@ -176,7 +170,6 @@ export function reverseParseInstructionSet(
           keyIndex = instruction
           currentMemAddress += 1
           retVal = placeHolderArray[instruction]
-          valueCount += 1
           break
         case 3:
           retVal = arithmeticOperatorReverseInterpretation(
@@ -217,12 +210,6 @@ export function reverseParseInstructionSet(
           if (currentActionIndex == 1) {
             currentMemAddress += 1
             currentInstructionValues = []
-          }
-          opCount += 1
-          if (left) {
-            right = true
-          } else {
-            left = true
           }
           break
         case 6:
@@ -306,7 +293,6 @@ export function reverseParseInstructionSet(
           )
 
           if (currentActionIndex == 1) {
-            opCount = 0
             currentMemAddress += 1
             currentInstructionValues = []
           }
@@ -417,9 +403,6 @@ export function reverseParseInstructionSet(
         default:
           console.log('unknown instruction')
           break
-      }
-      if (currentAction > 2 && currentActionIndex == 1) {
-        valueCount = 0
       }
       currentActionIndex -= 1
       if (currentActionIndex == 0) {

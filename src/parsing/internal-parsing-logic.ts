@@ -163,7 +163,7 @@ export function convertHumanReadableToInstructionSet(
     mem: [],
     iterator: { value: 0 },
   }
-  // // Convert the AST into the Instruction Set Syntax
+  // Convert the AST into the Instruction Set Syntax
   convertASTToInstructionSet(astAccumulator, array_, names, existingPlaceHolders, trackerNameToID)
 
   for (var instructionIter in astAccumulator.instructionSet) {
@@ -213,7 +213,7 @@ function reassembleRecursively(
  * @param placeHolders - An array to store placeholders.
  * @param trackerNameToID - A mapping of tracker IDs to their names and types.
  */
-export function convertASTToInstructionSet(
+function convertASTToInstructionSet(
   acc: ASTAccumulator,
   expression: any[],
   parameterNames: any[],
@@ -510,7 +510,7 @@ export function convertASTToInstructionSet(
  * @returns A nested array representing the tree structure of the logical condition.
  *          Example: ["OR", ["AND", ["A"], ["B"]], ["C"]].
  */
-export function convertToTree(condition: string, splitOn: string): any[] {
+function convertToTree(condition: string, splitOn: string): any[] {
   // Recursive Function steps:
   // 1. Replace anything in parenthesis with i:n
   var substrs = new Array()
@@ -520,8 +520,8 @@ export function convertToTree(condition: string, splitOn: string): any[] {
 
   let leng = condition.split('[').length
   while (iter <= leng - 2) {
-    // Start with the final instance of "(" in the string, create a substring
-    // to the next instance of ")" and replace that with i:n
+    // Start with the final instance of "[" in the string, create a substring
+    // to the next instance of "]" and replace that with i:n
     // Repeat this process until all parenthesis have been accounted for
     var start = condition.lastIndexOf('[')
     var substr = condition.substring(start, condition.indexOf(']', start) + 1)
@@ -658,7 +658,7 @@ export function convertToTree(condition: string, splitOn: string): any[] {
  * @param array - The array to iterate over and process. Can contain nested arrays.
  * @param splitOn - The delimiter string used to split and process elements in the array.
  */
-export function iterate(array: any[], splitOn: string): void {
+function iterate(array: any[], splitOn: string): void {
   var iter = 0
 
   while (iter < array.length) {
@@ -758,7 +758,7 @@ export function removeArrayWrappers(array: any[]): any[] {
  *                of any type.
  * @returns The processed array with elements converted to `BigInt` where applicable.
  */
-export function intify(array: any[]): Array<number | BigInt> {
+function intify(array: any[]): Array<number | BigInt> {
   return array.map((iter) => {
     if (Array.isArray(iter)) {
       return intify(iter)
