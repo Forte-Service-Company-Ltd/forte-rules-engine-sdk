@@ -291,6 +291,7 @@ export function reverseParseInstructionSet(
             currentInstructionValues,
             ' == '
           )
+
           if (currentActionIndex == 1) {
             currentMemAddress += 1
             currentInstructionValues = []
@@ -370,12 +371,18 @@ export function reverseParseInstructionSet(
         case 18:
           if (!truUpdated) {
             var str = memAddressesMap[currentMemAddress - 1].value
-            var memVal: any = str
-              .replace('TR:', 'TRU:')
-              .replace('-', '-=')
-              .replace('+', '+=')
-              .replace('*', '*=')
-              .replace('/', '/=')
+            var memVal: any = str.replace('TR:', 'TRU:')
+            if (typeof memVal == 'string') {
+              if (memVal.split(' ')[1] == '-') {
+                memVal = memVal.replace('-', '-=')
+              } else if (memVal.split(' ')[1] == '+') {
+                memVal = memVal.replace('+', '+=')
+              } else if (memVal.split(' ')[1] == '*') {
+                memVal = memVal.replace('*', '*=')
+              } else if (memVal.split(' ')[1] == '+') {
+                memVal = memVal.replace('/', '/=')
+              }
+            }
             truUpdated = true
             memAddressesMap.push({
               memAddr: currentMemAddress,
@@ -405,7 +412,7 @@ export function reverseParseInstructionSet(
     instructionNumber += 1
   }
   if (retVal.at(0) == '(') {
-    retVal = retVal.substring(2, retVal.length - 2)
+    retVal = retVal.substring(1, retVal.length - 1)
   }
   return retVal
 }
@@ -845,8 +852,14 @@ function arithmeticOperatorReverseInterpretation(
         currentInstructionValues[0] = toHex(currentInstructionValues[0])
       }
     }
+    var currentString = ''
 
-    var currentString = currentInstructionValues[0] + symbol + currentInstructionValues[1]
+    if (symbol.trim() == '+' || symbol.trim() == '-' || symbol.trim() == '*' || symbol.trim() == '/') {
+      currentString = '[' + currentInstructionValues[0] + symbol + currentInstructionValues[1] + ']'
+    } else {
+      currentString = currentInstructionValues[0] + symbol + currentInstructionValues[1]
+    }
+
     memAddressesMap.push({ memAddr: currentMemAddress, value: currentString })
     return currentString
   }
@@ -880,7 +893,7 @@ function logicalOperatorReverseInterpretation(
     }
   }
   if (currentActionIndex == 1) {
-    var currentString = '( ' + currentInstructionValues[0] + symbol + currentInstructionValues[1] + ' )'
+    var currentString = '(' + currentInstructionValues[0] + symbol + currentInstructionValues[1] + ')'
     memAddressesMap.push({ memAddr: currentMemAddress, value: currentString })
     return currentString
   }
