@@ -194,7 +194,6 @@ export function parseRuleSyntax(
     trackerNameToID,
     placeHolders
   )
-
   const excludeArray: string[] = ruleComponents.map((name) => name.name)
   excludeArray.push(...matchArray)
   excludeArray.push(...operandArray)

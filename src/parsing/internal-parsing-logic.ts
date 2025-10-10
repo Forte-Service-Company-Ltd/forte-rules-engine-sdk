@@ -65,59 +65,105 @@ export function convertHumanReadableToInstructionSet(
   trackerNameToID: NameToID[],
   existingPlaceHolders: PlaceholderStruct[]
 ): InstructionSet {
-  //Replace AND, OR and NOT with a placeholder value (PLA) so we can parse them simultaneously
+  // Subexpressions used for calculations are captured between brackets [ ]
+  // First iterate through the syntax and replace each subexpression with a placeholder so we can parse them individually
+  // (this includes recursive subexpressions as many levels deep as they go)
+  // --------------------------------------------------------------------------------------------------------------------
+  var subexpressionPlaceholders = []
+  var plhIter = 0
+  while (syntax.includes('[')) {
+    var index = syntax.lastIndexOf('[')
+    var closingIndex = syntax.indexOf(']', index)
+    var place = syntax.substring(index, closingIndex + 1)
+    subexpressionPlaceholders.push({
+      name: 'PLH' + plhIter,
+      syn: place.replace('[', '').replace(']', ''),
+      arr: [] as any[],
+    })
+    syntax = syntax.replace(place, 'PLH' + plhIter)
+    plhIter += 1
+  }
+  subexpressionPlaceholders.push({ name: 'PLH' + plhIter, syn: syntax, arr: [] as any[] })
+  // --------------------------------------------------------------------------------------------------------------------
+  //
+  //
+  // Next we will iterate over the subexpressions and fully parse each one into an abstract syntax tree
+  // --------------------------------------------------------------------------------------------------------------------
   originalDelimiters = []
-  var whiteSpaceSplit = syntax.split(' ')
   var delimiterIterator = 0
-  var first = true
-  let array_: any[] = []
-  for (var str of whiteSpaceSplit) {
-    if (str == 'AND' || str == 'OR' || str == 'NOT') {
-      originalDelimiters.push(str)
-      if (first) {
-        syntax = syntax.replace(str, ' PLA' + String(delimiterIterator))
-      } else {
-        syntax = syntax.replace(' ' + str, ' PLA' + String(delimiterIterator))
+  for (var individualSubExpression of subexpressionPlaceholders) {
+    //Replace AND, OR and NOT with a placeholder value (PLA) so we can parse them simultaneously
+
+    var whiteSpaceSplit = individualSubExpression.syn.split(' ')
+
+    var first = true
+    let array_: any[] = []
+    for (var str of whiteSpaceSplit) {
+      if (str == 'AND' || str == 'OR' || str == 'NOT') {
+        originalDelimiters.push(str)
+        if (first) {
+          individualSubExpression.syn = individualSubExpression.syn.replace(str, ' PLA' + String(delimiterIterator))
+        } else {
+          individualSubExpression.syn = individualSubExpression.syn.replace(
+            ' ' + str,
+            ' PLA' + String(delimiterIterator)
+          )
+        }
+
+        delimiterIterator += 1
       }
-
-      delimiterIterator += 1
-    }
-    first = false
-  }
-
-  // Create the initial Abstract Syntax Tree (AST) splitting on PLA (placeholder)
-  var array = convertToTree(syntax, 'PLA')
-
-  if (array.length == 1) {
-    array = array[0]
-  } else if (array.length == 0) {
-    // If the array is still empty than a single top level statement without an AND or OR was used.
-    array.push(syntax)
-  }
-  if (array.length > 0) {
-    // Recursively iterate over the tree splitting on the available operators
-    for (var matchCase of matchArray) {
-      //AND, OR and NOT have been relaced with placeholders, just iterate over the placeholder itself
-      if (matchCase == 'OR') {
-        continue
-      } else if (matchCase == 'AND') {
-        matchCase = 'PLA'
-      } else if (matchCase == 'NOT') {
-        continue
-      }
-
-      iterate(array, matchCase)
+      first = false
     }
 
-    array_ = removeArrayWrappers(array)
-    array_ = intify(array_)
+    // Create the initial Abstract Syntax Tree (AST) splitting on PLA (placeholder)
+    var array = convertToTree(individualSubExpression.syn, 'PLA')
+    if (array.length == 1) {
+      array = array[0]
+    } else if (array.length == 0) {
+      // If the array is still empty than a single top level statement without an AND or OR was used.
+      array.push(individualSubExpression.syn)
+    }
+    if (array.length > 0) {
+      // Recursively iterate over the tree splitting on the available operators
+      for (var matchCase of matchArray) {
+        //AND, OR and NOT have been relaced with placeholders, just iterate over the placeholder itself
+        if (matchCase == 'OR') {
+          continue
+        } else if (matchCase == 'AND') {
+          matchCase = 'PLA'
+        } else if (matchCase == 'NOT') {
+          continue
+        }
+
+        iterate(array, matchCase)
+      }
+      array_ = removeArrayWrappers(array)
+      array_ = intify(array_)
+      individualSubExpression.arr = array_
+    }
   }
+  // --------------------------------------------------------------------------------------------------------------------
+  //
+  //
+  // Finally we will recursively reassemble the entire abstract syntax tree by replacing each placeholder with the fully
+  // parsed contents it represents.
+  // --------------------------------------------------------------------------------------------------------------------
+  for (var individualSubExpression of subexpressionPlaceholders) {
+    var indexIterator = 0
+    for (var arrInd of individualSubExpression.arr) {
+      reassembleRecursively(arrInd, subexpressionPlaceholders, individualSubExpression.arr, indexIterator)
+      indexIterator += 1
+    }
+  }
+  var array_ = []
+  array_ = subexpressionPlaceholders[subexpressionPlaceholders.length - 1].arr
+  // --------------------------------------------------------------------------------------------------------------------
   const astAccumulator: ASTAccumulator = {
     instructionSet: [],
     mem: [],
     iterator: { value: 0 },
   }
-  // Convert the AST into the Instruction Set Syntax
+  // // Convert the AST into the Instruction Set Syntax
   convertASTToInstructionSet(astAccumulator, array_, names, existingPlaceHolders, trackerNameToID)
 
   for (var instructionIter in astAccumulator.instructionSet) {
@@ -131,6 +177,31 @@ export function convertHumanReadableToInstructionSet(
   return astAccumulator.instructionSet
 }
 
+// Function used to rebuild the original full statement by replacing each of the placeholders with
+// the AST it represents recursively
+function reassembleRecursively(
+  arrInd: any,
+  subexpressionPlaceholders: any,
+  individualSubExpressionArray: any,
+  indexIterator: number
+) {
+  if (typeof arrInd == 'string') {
+    if (arrInd.includes('PLH')) {
+      for (var i = 0; i < subexpressionPlaceholders.length; i++) {
+        if (subexpressionPlaceholders[i].name == arrInd) {
+          individualSubExpressionArray[indexIterator] = subexpressionPlaceholders[i].arr
+        }
+      }
+    }
+  } else if (Array.isArray(arrInd)) {
+    var recursiveIndexIterator = 0
+    for (var arrarrind of arrInd) {
+      reassembleRecursively(arrarrind, subexpressionPlaceholders, arrInd, recursiveIndexIterator)
+      recursiveIndexIterator += 1
+    }
+  }
+}
+
 /**
  * Converts an AST into an instruction set syntax.
  *
@@ -142,7 +213,7 @@ export function convertHumanReadableToInstructionSet(
  * @param placeHolders - An array to store placeholders.
  * @param trackerNameToID - A mapping of tracker IDs to their names and types.
  */
-function convertASTToInstructionSet(
+export function convertASTToInstructionSet(
   acc: ASTAccumulator,
   expression: any[],
   parameterNames: any[],
@@ -439,15 +510,30 @@ function convertASTToInstructionSet(
  * @returns A nested array representing the tree structure of the logical condition.
  *          Example: ["OR", ["AND", ["A"], ["B"]], ["C"]].
  */
-function convertToTree(condition: string, splitOn: string): any[] {
+export function convertToTree(condition: string, splitOn: string): any[] {
   // Recursive Function steps:
   // 1. Replace anything in parenthesis with i:n
   var substrs = new Array()
-
+  var calculationSubstrs = new Array()
   var delimiterSplit = condition.split(splitOn)
   let iter = 0
-  let leng = condition.split('(').length
 
+  let leng = condition.split('[').length
+  while (iter <= leng - 2) {
+    // Start with the final instance of "(" in the string, create a substring
+    // to the next instance of ")" and replace that with i:n
+    // Repeat this process until all parenthesis have been accounted for
+    var start = condition.lastIndexOf('[')
+    var substr = condition.substring(start, condition.indexOf(']', start) + 1)
+
+    condition = condition.replace(substr, 'q:'.concat(iter.toString()))
+    var index = 'q:'.concat(iter.toString())
+    var tuple: Tuple = { i: index, s: substr }
+    calculationSubstrs.push(tuple)
+    iter++
+  }
+  iter = 0
+  leng = condition.split('(').length
   while (iter <= leng - 2) {
     // Start with the final instance of "(" in the string, create a substring
     // to the next instance of ")" and replace that with i:n
@@ -482,15 +568,36 @@ function convertToTree(condition: string, splitOn: string): any[] {
     if (endIndex >= 1) {
       var innerArray = new Array()
       // Retrieve the contents of the parenthesis for the last two i:n values
-      var actualValue = retrieveParenthesisContent(delimiterSplit[endIndex - 1], substrs)
-      var actualValueTwo = retrieveParenthesisContent(delimiterSplit[endIndex], substrs)
+      var actualValue = retrieveParenthesisContent(delimiterSplit[endIndex - 1], substrs, 'i:')
+      var actualValueTwo = retrieveParenthesisContent(delimiterSplit[endIndex], substrs, 'i:')
 
       if (actualValue.startsWith('(')) {
         actualValue = actualValue.substring(1, actualValue.length - 1)
+        actualValue = retrieveParenthesisContent(actualValue, calculationSubstrs, 'q:')
+        if (actualValue.startsWith('[')) {
+          actualValue = actualValue.replaceAll('[', '')
+          actualValue = actualValue.replaceAll(']', '')
+        }
+      } else {
+        actualValue = retrieveParenthesisContent(actualValue, calculationSubstrs, 'q:')
+        if (actualValue.startsWith('[')) {
+          actualValue = actualValue.replaceAll('[', '')
+          actualValue = actualValue.replaceAll(']', '')
+        }
       }
-
       if (actualValueTwo.startsWith('(')) {
         actualValueTwo = actualValueTwo.substring(1, actualValueTwo.length - 1)
+        actualValueTwo = retrieveParenthesisContent(actualValueTwo, calculationSubstrs, 'q:')
+        if (actualValueTwo.startsWith('[')) {
+          actualValueTwo = actualValueTwo.replaceAll('[', '')
+          actualValueTwo = actualValueTwo.replaceAll(']', '')
+        }
+      } else {
+        actualValueTwo = retrieveParenthesisContent(actualValueTwo, calculationSubstrs, 'q:')
+        if (actualValueTwo.startsWith('[')) {
+          actualValueTwo = actualValueTwo.replaceAll('[', '')
+          actualValueTwo = actualValueTwo.replaceAll(']', '')
+        }
       }
       // Add the contents to an inner array
       var innerArrayTwo = new Array()
@@ -529,7 +636,7 @@ function convertToTree(condition: string, splitOn: string): any[] {
     // Slightly modified process for the final index in the array
     if (endIndex == 0) {
       var innerArray = new Array()
-      var actualValue = retrieveParenthesisContent(delimiterSplit[endIndex], substrs)
+      var actualValue = retrieveParenthesisContent(delimiterSplit[endIndex], substrs, 'i:')
       if (actualValue.includes('(')) {
         actualValue = actualValue.substring(1, actualValue.length - 1)
       }
@@ -551,7 +658,7 @@ function convertToTree(condition: string, splitOn: string): any[] {
  * @param array - The array to iterate over and process. Can contain nested arrays.
  * @param splitOn - The delimiter string used to split and process elements in the array.
  */
-function iterate(array: any[], splitOn: string): void {
+export function iterate(array: any[], splitOn: string): void {
   var iter = 0
 
   while (iter < array.length) {
@@ -597,16 +704,16 @@ function iterate(array: any[], splitOn: string): void {
  *                 a key (`i`) and a substitution value (`s`).
  * @returns The processed string with resolved content from the tuples.
  */
-function retrieveParenthesisContent(str: string, tuples: Tuple[]): string {
+function retrieveParenthesisContent(str: string, tuples: Tuple[], delim: string): string {
   var actualValue = str
   var iter = 0
   while (iter < tuples.length) {
     let tuple: Tuple = tuples[iter]
     if (str.includes(tuple.i)) {
-      actualValue = tuple.s
-      if (actualValue.includes('i:')) {
-        var substr = actualValue.substring(actualValue.indexOf('i:'), actualValue.indexOf('i:') + 3)
-        actualValue = actualValue.replace(substr, retrieveParenthesisContent(substr, tuples))
+      actualValue = actualValue.replace(tuple.i, tuple.s)
+      if (actualValue.includes(delim)) {
+        var substr = actualValue.substring(actualValue.indexOf(delim), actualValue.indexOf(delim) + 3)
+        actualValue = actualValue.replace(substr, retrieveParenthesisContent(substr, tuples, delim))
       }
       break
     }
@@ -651,7 +758,7 @@ export function removeArrayWrappers(array: any[]): any[] {
  *                of any type.
  * @returns The processed array with elements converted to `BigInt` where applicable.
  */
-function intify(array: any[]): Array<number | BigInt> {
+export function intify(array: any[]): Array<number | BigInt> {
   return array.map((iter) => {
     if (Array.isArray(iter)) {
       return intify(iter)
