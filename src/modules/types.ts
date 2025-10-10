@@ -614,7 +614,7 @@ export const PTTrackerKey = PTTracker.filter((pt) => !pt.name.includes('[]'))
 export const PTNamesTrackerKey = PTTrackerKey.map((pt) => pt.name)
 export type PTNameTrackerKey = (typeof PTNamesTrackerKey)[number]
 
-export const SUPPORTEDVERSION: versionStruct = { major: 0, minor: '9', tertiary: '0' }
+export const SUPPORTEDVERSION: versionStruct = { major: 0, minor: '9', tertiary: '*' }
 
 // -----------------------------------------------------------------------------
 // Error Types
