@@ -1134,9 +1134,9 @@ export const getVersionCompatible = async (
   const reVersion = await getRulesEngineVersion(config, rulesEnginePolicyContract)
   const comparisonStruct = convertToVersionStruct(reVersion)
   return (
-    comparisonStruct.major == SUPPORTEDVERSION.major &&
-    (comparisonStruct.minor == SUPPORTEDVERSION.minor || SUPPORTEDVERSION.minor == 'X') &&
-    (comparisonStruct.tertiary == SUPPORTEDVERSION.tertiary || SUPPORTEDVERSION.tertiary == 'X')
+    comparisonStruct.major === SUPPORTEDVERSION.major &&
+    (comparisonStruct.minor === SUPPORTEDVERSION.minor || SUPPORTEDVERSION.minor === '*') &&
+    (comparisonStruct.tertiary === SUPPORTEDVERSION.tertiary || SUPPORTEDVERSION.tertiary === '*')
   )
 }
 
