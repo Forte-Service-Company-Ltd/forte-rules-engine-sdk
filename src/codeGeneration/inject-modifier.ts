@@ -143,12 +143,19 @@ export function injectModifier(
 
   // Find Function and place modifier
   var functionName = 'function '
-  var argListUpdate = variables
-    .replace(/address /g, '')
-    .replace(/uint256 /g, '')
-    .replace(/string /g, '')
-    .replace(/bool /g, '')
-    .replace(/bytes /g, '')
+  
+  // Extract parameter names from encoded values
+  var argListUpdate = ''
+  if (variables && variables.trim()) {
+    argListUpdate = variables
+      .split(',')
+      .map(param => {
+        const trimmed = param.trim()
+        const words = trimmed.split(/\s+/)
+        return words[words.length - 1]
+      })
+      .join(', ')
+  }
 
   const modifierToAdd = `checkRulesBefore${funcName}(${argListUpdate})`
 
