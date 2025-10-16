@@ -5,8 +5,6 @@ import {
   validateTrackerJSON,
   validatePolicyJSON,
   safeParseJson,
-  formatParenConditionGroups,
-  validateCondition,
   validateMappedTrackerJSON,
   validateCallingFunctionExists,
   CallingFunctionJSON,
@@ -829,64 +827,6 @@ test('Tests can return error when parsing invalid json', () => {
   expect(isLeft(retVal)).toBeTruthy()
   const parsed = unwrapEither(retVal) as RulesError[]
   expect(parsed[0].message).toEqual('Failed to parse JSON')
-})
-
-test('Tests formatParenConditionGroups', () => {
-  const str = `FC:GetValue > 500 AND (FC:GetValue < 100 OR FC:GetValue > 200)`
-  const groups = formatParenConditionGroups(str)
-  expect(groups.finalGroups.length).toEqual(2)
-})
-
-test('Tests formatParenConditionGroups nested second group', () => {
-  const str = `FC:GetValue > 500 AND (FC:GetValue < 100 OR (FC:GetValue > 200 AND TR:TestTracker > 100)) `
-  const groups = formatParenConditionGroups(str)
-  expect(groups.finalGroups.length).toEqual(3)
-})
-
-test('Tests formatParenConditionGroups single group', () => {
-  const str = `FC:GetValue > 500`
-  const groups = formatParenConditionGroups(str)
-  expect(groups.finalGroups.length).toEqual(1)
-})
-
-test('Tests formatParenConditionGroups nested first group', () => {
-  const str = `(FC:GetValue < 100 OR (FC:GetValue > 200 AND TR:TestTracker > 100)) AND FC:GetValue > 500`
-  const groups = formatParenConditionGroups(str)
-  expect(groups.finalGroups.length).toEqual(3)
-})
-
-test('Tests formatParenConditionGroups nested both groups', () => {
-  const str = `(FC:GetValue < 100 OR (FC:GetValue > 200 AND TR:TestTracker > 100)) AND (TR:TestTracker > 400 AND (FC:GetValue > 500 AND FC:GetRole == "Admin"))`
-  const groups = formatParenConditionGroups(str)
-  expect(groups.finalGroups.length).toEqual(5)
-})
-
-test('Tests formatParenConditionGroups catches missing paren', () => {
-  const str = `(FC:GetValue < 100 OR (FC:GetValue > 200 AND TR:TestTracker > 100) AND FC:GetValue > 500`
-  const isValid = validateCondition(str)
-
-  expect(isValid).toBeFalsy()
-})
-
-test('Tests formatParenConditionGroups catches multiple AND operators', () => {
-  const str = `(FC:GetValue < 100 OR (FC:GetValue > 200 AND TR:TestTracker > 100)) AND FC:GetValue > 500 AND FC:GetScore > 100`
-  const isValid = validateCondition(str)
-
-  expect(isValid).toBeFalsy()
-})
-
-test('Tests formatParenConditionGroups catches multiple OR operators', () => {
-  const str = `(FC:GetValue < 100 OR (FC:GetValue > 200 AND TR:TestTracker > 100)) OR FC:GetValue > 500 OR FC:GetScore > 100`
-  const isValid = validateCondition(str)
-
-  expect(isValid).toBeFalsy()
-})
-
-test('Tests formatPrenConditionGroups catches AND and OR operators', () => {
-  const str = `(FC:GetValue < 100 OR (FC:GetValue > 200 AND TR:TestTracker > 100)) OR FC:GetValue > 500 OR FC:GetScore > 100`
-  const isValid = validateCondition(str)
-
-  expect(isValid).toBeFalsy()
 })
 
 const ADDRESS_ARRAY = [

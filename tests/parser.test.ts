@@ -7,8 +7,8 @@ import {
   matchArray,
   pTypeEnum,
   RulesError,
-  TrackerDefinition, 
-  NameToID, 
+  TrackerDefinition,
+  NameToID,
   PlaceholderStruct,
 } from '../src/modules/types.js'
 import {
@@ -32,13 +32,6 @@ import {
 } from '../src/parsing/parser.js'
 import { parseEffect } from '../src/parsing/parsing-utilities.js'
 import { reverseParseInstructionSet } from '../src/parsing/reverse-parsing-logic.js'
-import {
-  convertASTToInstructionSet,
-  convertToTree,
-  intify,
-  iterate,
-  removeArrayWrappers,
-} from '../src/parsing/internal-parsing-logic.js'
 
 test('Evaluates a simple syntax string (using only values and operators)', () => {
   /**
@@ -371,7 +364,7 @@ test('Reverse Interpretation for the: "Evaluates a simple syntax string involvin
   let instructionSet = ['PLH', 0n, 'PLHM', 1n, 0n, 'N', 1n, '==', 1n, 2n]
   var expectedString = 'TR:trackerOne(to) == 1'
   const cleanedInstructionSet = cleanInstructionSet(instructionSet)
-  var placeholderArray = ['to', 'TR:trackerOne']
+  var placeholderArray = ['to', 'TR:trackerOne~1']
   var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
   expect(retVal).toEqual(expectedString)
 })
@@ -380,7 +373,7 @@ test('Reverse Interpretation for the: "Evaluates a simple effect involving a map
   let instructionSet = ['PLH', 0n, 'PLHM', 1n, 0n, 'N', 1n, '-', 1n, 2n, 'TRUM', 1n, 3n, 0n, 0n]
   var expectedString = '[TRU:testOne(to) -= 1]'
   const cleanedInstructionSet = cleanInstructionSet(instructionSet)
-  var placeholderArray = ['to', 'TR:testOne']
+  var placeholderArray = ['to', 'TR:testOne~1']
   var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
   expect(retVal).toEqual(expectedString)
 })
@@ -430,7 +423,7 @@ test('Evaluates a complex effect involving a mapped tracker update (TRUM))', () 
   } `
 
   const cleanedInstructionSet = cleanInstructionSet(instructionSet)
-  var placeholderArray = ['to', 'TR:testOne', 'TR:testTwo']
+  var placeholderArray = ['to', 'TR:testOne~1', 'TR:testTwo~2']
   var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
   expect(retVal).toEqual('[TRU:testOne(to) -= 1] AND [TRU:testTwo(to) -= 1]')
 })
@@ -1224,7 +1217,7 @@ test('Evaluate a complex syntax string with multiple foreign calls', () => {
     'PLH',
     4n,
     'N',
-    '500)',
+    500n,
     '<',
     12n,
     13n,
@@ -1243,7 +1236,7 @@ test('Evaluate a complex syntax string with multiple foreign calls', () => {
   ]
 
   var ruleStringA = `{
-    "Condition": "FC:isAllowed == 1 AND (to == 0xdeadbeefdeadbeef OR (FC:isSuperCoolGuy == 1 AND (FC:isRich == 1 AND FC:creditRisk == 500)))",
+    "Condition": "FC:isAllowed == 1 AND (to == 0xdeadbeefdeadbeef OR (FC:isSuperCoolGuy == 1 AND (FC:isRich == 1 AND FC:creditRisk < 500)))",
       "PositiveEffects": ["revert"],
         "NegativeEffects": [],
           "CallingFunction": "transfer"
@@ -1262,8 +1255,7 @@ test('Evaluate a complex syntax string with multiple foreign calls', () => {
     []
   )
   expect(retVal).not.toBeNull()
-  // expect(retVal!.instructionSet).toEqual(expectedArray)
-  console.log(retVal?.instructionSet)
+  expect(retVal!.instructionSet).toEqual(expectedArray)
 })
 
 test('Reverse Interpretation for the: "Evaluates a simple syntax string with a Foreign Call" test', () => {
@@ -2882,14 +2874,14 @@ test('Test Event with Foreign Call Parameter - processSyntax Integration', () =>
     {
       name: 'compare',
       id: 0,
-      type: 1
-    }
-  ];
-  
+      type: 1,
+    },
+  ]
+
   const trackerNameToID: NameToID[] = []
   const additionalForeignCalls = ['FC:compare']
   const encodedValues = 'address to, uint256 value'
-  
+
   // Test event effect that contains a foreign call parameter
   const eventEffect = 'emit "Foreign Call Update", FC:compare'
   const [updatedEffect, effectComponents] = processSyntax(
@@ -2899,20 +2891,20 @@ test('Test Event with Foreign Call Parameter - processSyntax Integration', () =>
     additionalForeignCalls,
     eventEffect
   )
-  
+
   // Verify processSyntax transforms FC:compare to a placeholder
   expect(updatedEffect).toContain('FC:')
   expect(updatedEffect).not.toContain('FC:compare') // Original name should be replaced
-  
+
   // Test parseEffect with the transformed components
   const placeholders: PlaceholderStruct[] = []
   const eventResult = parseEffect(updatedEffect, effectComponents, placeholders, trackerNameToID)
-  
+
   expect(eventResult).toBeDefined()
   expect(eventResult?.type).toBe(EffectType.EVENT)
   expect(eventResult?.text).toBe('Foreign Call Update')
   expect(eventResult?.eventPlaceholderIndex).toBeDefined()
-  
+
   // Verify the foreign call parameter is properly detected as dynamic
   if (eventResult?.eventPlaceholderIndex !== undefined && effectComponents[eventResult.eventPlaceholderIndex]) {
     const referencedComponent = effectComponents[eventResult.eventPlaceholderIndex]
@@ -3434,6 +3426,465 @@ test('Reverse Interpretation for: Complex calculated values test #5', () => {
   var expectedString = 'TRU:trackerOne = [[[1 + 2] + [value + valueTwo]] / TR:trackerOne]'
   const cleanedInstructionSet = cleanInstructionSet(instructionSet)
   var placeholderArray = ['value', 'valueTwo', 'TR:trackerOne']
+  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
+  expect(retVal).toEqual(expectedString)
+})
+
+test('Complex non-cascading expression', () => {
+  var expectedArray = [
+    'N',
+    2n,
+    'PLH',
+    1n,
+    '==',
+    0n,
+    1n,
+    'N',
+    1n,
+    'PLH',
+    0n,
+    'N',
+    3n,
+    '+',
+    4n,
+    5n,
+    '==',
+    3n,
+    6n,
+    'AND',
+    2n,
+    7n,
+    'N',
+    2n,
+    'PLH',
+    1n,
+    'PLH',
+    0n,
+    '-',
+    10n,
+    11n,
+    '==',
+    9n,
+    12n,
+    'PLH',
+    0n,
+    'PLH',
+    0n,
+    '+',
+    14n,
+    15n,
+    'N',
+    14n,
+    '==',
+    16n,
+    17n,
+    'OR',
+    13n,
+    18n,
+    'AND',
+    8n,
+    19n,
+  ]
+
+  var ruleStringA = `{
+    "Condition": "(2 == valueTwo AND 1 == [value + 3]) AND (2 == [valueTwo - value] OR [value + value] == 14)",
+      "PositiveEffects": [],
+        "NegativeEffects": [],
+          "CallingFunction": "addValue"
+  } `
+
+  var retVal = parseRuleSyntax(
+    JSON.parse(ruleStringA),
+    [
+      { id: 4, name: 'trackerOne', type: 1 },
+      { id: 5, name: 'testTwo', type: 1 },
+    ],
+    [{ id: 1, name: 'foreignCallOne', type: 0 }],
+    'uint256 value, uint256 valueTwo, uint256 valueThree, uint256 valueFour',
+    ['FC:foreignCallOne'],
+    []
+  )
+  expect(retVal?.instructionSet).toEqual(expectedArray)
+})
+
+test('Reverse Interpretation for: Complex non-cascading expression', () => {
+  let instructionSet = [
+    'N',
+    2n,
+    'PLH',
+    1n,
+    '==',
+    0n,
+    1n,
+    'N',
+    1n,
+    'PLH',
+    0n,
+    'N',
+    3n,
+    '+',
+    4n,
+    5n,
+    '==',
+    3n,
+    6n,
+    'AND',
+    2n,
+    7n,
+    'N',
+    2n,
+    'PLH',
+    1n,
+    'PLH',
+    0n,
+    '-',
+    10n,
+    11n,
+    '==',
+    9n,
+    12n,
+    'PLH',
+    0n,
+    'PLH',
+    0n,
+    '+',
+    14n,
+    15n,
+    'N',
+    14n,
+    '==',
+    16n,
+    17n,
+    'OR',
+    13n,
+    18n,
+    'AND',
+    8n,
+    19n,
+  ]
+  var expectedString = '(2 == valueTwo AND 1 == [value + 3]) AND (2 == [valueTwo - value] OR [value + value] == 14)'
+  const cleanedInstructionSet = cleanInstructionSet(instructionSet)
+  var placeholderArray = ['value', 'valueTwo', 'TR:trackerOne']
+  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
+  expect(retVal).toEqual(expectedString)
+})
+
+test('Complex non-cascading expression #2', () => {
+  var expectedArray = [
+    'N',
+    2n,
+    'PLH',
+    1n,
+    '==',
+    0n,
+    1n,
+    'N',
+    1n,
+    'PLH',
+    0n,
+    'N',
+    3n,
+    '+',
+    4n,
+    5n,
+    '==',
+    3n,
+    6n,
+    'AND',
+    2n,
+    7n,
+    'N',
+    2n,
+    'PLH',
+    1n,
+    'PLH',
+    0n,
+    '-',
+    10n,
+    11n,
+    '==',
+    9n,
+    12n,
+    'AND',
+    8n,
+    13n,
+    'PLH',
+    0n,
+    'PLH',
+    0n,
+    '+',
+    15n,
+    16n,
+    'N',
+    14n,
+    '==',
+    17n,
+    18n,
+    'OR',
+    14n,
+    19n,
+  ]
+
+  var ruleStringA = `{
+    "Condition": "((2 == valueTwo AND 1 == [value + 3]) AND 2 == [valueTwo - value]) OR [value + value] == 14",
+      "PositiveEffects": [],
+        "NegativeEffects": [],
+          "CallingFunction": "addValue"
+  } `
+
+  var retVal = parseRuleSyntax(
+    JSON.parse(ruleStringA),
+    [
+      { id: 4, name: 'trackerOne', type: 1 },
+      { id: 5, name: 'testTwo', type: 1 },
+    ],
+    [{ id: 1, name: 'foreignCallOne', type: 0 }],
+    'uint256 value, uint256 valueTwo, uint256 valueThree, uint256 valueFour',
+    ['FC:foreignCallOne'],
+    []
+  )
+  expect(retVal?.instructionSet).toEqual(expectedArray)
+})
+
+test('Reverse Interpretation for: Complex non-cascading expression #2', () => {
+  let instructionSet = [
+    'N',
+    2n,
+    'PLH',
+    1n,
+    '==',
+    0n,
+    1n,
+    'N',
+    1n,
+    'PLH',
+    0n,
+    'N',
+    3n,
+    '+',
+    4n,
+    5n,
+    '==',
+    3n,
+    6n,
+    'AND',
+    2n,
+    7n,
+    'N',
+    2n,
+    'PLH',
+    1n,
+    'PLH',
+    0n,
+    '-',
+    10n,
+    11n,
+    '==',
+    9n,
+    12n,
+    'AND',
+    8n,
+    13n,
+    'PLH',
+    0n,
+    'PLH',
+    0n,
+    '+',
+    15n,
+    16n,
+    'N',
+    14n,
+    '==',
+    17n,
+    18n,
+    'OR',
+    14n,
+    19n,
+  ]
+  var expectedString = '((2 == valueTwo AND 1 == [value + 3]) AND 2 == [valueTwo - value]) OR [value + value] == 14'
+  const cleanedInstructionSet = cleanInstructionSet(instructionSet)
+  var placeholderArray = ['value', 'valueTwo', 'TR:trackerOne']
+  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
+  expect(retVal).toEqual(expectedString)
+})
+
+test('Complex non-cascading expression #3', () => {
+  var expectedArray = [
+    'N',
+    2n,
+    'PLH',
+    1n,
+    '==',
+    0n,
+    1n,
+    'N',
+    1n,
+    'PLH',
+    3n,
+    'N',
+    3n,
+    '+',
+    4n,
+    5n,
+    '==',
+    3n,
+    6n,
+    'AND',
+    2n,
+    7n,
+    'PLH',
+    2n,
+    'N',
+    1234n,
+    '==',
+    9n,
+    10n,
+    'OR',
+    8n,
+    11n,
+    'N',
+    2n,
+    'PLH',
+    1n,
+    'PLH',
+    4n,
+    '-',
+    14n,
+    15n,
+    '==',
+    13n,
+    16n,
+    'PLH',
+    0n,
+    'PLH',
+    0n,
+    '+',
+    18n,
+    19n,
+    'N',
+    14n,
+    '==',
+    20n,
+    21n,
+    'OR',
+    17n,
+    22n,
+    'PLH',
+    0n,
+    'N',
+    123n,
+    '>=',
+    24n,
+    25n,
+    'AND',
+    23n,
+    26n,
+    'AND',
+    12n,
+    27n,
+  ]
+
+  var ruleStringA = `{
+    "Condition": "((2 == valueTwo AND 1 == [TR:trackerOne + 3]) OR FC:foreignCallOne == 1234) AND ((2 == [valueTwo - TR:testTwo] OR [value + value] == 14) AND value >= 123)",
+      "PositiveEffects": ["TRU:trackerOne += [[TR:trackerOne + TR:trackerTwo] / 2]"],
+        "NegativeEffects": [],
+          "CallingFunction": "addValue"
+  } `
+
+  var retVal = parseRuleSyntax(
+    JSON.parse(ruleStringA),
+    [
+      { id: 4, name: 'trackerOne', type: 1 },
+      { id: 5, name: 'trackerTwo', type: 1 },
+      { id: 6, name: 'trackerThree', type: 1 },
+    ],
+    [{ id: 1, name: 'foreignCallOne', type: 0 }],
+    'uint256 value, uint256 valueTwo, uint256 valueThree, uint256 valueFour',
+    ['FC:foreignCallOne'],
+    []
+  )
+  expect(retVal?.instructionSet).toEqual(expectedArray)
+})
+
+test('Reverse Interpretation for: Complex non-cascading expression #3', () => {
+  let instructionSet = [
+    'N',
+    2n,
+    'PLH',
+    1n,
+    '==',
+    0n,
+    1n,
+    'N',
+    1n,
+    'PLH',
+    3n,
+    'N',
+    3n,
+    '+',
+    4n,
+    5n,
+    '==',
+    3n,
+    6n,
+    'AND',
+    2n,
+    7n,
+    'PLH',
+    2n,
+    'N',
+    1234n,
+    '==',
+    9n,
+    10n,
+    'OR',
+    8n,
+    11n,
+    'N',
+    2n,
+    'PLH',
+    1n,
+    'PLH',
+    4n,
+    '-',
+    14n,
+    15n,
+    '==',
+    13n,
+    16n,
+    'PLH',
+    0n,
+    'PLH',
+    0n,
+    '+',
+    18n,
+    19n,
+    'N',
+    14n,
+    '==',
+    20n,
+    21n,
+    'OR',
+    17n,
+    22n,
+    'PLH',
+    0n,
+    'N',
+    123n,
+    '>=',
+    24n,
+    25n,
+    'AND',
+    23n,
+    26n,
+    'AND',
+    12n,
+    27n,
+  ]
+  var expectedString =
+    '((2 == valueTwo AND 1 == [TR:trackerOne + 3]) OR FC:foreignCallOne == 1234) AND ((2 == [valueTwo - TR:testTwo] OR [value + value] == 14) AND value >= 123)'
+  const cleanedInstructionSet = cleanInstructionSet(instructionSet)
+  var placeholderArray = ['value', 'valueTwo', 'FC:foreignCallOne', 'TR:trackerOne', 'TR:testTwo']
   var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
   expect(retVal).toEqual(expectedString)
 })

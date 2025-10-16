@@ -186,83 +186,6 @@ export const validateConditionGroup = (condition: string[]): boolean => {
   return andTerms || orTerms
 }
 
-export const handleCloseParenthesis = (acc: ConditionGroups, term: string, coreGroup: boolean) => {
-  if (acc.groups.length === 0) {
-    acc.groups.push(['PAREN_GROUP']) // If no groups left, push a placeholder group
-  } else if (coreGroup) {
-    acc.finalGroups.push(acc.groups.pop() as string[])
-    acc.groups[acc.groups.length - 1].push('PAREN_GROUP')
-    acc.finalGroups.push(acc.groups.pop() as string[])
-  } else {
-    acc.groups[acc.groups.length - 1].push('PAREN_GROUP')
-    acc.finalGroups.push(acc.groups.pop() as string[])
-  }
-}
-
-type ConditionGroups = {
-  groups: string[][]
-  finalGroups: string[][]
-  invalid: boolean
-}
-
-const replaceMappedTrackers = (condition: string): string => {
-  return condition.replace(/TR:[a-zA-Z]+\([^()]+\)/g, 'MAPPED_TRACKER')
-}
-
-const addParensPadding = (condition: string): string => {
-  return condition
-    .replace(/([()])/g, ' $1 ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-/**
- * Parses a a rule condition and returns groups formatted based on parenthesis.
- *
- * @param condition - string representing the rule condition.
- * @returns ConditionGroups the formatted groups and whether the condition is valid syntax.
- */
-export const formatParenConditionGroups = (condition: string): ConditionGroups => {
-  const formattedCondition = addParensPadding(replaceMappedTrackers(condition))
-  return formattedCondition.split(' ').reduce(
-    (acc: ConditionGroups, term, index, terms) => {
-      if (acc.invalid) return acc // If already invalid, skip further processing
-
-      const currentGroup = acc.groups[acc.groups.length - 1]
-
-      if (term === ')') {
-        handleCloseParenthesis(acc, term, term !== terms[index - 1])
-      } else if (term === '(') {
-        acc.groups.push([]) // Start a new group
-
-        // if it is the first term, create a new group
-        // if the first term is an open parenthesis it is handled above
-      } else if (index === 0) {
-        acc.groups.push([term])
-
-        // if is the the last term push it to the current group
-        // then finalize the current group
-        // if it is a close paren it is handled above
-      } else if (index === terms.length - 1) {
-        currentGroup.push(term)
-        acc.finalGroups.push(acc.groups.pop() as string[]) // Push the last group to final groups
-
-        // the remaining case is a regular string term, add it to the current group
-      } else {
-        // if there is no current group the condition is invalid
-        if (currentGroup == undefined) {
-          acc.invalid = true // If no current group, mark as invalid
-        } else {
-          currentGroup.push(term) // Add term to the current group
-        }
-      }
-
-      return acc
-    },
-    { groups: [], finalGroups: [], invalid: false }
-  )
-}
-
 const validateInputReferencedCalls = (
   foreignCallNames: string[],
   trackerNames: string[],
@@ -426,41 +349,11 @@ const validateReferencedCalls = (input: any): boolean => {
   return validatedInputs && validatedForeignCallValuesToPass // If any input is invalid, return false
 }
 
-/**
- * Validates a rule condition.
- *
- * @param condition - string representing the rule condition.
- * @returns boolean, true if the condition has properly formatted paren
- *          groups, otherwise false.
- */
-export const validateCondition = (condition: string): boolean => {
-  const grouped = formatParenConditionGroups(condition)
-  if (grouped.invalid) {
-    return false // If the condition is invalid, return false
-  }
-
-  // if there are non finalized groups, or no finalized groups it is invalid
-  if (grouped.groups.length > 0 || grouped.finalGroups.length === 0) {
-    return false
-  }
-
-  // if there is a single groups that does not include a logical operator, it is valid
-  if (grouped.finalGroups.length === 1 && !['AND', 'OR'].includes(grouped.finalGroups[0].join(' '))) {
-    return true // If no groups, condition is valid
-  }
-
-  const validatedOperators = grouped.finalGroups.map(validateConditionGroup).every((isValid) => isValid)
-
-  return validatedOperators
-}
-
 export const ruleValidator = z.object({
   Id: z.number().optional(),
   Name: z.string().default(EMPTY_STRING),
   Description: z.string().default(EMPTY_STRING),
-  Condition: z.string().refine((val) => validateCondition(val), {
-    error: 'Invalid logical operators in condition',
-  }),
+  Condition: z.string(),
   PositiveEffects: z.array(z.string()),
   NegativeEffects: z.array(z.string()),
   CallingFunction: z.string(),
