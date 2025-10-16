@@ -165,11 +165,11 @@ export function reverseParseInstructionSet(
         case 2:
           memAddressesMap.push({
             memAddr: currentMemAddress,
-            value: placeHolderArray[instruction],
+            value: placeHolderArray[instruction].split('~')[0],
           })
           keyIndex = instruction
           currentMemAddress += 1
-          retVal = placeHolderArray[instruction]
+          retVal = placeHolderArray[instruction].split('~')[0]
           break
         case 3:
           retVal = arithmeticOperatorReverseInterpretation(
@@ -189,7 +189,16 @@ export function reverseParseInstructionSet(
           if (currentActionIndex == 2) {
             valueIndex = instruction
           } else {
-            var newMem = placeHolderArray[valueIndex] + '(' + placeHolderArray[keyIndex] + ')'
+            var trum = ''
+            for (var place of placeHolderArray) {
+              if (place.includes('~')) {
+                var value = Number(place.split('~')[1])
+                if (value == valueIndex) {
+                  trum = place.split('~')[0]
+                }
+              }
+            }
+            var newMem = trum + '(' + placeHolderArray[keyIndex] + ')'
             memAddressesMap.push({
               memAddr: currentMemAddress,
               value: newMem,
@@ -447,6 +456,7 @@ export const reverseParsePlaceholder = (
     } else if (placeholder.pType == 3) {
       strTR = strTR + '!' + 'bool'
     }
+    strTR = strTR + '~' + placeholder.typeSpecificIndex
     return 'TR:' + strTR
   } else if (placeholder.flags == 0x04) {
     return 'GV:MSG_SENDER'
@@ -499,7 +509,7 @@ export const reverseParseEffect = (
     const decodedText = decodeHexString(effect.text)
     var param = ''
     if (effect.dynamicParam) {
-      param = ', ' + placeholders[effect.eventPlaceholderIndex]
+      param = ', ' + placeholders[effect.eventPlaceholderIndex].split('~')[0]
     } else if (effect.param && effect.param !== '0x') {
       // Static parameter - decode based on pType and add suffix if needed
       let decodedParam = ''
