@@ -162,7 +162,6 @@ export function parseRuleSyntax(
     additionalForeignCalls,
     removeExtraParenthesis(syntax.Condition)
   )
-
   const placeHolders = buildPlaceholderList(ruleComponents)
   const processedEffect = getProcessedEffects(
     encodedValues,
@@ -187,7 +186,6 @@ export function parseRuleSyntax(
     return null
   }
   const [negativeEffects, negativeEffectPlaceHolders] = retE
-
   const conditionInstructionSet = convertHumanReadableToInstructionSet(
     condition,
     ruleComponents,

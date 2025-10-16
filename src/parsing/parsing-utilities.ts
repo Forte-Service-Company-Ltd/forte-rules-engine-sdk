@@ -80,7 +80,6 @@ export function parseTrackers(
 ): [string, TrackerArgument[]] {
   const trRegex = /TR:[a-zA-Z]+/g
   const truRegex = /TRU:[a-zA-Z]+/g
-
   const matches = [...new Set(condition.match(trRegex) || [])]
 
   const trMappedRegex = /TR:[a-zA-Z]+\([^()]+\)/g
@@ -88,16 +87,14 @@ export function parseTrackers(
   const mappedMatches = condition.match(trMappedRegex) || []
   const mappedUpdateMatches = condition.match(truMappedRegex) || []
   const mappedMatchesSet = [...new Set([...mappedMatches, ...mappedUpdateMatches])]
-
   // replace mapped tracker parens syntx `trackerName(key) with pipe syntax `trackerName | key`
   const trCondition = mappedMatchesSet.reduce((acc, match) => {
     let initialSplit = match.split('(')[1]
 
     initialSplit = initialSplit.substring(0, initialSplit.length - 1)
 
-    return acc.replace(match, initialSplit + ' | ' + match.split('(')[0])
+    return acc.replaceAll(match, initialSplit + ' | ' + match.split('(')[0])
   }, condition)
-
   const trackers: TrackerArgument[] = matches.map((name) => {
     let rawTypeTwo = 'address'
     let tIndex = 0
@@ -125,7 +122,6 @@ export function parseTrackers(
   })
 
   const updateMatchesSet = [...new Set([...(condition.match(truRegex) || [])])]
-
   const updatedTrackers: TrackerArgument[] = updateMatchesSet
     .map((name: string): Maybe<TrackerArgument> => {
       let tIndex = 0
@@ -446,19 +442,19 @@ export function parseEffect(
         }
         iter += 1
       }
-      
+
       // For dynamic parameters, generate instruction set for foreign call execution
       if (dynamic) {
         const paramString = spli[1].trim()
         effectInstructionSet = ['PLH', plhIndex]
       }
-      
+
       // Check for :bytes suffix first
       let paramString = spli[1].trim()
-      
+
       if (paramString.endsWith(':bytes')) {
-        pType = 5  // bytes
-        parameterValue = paramString.slice(0, -6).trim()  // Remove ':bytes' suffix
+        pType = 5 // bytes
+        parameterValue = paramString.slice(0, -6).trim() // Remove ':bytes' suffix
       } else if (isAddress(paramString)) {
         pType = 0
         parameterValue = paramString
@@ -466,10 +462,10 @@ export function parseEffect(
         pType = 2
         parameterValue = BigInt(paramString)
       } else if (paramString.toLowerCase() === 'true' || paramString.toLowerCase() === 'false') {
-        pType = 3  // bool detection
+        pType = 3 // bool detection
         parameterValue = paramString.toLowerCase() === 'true'
       } else {
-        pType = 1  // string
+        pType = 1 // string
         parameterValue = paramString
       }
     } else {
@@ -609,20 +605,18 @@ export function removeExtraParenthesis(strToClean: string): string {
     iter += 1
     strToClean = strToClean.replace(sub, replacement)
   }
-
   const trMappedRegex = /TR:[a-zA-Z]+\([^()]+\)/g
 
   var mappedMatches = strToClean.match(trMappedRegex)
   if (mappedMatches != null) {
     var uniq = [...new Set(mappedMatches)]
-    for (var match of uniq!) {
+    for (var match of mappedMatches!) {
       trHolder.push(match)
       var replacement = 'trRep:' + trIter
       trIter += 1
       strToClean = strToClean.replace(match, replacement)
     }
   }
-
   iter = 0
   while (strToClean.includes('(')) {
     var initialIndex = strToClean.lastIndexOf('(')
