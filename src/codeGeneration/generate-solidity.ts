@@ -93,11 +93,18 @@ export function generateModifier(policyS: string, outputFileName: string): void 
       var modifierNameStr = 'modifier checkRulesBefore' + callingFunction + '([]) {\n'
       var modifierNameAfterStr = '\tmodifier checkRulesAfter' + callingFunction + '([]) {\n'
 
-      var argListUpdate = argList.replace(/address /g, '')
-      argListUpdate = argListUpdate.replace(/uint256 /g, '')
-      argListUpdate = argListUpdate.replace(/string /g, '')
-      argListUpdate = argListUpdate.replace(/bool /g, '')
-      argListUpdate = argListUpdate.replace(/bytes /g, '')
+      // Extract parameter names for abi.encodeWithSelector call
+      var argListUpdate = ''
+      if (argList && argList.trim()) {
+        argListUpdate = argList
+          .split(',')
+          .map(param => {
+            const trimmed = param.trim()
+            const words = trimmed.split(/\s+/)
+            return words[words.length - 1]
+          })
+          .join(', ')
+      }
 
       modifierNameStr = modifierNameStr.replace('[]', argList.trim())
       modifierNameAfterStr = modifierNameAfterStr.replace('[]', argList.trim())
