@@ -257,7 +257,7 @@ const validateValuesToPass = (
 
 /**
  * Validates that all foreign calls and rules reference existing calling functions
- * @param input - The policy JSON object
+ * @param input - The policy JSON object (may be merged with existing policy data)
  * @returns boolean indicating if all references are valid
  */
 const validateReferencedCalls = (input: any): boolean => {
@@ -760,14 +760,35 @@ export interface PolicyJSON extends z.infer<typeof policyJSONValidator> {}
  * Parses a JSON string and returns Either a PolicyJSON object or an error.
  *
  * @param policy - string to be parsed.
+ * @param existingPolicy - optional existing policy data to merge with for update operations.
  * @returns Either the parsed PolicyJSON object or an error.
  */
-export const validatePolicyJSON = (policy: string): Either<RulesError[], PolicyJSON> => {
+export const validatePolicyJSON = (policy: string, existingPolicy?: PolicyJSON): Either<RulesError[], PolicyJSON> => {
   const parsedJson = safeParseJson(policy)
 
   if (isLeft(parsedJson)) return parsedJson
 
-  const parsed = policyJSONValidator.safeParse(unwrapEither(parsedJson))
+  let policyData: any = unwrapEither(parsedJson)
+
+  // If we have an existing policy, merge it with the input data
+  // This allows validation during updates where the input may only contain new/updated entities
+  if (existingPolicy) {
+    policyData = {
+      Id: policyData.Id ?? existingPolicy.Id,
+      Policy: policyData.Policy ?? existingPolicy.Policy,
+      Description: policyData.Description ?? existingPolicy.Description,
+      PolicyType: policyData.PolicyType ?? existingPolicy.PolicyType,
+      // Merge arrays: combine existing entities with new/updated ones
+      // Use a Map to handle updates by Name for efficient merging
+      CallingFunctions: mergeEntitiesByName(existingPolicy.CallingFunctions, policyData.CallingFunctions || []),
+      ForeignCalls: mergeEntitiesByName(existingPolicy.ForeignCalls, policyData.ForeignCalls || []),
+      Trackers: mergeEntitiesByName(existingPolicy.Trackers, policyData.Trackers || []),
+      MappedTrackers: mergeEntitiesByName(existingPolicy.MappedTrackers, policyData.MappedTrackers || []),
+      Rules: mergeEntitiesByName(existingPolicy.Rules, policyData.Rules || []),
+    }
+  }
+
+  const parsed = policyJSONValidator.safeParse(policyData)
 
   if (parsed.success) {
     return makeRight(parsed.data)
@@ -779,4 +800,25 @@ export const validatePolicyJSON = (policy: string): Either<RulesError[], PolicyJ
     }))
     return makeLeft(errors)
   }
+}
+
+/**
+ * Merges existing entities with new entities, prioritizing new entities by Name.
+ * This is used during policy updates to combine on-chain state with update input.
+ *
+ * @param existing - Array of existing entities from on-chain state
+ * @param updates - Array of new/updated entities from input
+ * @returns Merged array with updates taking precedence
+ */
+const mergeEntitiesByName = <T extends { Name: string }>(existing: T[], updates: T[]): T[] => {
+  // Create a map of existing entities by name
+  const entityMap = new Map<string, T>()
+
+  // Add all existing entities
+  existing.forEach((entity) => entityMap.set(entity.Name, entity))
+
+  // Override with updates (new or updated entities)
+  updates.forEach((entity) => entityMap.set(entity.Name, entity))
+
+  return Array.from(entityMap.values())
 }
