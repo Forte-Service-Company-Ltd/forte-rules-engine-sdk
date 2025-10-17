@@ -1219,7 +1219,7 @@ describe('Rules Engine Interactions', async () => {
                                "Description": "Rule A Description",
                                "Condition": "GV:TX_ORIGIN == GV:BLOCK_TIMESTAMP AND (GV:MSG_DATA == 2 AND (someValue == true AND GV:BLOCK_NUMBER == 4))",
                                "PositiveEffects": ["emit \\"Success\\"", "FC:AnotherTestForeignCall", "[TRU:mappedTrackerOne(to) += 1]"],
-                               "NegativeEffects": ["revert(\\"Negative\\")", "[TRU:trackerOne += 12]"],
+                               "NegativeEffects": ["[TRU:trackerOne += 12]", "revert(\\"Negative\\")"],
                                "CallingFunction": "transfer"
                            }
                        ]
@@ -1264,7 +1264,7 @@ describe('Rules Engine Interactions', async () => {
 
     expect(retVal).toBeDefined()
 
-    input.Rules[0].NegativeEffects[0] = "revert('Negative')"
+    input.Rules[0].NegativeEffects = ["[TRU:trackerOne += 12]", "revert('Negative')"]
 
     // // Verify Policy data mirrors input fields
     assertPolicyDataMatchesInput(retVal!, input)
@@ -2190,7 +2190,7 @@ describe('Rules Engine Interactions', async () => {
                                            "Description": "Rule A Description",
                                            "Condition": "FC:ATestForeignCall > 1000",
                                            "PositiveEffects": ["emit \\"Success\\"", "FC:AnotherTestForeignCall", "TRU:mappedTrackerOne(to) += 1"],
-                                           "NegativeEffects": ["revert(\\\"Negative\\\")", "TRU:trackerOne += 12"],
+                                           "NegativeEffects": ["TRU:trackerOne += 12", "revert(\\\"Negative\\\")"],
                                            "CallingFunction": "transfer"
                                        }
                                    ]

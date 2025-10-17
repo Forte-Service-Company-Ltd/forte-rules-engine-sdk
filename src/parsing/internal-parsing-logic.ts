@@ -772,7 +772,21 @@ function intify(array: any[]): Array<number | BigInt> {
       return intify(iter)
     } else {
       if (isAddress(iter) || !isNaN(Number(iter))) {
-        return BigInt(iter)
+        // Skip validation for addresses - they're valid even if they represent large numbers
+        if (isAddress(iter)) {
+          return BigInt(iter)
+        }
+        
+        // Validate numbers against uint256 maximum value for EVM compatibility
+        const numValue = BigInt(iter)
+        const MAX_UINT256 = BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff') // 2^256 - 1
+        
+        if (numValue > MAX_UINT256) {
+          console.error(`Validation Error: Number '${iter}' exceeds uint256 maximum value. Maximum allowed is ${MAX_UINT256.toString()}.`)
+          throw new Error(`Number '${iter}' exceeds uint256 maximum`)
+        }
+        
+        return numValue
       }
     }
     return iter
