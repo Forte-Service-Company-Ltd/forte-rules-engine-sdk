@@ -741,7 +741,7 @@ export const updatePolicy = async (
       policyId
     )
 
-    const validatedPolicyJSON = validatePolicyJSON(policySyntax, existingPolicy ?? undefined)
+    const validatedPolicyJSON = validatePolicyJSON(policySyntax, existingPolicy)
     if (isLeft(validatedPolicyJSON)) {
       throw new Error(getRulesErrorMessages(unwrapEither(validatedPolicyJSON)))
     }
