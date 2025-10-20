@@ -350,7 +350,7 @@ const validateReferencedCalls = (input: any): boolean => {
 }
 
 export const ruleValidator = z.object({
-  Id: z.number().optional(),
+  Id: z.coerce.number().optional(),
   Name: z.string().default(EMPTY_STRING),
   Description: z.string().default(EMPTY_STRING),
   Condition: z.string(),
@@ -412,7 +412,7 @@ export const validateFCFunctionInput = (input: string): boolean => {
 }
 
 export const foreignCallValidator = z.object({
-  Id: z.number().optional(),
+  Id: z.coerce.number().optional(),
   Name: z.string(),
   Function: z.string().trim().refine(validateFCFunctionInput, { message: 'Unsupported argument type' }),
   Address: z
@@ -545,7 +545,7 @@ const validateMappedTrackerUniqueKeys = (data: any): boolean => {
 
 export const trackerValidator = z
   .object({
-    Id: z.number().optional(),
+    Id: z.coerce.number().optional(),
     Name: z.string().trim(),
     Type: z.preprocess(trimPossibleString, z.literal(supportedTrackerTypes, 'Unsupported type')),
     InitialValue: z.union([z.string().trim(), z.array(z.string().trim())]),
@@ -560,7 +560,7 @@ export interface MappedTrackerJSON extends z.infer<typeof mappedTrackerValidator
 
 export const mappedTrackerValidator = z
   .object({
-    Id: z.number().optional(),
+    Id: z.coerce.number().optional(),
     Name: z.string().trim(),
     KeyType: z.preprocess(trimPossibleString, z.literal(supportedTrackerKeyTypes, 'Unsupported key type')),
     ValueType: z.preprocess(trimPossibleString, z.literal(supportedTrackerTypes, 'Unsupported type')),
@@ -681,7 +681,7 @@ const validateUniqueNames = (input: any): boolean => {
 
 export const policyJSONValidator = z
   .object({
-    Id: z.number().optional(),
+    Id: z.coerce.number().optional(),
     Policy: z.string().default(EMPTY_STRING),
     Description: z.string().default(EMPTY_STRING),
     PolicyType: z.string(),
@@ -691,7 +691,6 @@ export const policyJSONValidator = z
     MappedTrackers: z.array(mappedTrackerValidator),
     Rules: z.array(ruleValidator),
   })
-  .refine(validateReferencedCalls, { message: 'Invalid reference call' })
   .refine(
     (data) => {
       // Validate rule ordering consistency: if any rule has an order field, all rules must have it
@@ -724,7 +723,7 @@ export const policyJSONValidator = z
   .refine(
     (data) => {
       const rulesWithIds = data.Rules.filter((rule) => rule.Id != null)
-      let ids = rulesWithIds.map((rule) => rule.Id!)
+      let ids: (number | bigint)[] = rulesWithIds.map((rule) => rule.Id!)
       if (!validateUniqueKeys(ids)) {
         return false
       }
@@ -768,31 +767,12 @@ export const validatePolicyJSON = (policy: string, existingPolicy?: PolicyJSON):
 
   if (isLeft(parsedJson)) return parsedJson
 
-  let policyData: any = unwrapEither(parsedJson)
+  const originalPolicyData: any = unwrapEither(parsedJson)
 
-  // If we have an existing policy, merge it with the input data
-  // This allows validation during updates where the input may only contain new/updated entities
-  if (existingPolicy) {
-    policyData = {
-      Id: policyData.Id ?? existingPolicy.Id,
-      Policy: policyData.Policy ?? existingPolicy.Policy,
-      Description: policyData.Description ?? existingPolicy.Description,
-      PolicyType: policyData.PolicyType ?? existingPolicy.PolicyType,
-      // Merge arrays: combine existing entities with new/updated ones
-      // Use a Map to handle updates by Name for efficient merging
-      CallingFunctions: mergeEntitiesByName(existingPolicy.CallingFunctions, policyData.CallingFunctions || []),
-      ForeignCalls: mergeEntitiesByName(existingPolicy.ForeignCalls, policyData.ForeignCalls || []),
-      Trackers: mergeEntitiesByName(existingPolicy.Trackers, policyData.Trackers || []),
-      MappedTrackers: mergeEntitiesByName(existingPolicy.MappedTrackers, policyData.MappedTrackers || []),
-      Rules: mergeEntitiesByName(existingPolicy.Rules, policyData.Rules || []),
-    }
-  }
+  // First, validate the structure of the original input (without reference checks)
+  const parsed = policyJSONValidator.safeParse(originalPolicyData)
 
-  const parsed = policyJSONValidator.safeParse(policyData)
-
-  if (parsed.success) {
-    return makeRight(parsed.data)
-  } else {
+  if (!parsed.success) {
     const errors: RulesError[] = parsed.error.issues.map((err) => ({
       errorType: 'INPUT',
       message: `Policy ${err.message}${err.path.length ? `: Field ${err.path.join('.')}` : ''}`,
@@ -800,6 +780,42 @@ export const validatePolicyJSON = (policy: string, existingPolicy?: PolicyJSON):
     }))
     return makeLeft(errors)
   }
+
+  // If we have an existing policy, merge it with the input data for reference validation
+  // This allows validation during updates where the input may only contain new/updated entities
+  let mergedPolicyData: any = originalPolicyData
+  if (existingPolicy) {
+    mergedPolicyData = {
+      Id: originalPolicyData.Id ?? existingPolicy.Id,
+      Policy: originalPolicyData.Policy ?? existingPolicy.Policy,
+      Description: originalPolicyData.Description ?? existingPolicy.Description,
+      PolicyType: originalPolicyData.PolicyType ?? existingPolicy.PolicyType,
+      // Merge arrays: combine existing entities with new/updated ones
+      // Use a Map to handle updates by Name for efficient merging
+      CallingFunctions: mergeEntitiesByName(existingPolicy.CallingFunctions, originalPolicyData.CallingFunctions || []),
+      ForeignCalls: mergeEntitiesByName(existingPolicy.ForeignCalls, originalPolicyData.ForeignCalls || []),
+      Trackers: mergeEntitiesByName(existingPolicy.Trackers, originalPolicyData.Trackers || []),
+      MappedTrackers: mergeEntitiesByName(existingPolicy.MappedTrackers, originalPolicyData.MappedTrackers || []),
+      Rules: mergeEntitiesByName(existingPolicy.Rules, originalPolicyData.Rules || []),
+    }
+  }
+
+  // Perform reference validation on the merged data (which has full context)
+  const referenceCheck = policyJSONValidator
+    .refine(validateReferencedCalls, { message: 'Invalid reference call' })
+    .safeParse(mergedPolicyData)
+
+  if (!referenceCheck.success) {
+    const errors: RulesError[] = referenceCheck.error.issues.map((err) => ({
+      errorType: 'INPUT',
+      message: `Policy ${err.message}${err.path.length ? `: Field ${err.path.join('.')}` : ''}`,
+      state: { input: policy },
+    }))
+    return makeLeft(errors)
+  }
+
+  // Both validations passed - return the original input data (not the merged version)
+  return makeRight(parsed.data)
 }
 
 /**
