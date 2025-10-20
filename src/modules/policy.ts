@@ -730,7 +730,18 @@ export const updatePolicy = async (
   let allFunctionMappings: hexToFunctionString[] = []
   var nonDuplicatedCallingFunctions: CallingFunctionJSON[] = []
   if (policySyntax !== undefined) {
-    const validatedPolicyJSON = validatePolicyJSON(policySyntax)
+    // Fetch the existing policy from on-chain to merge with the update input
+    // This allows the validation to see all referenced entities, not just the ones being updated
+    const existingPolicy = await getPolicy(
+      config,
+      rulesEnginePolicyContract,
+      rulesEngineRulesContract,
+      rulesEngineComponentContract,
+      rulesEngineForeignCallContract,
+      policyId
+    )
+
+    const validatedPolicyJSON = validatePolicyJSON(policySyntax, existingPolicy ?? undefined)
     if (isLeft(validatedPolicyJSON)) {
       throw new Error(getRulesErrorMessages(unwrapEither(validatedPolicyJSON)))
     }

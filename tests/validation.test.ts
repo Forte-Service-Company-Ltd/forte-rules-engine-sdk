@@ -1805,3 +1805,129 @@ test('validateCallingFunctionExists should detect missing calling functions', ()
     'Calling function "" not found. Available calling functions: transfer, approve. Please ensure the calling function is defined in the CallingFunctions array before referencing it in rules or foreign calls.'
   )
 })
+
+test('Policy update validation should merge existing policy with update input', () => {
+  // Existing policy has transfer calling function and a rule
+  const existingPolicy = {
+    Id: 1,
+    Policy: 'Existing Policy',
+    Description: 'Existing Policy Description',
+    PolicyType: 'open',
+    CallingFunctions: [
+      {
+        Name: 'transfer',
+        FunctionSignature: 'transfer(address to, uint256 value)',
+        EncodedValues: 'address to, uint256 value',
+      },
+    ],
+    ForeignCalls: [
+      {
+        Name: 'ExistingFC',
+        Address: '0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC' as `0x${string}`,
+        Function: 'existing(address)',
+        ReturnType: 'uint256' as const,
+        ValuesToPass: 'to',
+        MappedTrackerKeyValues: '',
+        CallingFunction: 'transfer',
+      },
+    ],
+    Trackers: [
+      {
+        Name: 'ExistingTracker',
+        Type: 'uint256' as const,
+        InitialValue: '0',
+      },
+    ],
+    MappedTrackers: [],
+    Rules: [
+      {
+        Name: 'ExistingRule',
+        Description: 'Existing Rule',
+        Condition: 'value > 100',
+        PositiveEffects: ['emit Success'],
+        NegativeEffects: [],
+        CallingFunction: 'transfer',
+      },
+    ],
+  }
+
+  // Update input only contains a new rule that references the existing calling function
+  // This would fail without the merge because the calling function isn't in the update input
+  const updateInput = `{
+    "Policy": "Existing Policy",
+    "Description": "Existing Policy Description",
+    "PolicyType": "open",
+    "CallingFunctions": [],
+    "ForeignCalls": [],
+    "Trackers": [],
+    "MappedTrackers": [],
+    "Rules": [
+      {
+        "Name": "NewRule",
+        "Description": "New Rule referencing existing calling function",
+        "Condition": "value > 500",
+        "PositiveEffects": ["emit NewSuccess"],
+        "NegativeEffects": [],
+        "CallingFunction": "transfer"
+      }
+    ]
+  }`
+
+  // Validate with existing policy - should succeed because of merge
+  const validatedWithExisting = validatePolicyJSON(updateInput, existingPolicy)
+  expect(isRight(validatedWithExisting)).toBeTruthy()
+
+  // Validate without existing policy - should fail because transfer is not defined
+  const validatedWithoutExisting = validatePolicyJSON(updateInput)
+  expect(isLeft(validatedWithoutExisting)).toBeTruthy()
+
+  if (isLeft(validatedWithoutExisting)) {
+    const errors = unwrapEither(validatedWithoutExisting)
+    expect(errors.some((err) => err.message.includes('Invalid reference call'))).toBeTruthy()
+  }
+})
+
+test('Policy update validation should allow new foreign call referencing existing calling function', () => {
+  const existingPolicy = {
+    Id: 1,
+    Policy: 'Existing Policy',
+    Description: 'Existing Policy Description',
+    PolicyType: 'open',
+    CallingFunctions: [
+      {
+        Name: 'mint',
+        FunctionSignature: 'mint(address to, uint256 value)',
+        EncodedValues: 'address to, uint256 value',
+      },
+    ],
+    ForeignCalls: [],
+    Trackers: [],
+    MappedTrackers: [],
+    Rules: [],
+  }
+
+  // Update adds a foreign call that references the existing calling function
+  const updateInput = `{
+    "Policy": "Existing Policy",
+    "Description": "Existing Policy Description",
+    "PolicyType": "open",
+    "CallingFunctions": [],
+    "ForeignCalls": [
+      {
+        "Name": "NewFC",
+        "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+        "Function": "check(address)",
+        "ReturnType": "bool",
+        "ValuesToPass": "to",
+        "MappedTrackerKeyValues": "",
+        "CallingFunction": "mint"
+      }
+    ],
+    "Trackers": [],
+    "MappedTrackers": [],
+    "Rules": []
+  }`
+
+  const validated = validatePolicyJSON(updateInput, existingPolicy)
+  expect(isRight(validated)).toBeTruthy()
+})

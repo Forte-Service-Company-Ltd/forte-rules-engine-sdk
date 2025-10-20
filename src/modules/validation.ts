@@ -257,7 +257,7 @@ const validateValuesToPass = (
 
 /**
  * Validates that all foreign calls and rules reference existing calling functions
- * @param input - The policy JSON object
+ * @param input - The policy JSON object (may be merged with existing policy data)
  * @returns boolean indicating if all references are valid
  */
 const validateReferencedCalls = (input: any): boolean => {
@@ -350,7 +350,7 @@ const validateReferencedCalls = (input: any): boolean => {
 }
 
 export const ruleValidator = z.object({
-  Id: z.number().optional(),
+  Id: z.coerce.number().optional(),
   Name: z.string().default(EMPTY_STRING),
   Description: z.string().default(EMPTY_STRING),
   Condition: z.string(),
@@ -412,7 +412,7 @@ export const validateFCFunctionInput = (input: string): boolean => {
 }
 
 export const foreignCallValidator = z.object({
-  Id: z.number().optional(),
+  Id: z.coerce.number().optional(),
   Name: z.string(),
   Function: z.string().trim().refine(validateFCFunctionInput, { message: 'Unsupported argument type' }),
   Address: z
@@ -545,7 +545,7 @@ const validateMappedTrackerUniqueKeys = (data: any): boolean => {
 
 export const trackerValidator = z
   .object({
-    Id: z.number().optional(),
+    Id: z.coerce.number().optional(),
     Name: z.string().trim(),
     Type: z.preprocess(trimPossibleString, z.literal(supportedTrackerTypes, 'Unsupported type')),
     InitialValue: z.union([z.string().trim(), z.array(z.string().trim())]),
@@ -560,7 +560,7 @@ export interface MappedTrackerJSON extends z.infer<typeof mappedTrackerValidator
 
 export const mappedTrackerValidator = z
   .object({
-    Id: z.number().optional(),
+    Id: z.coerce.number().optional(),
     Name: z.string().trim(),
     KeyType: z.preprocess(trimPossibleString, z.literal(supportedTrackerKeyTypes, 'Unsupported key type')),
     ValueType: z.preprocess(trimPossibleString, z.literal(supportedTrackerTypes, 'Unsupported type')),
@@ -681,7 +681,7 @@ const validateUniqueNames = (input: any): boolean => {
 
 export const policyJSONValidator = z
   .object({
-    Id: z.number().optional(),
+    Id: z.coerce.number().optional(),
     Policy: z.string().default(EMPTY_STRING),
     Description: z.string().default(EMPTY_STRING),
     PolicyType: z.string(),
@@ -691,7 +691,6 @@ export const policyJSONValidator = z
     MappedTrackers: z.array(mappedTrackerValidator),
     Rules: z.array(ruleValidator),
   })
-  .refine(validateReferencedCalls, { message: 'Invalid reference call' })
   .refine(
     (data) => {
       // Validate rule ordering consistency: if any rule has an order field, all rules must have it
@@ -724,7 +723,7 @@ export const policyJSONValidator = z
   .refine(
     (data) => {
       const rulesWithIds = data.Rules.filter((rule) => rule.Id != null)
-      let ids = rulesWithIds.map((rule) => rule.Id!)
+      let ids: (number | bigint)[] = rulesWithIds.map((rule) => rule.Id!)
       if (!validateUniqueKeys(ids)) {
         return false
       }
@@ -760,18 +759,20 @@ export interface PolicyJSON extends z.infer<typeof policyJSONValidator> {}
  * Parses a JSON string and returns Either a PolicyJSON object or an error.
  *
  * @param policy - string to be parsed.
+ * @param existingPolicy - optional existing policy data to merge with for update operations.
  * @returns Either the parsed PolicyJSON object or an error.
  */
-export const validatePolicyJSON = (policy: string): Either<RulesError[], PolicyJSON> => {
+export const validatePolicyJSON = (policy: string, existingPolicy?: PolicyJSON): Either<RulesError[], PolicyJSON> => {
   const parsedJson = safeParseJson(policy)
 
   if (isLeft(parsedJson)) return parsedJson
 
-  const parsed = policyJSONValidator.safeParse(unwrapEither(parsedJson))
+  const originalPolicyData: any = unwrapEither(parsedJson)
 
-  if (parsed.success) {
-    return makeRight(parsed.data)
-  } else {
+  // First, validate the structure of the original input (without reference checks)
+  const parsed = policyJSONValidator.safeParse(originalPolicyData)
+
+  if (!parsed.success) {
     const errors: RulesError[] = parsed.error.issues.map((err) => ({
       errorType: 'INPUT',
       message: `Policy ${err.message}${err.path.length ? `: Field ${err.path.join('.')}` : ''}`,
@@ -779,4 +780,61 @@ export const validatePolicyJSON = (policy: string): Either<RulesError[], PolicyJ
     }))
     return makeLeft(errors)
   }
+
+  // If we have an existing policy, merge it with the input data for reference validation
+  // This allows validation during updates where the input may only contain new/updated entities
+  let mergedPolicyData: any = originalPolicyData
+  if (existingPolicy) {
+    mergedPolicyData = {
+      Id: originalPolicyData.Id ?? existingPolicy.Id,
+      Policy: originalPolicyData.Policy ?? existingPolicy.Policy,
+      Description: originalPolicyData.Description ?? existingPolicy.Description,
+      PolicyType: originalPolicyData.PolicyType ?? existingPolicy.PolicyType,
+      // Merge arrays: combine existing entities with new/updated ones
+      // Use a Map to handle updates by Name for efficient merging
+      CallingFunctions: mergeEntitiesByName(existingPolicy.CallingFunctions, originalPolicyData.CallingFunctions || []),
+      ForeignCalls: mergeEntitiesByName(existingPolicy.ForeignCalls, originalPolicyData.ForeignCalls || []),
+      Trackers: mergeEntitiesByName(existingPolicy.Trackers, originalPolicyData.Trackers || []),
+      MappedTrackers: mergeEntitiesByName(existingPolicy.MappedTrackers, originalPolicyData.MappedTrackers || []),
+      Rules: mergeEntitiesByName(existingPolicy.Rules, originalPolicyData.Rules || []),
+    }
+  }
+
+  // Perform reference validation on the merged data (which has full context)
+  const referenceCheck = policyJSONValidator
+    .refine(validateReferencedCalls, { message: 'Invalid reference call' })
+    .safeParse(mergedPolicyData)
+
+  if (!referenceCheck.success) {
+    const errors: RulesError[] = referenceCheck.error.issues.map((err) => ({
+      errorType: 'INPUT',
+      message: `Policy ${err.message}${err.path.length ? `: Field ${err.path.join('.')}` : ''}`,
+      state: { input: policy },
+    }))
+    return makeLeft(errors)
+  }
+
+  // Both validations passed - return the original input data (not the merged version)
+  return makeRight(parsed.data)
+}
+
+/**
+ * Merges existing entities with new entities, prioritizing new entities by Name.
+ * This is used during policy updates to combine on-chain state with update input.
+ *
+ * @param existing - Array of existing entities from on-chain state
+ * @param updates - Array of new/updated entities from input
+ * @returns Merged array with updates taking precedence
+ */
+const mergeEntitiesByName = <T extends { Name: string }>(existing: T[], updates: T[]): T[] => {
+  // Create a map of existing entities by name
+  const entityMap = new Map<string, T>()
+
+  // Add all existing entities
+  existing.forEach((entity) => entityMap.set(entity.Name, entity))
+
+  // Override with updates (new or updated entities)
+  updates.forEach((entity) => entityMap.set(entity.Name, entity))
+
+  return Array.from(entityMap.values())
 }
