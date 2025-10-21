@@ -14,6 +14,8 @@ import {
   ForeignCallDefinition,
   ForeignCallEncodedIndex,
   InstructionSet,
+  InstructionType,
+  INSTRUCTION_STRING_TO_TYPE,
   MappedTrackerDefinition,
   matchArray,
   Maybe,
@@ -544,53 +546,27 @@ export function buildTrackerList(condition: string): string[] {
 }
 
 /**
+ * Gets the instruction type code for a given instruction string.
+ * This function centralizes the mapping from string instructions to their numeric equivalents
+ * used in the instruction set processing.
+ *
+ * @param instruction - The instruction string to convert (e.g., 'N', 'PLH', '+', 'AND').
+ * @returns The numeric instruction type code, or the original instruction if not a string operation.
+ */
+function getInstructionType(instruction: string | number | BigInt): number | string | BigInt {
+  if (typeof instruction === 'string' && instruction in INSTRUCTION_STRING_TO_TYPE) {
+    return INSTRUCTION_STRING_TO_TYPE[instruction]
+  }
+  return instruction
+}
+
+/**
  * Cleans the instruction set by replacing string representations of operators with their numeric equivalents.
  *
  * @param instructionSet - The instruction set to clean.
  */
 export function cleanInstructionSet(instructionSet: InstructionSet): number[] {
-  return instructionSet.map((instruction) => {
-    if (instruction == 'N') {
-      return 0
-    } else if (instruction == 'NOT') {
-      return 1
-    } else if (instruction == 'PLH') {
-      return 2
-    } else if (instruction == '=') {
-      return 3
-    } else if (instruction == 'PLHM') {
-      return 4
-    } else if (instruction == '+') {
-      return 5
-    } else if (instruction == '-') {
-      return 6
-    } else if (instruction == '*') {
-      return 7
-    } else if (instruction == '/') {
-      return 8
-    } else if (instruction == '<') {
-      return 9
-    } else if (instruction == '>') {
-      return 10
-    } else if (instruction == '==') {
-      return 11
-    } else if (instruction == 'AND') {
-      return 12
-    } else if (instruction == 'OR') {
-      return 13
-    } else if (instruction == '>=') {
-      return 14
-    } else if (instruction == '<=') {
-      return 15
-    } else if (instruction == '!=') {
-      return 16
-    } else if (instruction == 'TRU') {
-      return 17
-    } else if (instruction == 'TRUM') {
-      return 18
-    }
-    return instruction
-  }) as number[]
+  return instructionSet.map((instruction) => getInstructionType(instruction)) as number[]
 }
 
-export { parseFunctionArguments }
+export { parseFunctionArguments, getInstructionType }

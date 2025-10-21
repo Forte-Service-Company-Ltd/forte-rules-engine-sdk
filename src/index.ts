@@ -60,6 +60,8 @@ export {
   Right,
   Either,
   ContractBlockParameters,
+  InstructionType,
+  INSTRUCTION_STRING_TO_TYPE,
 } from './modules/types.js'
 
 export {

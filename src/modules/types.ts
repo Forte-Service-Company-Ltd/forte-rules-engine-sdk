@@ -561,6 +561,56 @@ export const truMatchArray: string[] = ['+=', '-=', '*=', '/=', '=']
 export const operandArray: string[] = ['PLH', 'N', 'PLHM', 'TRU', 'TRUM']
 
 /**
+ * Instruction type enumeration for convertASTToInstructionSet operations
+ */
+export enum InstructionType {
+  NUMERIC_LITERAL = 0,    // 'N' - Numeric literal value
+  NOT = 1,                // 'NOT' - Logical NOT operation
+  PLACEHOLDER = 2,        // 'PLH' - Placeholder reference
+  ASSIGNMENT = 3,         // '=' - Assignment operation
+  MAPPED_PLACEHOLDER = 4, // 'PLHM' - Mapped placeholder reference
+  ADDITION = 5,           // '+' - Addition operation
+  SUBTRACTION = 6,        // '-' - Subtraction operation
+  MULTIPLICATION = 7,     // '*' - Multiplication operation
+  DIVISION = 8,           // '/' - Division operation
+  LESS_THAN = 9,          // '<' - Less than comparison
+  GREATER_THAN = 10,      // '>' - Greater than comparison
+  EQUAL = 11,             // '==' - Equality comparison
+  AND = 12,               // 'AND' - Logical AND operation
+  OR = 13,                // 'OR' - Logical OR operation
+  GREATER_EQUAL = 14,     // '>=' - Greater than or equal comparison
+  LESS_EQUAL = 15,        // '<=' - Less than or equal comparison
+  NOT_EQUAL = 16,         // '!=' - Not equal comparison
+  TRACKER_UPDATE = 17,    // 'TRU' - Tracker update operation
+  MAPPED_TRACKER_UPDATE = 18, // 'TRUM' - Mapped tracker update operation
+}
+
+/**
+ * Mapping from instruction strings to their corresponding instruction type codes
+ */
+export const INSTRUCTION_STRING_TO_TYPE: Record<string, InstructionType> = {
+  'N': InstructionType.NUMERIC_LITERAL,
+  'NOT': InstructionType.NOT,
+  'PLH': InstructionType.PLACEHOLDER,
+  '=': InstructionType.ASSIGNMENT,
+  'PLHM': InstructionType.MAPPED_PLACEHOLDER,
+  '+': InstructionType.ADDITION,
+  '-': InstructionType.SUBTRACTION,
+  '*': InstructionType.MULTIPLICATION,
+  '/': InstructionType.DIVISION,
+  '<': InstructionType.LESS_THAN,
+  '>': InstructionType.GREATER_THAN,
+  '==': InstructionType.EQUAL,
+  'AND': InstructionType.AND,
+  'OR': InstructionType.OR,
+  '>=': InstructionType.GREATER_EQUAL,
+  '<=': InstructionType.LESS_EQUAL,
+  '!=': InstructionType.NOT_EQUAL,
+  'TRU': InstructionType.TRACKER_UPDATE,
+  'TRUM': InstructionType.MAPPED_TRACKER_UPDATE,
+} as const
+
+/**
  * Parameter type enumeration
  */
 export enum pTypeEnum {

@@ -74,49 +74,61 @@ export function reverseParseInstructionSet(
     if (currentAction == -1) {
       currentAction = Number(instruction)
       switch (currentAction) {
-        case 0:
+        case 0: // InstructionType.NUMERIC_LITERAL
           currentActionIndex = 1
           break
-        case 1:
+        case 1: // InstructionType.NOT
           currentActionIndex = 1
           break
-        case 2:
+        case 2: // InstructionType.PLACEHOLDER
           currentActionIndex = 1
           break
-        case 3:
+        case 3: // InstructionType.ASSIGNMENT
           currentActionIndex = 2
           break
-        case 4:
+        case 4: // InstructionType.MAPPED_PLACEHOLDER
           currentActionIndex = 2
           break
-        case 5:
+        case 5: // InstructionType.ADDITION
           currentActionIndex = 2
           break
-        case 6:
+        case 6: // InstructionType.SUBTRACTION
           currentActionIndex = 2
           break
-        case 7:
+        case 7: // InstructionType.MULTIPLICATION
           currentActionIndex = 2
           break
-        case 8:
+        case 8: // InstructionType.DIVISION
           currentActionIndex = 2
           break
-        case 9:
+        case 9: // InstructionType.LESS_THAN
           currentActionIndex = 2
           break
-        case 10:
+        case 10: // InstructionType.GREATER_THAN
           currentActionIndex = 2
           break
-        case 11:
+        case 11: // InstructionType.EQUAL
           currentActionIndex = 2
           break
-        case 12:
+        case 12: // InstructionType.AND
           currentActionIndex = 2
           break
-        case 17:
+        case 13: // InstructionType.OR (handled same as AND)
+          currentActionIndex = 2
+          break
+        case 14: // InstructionType.GREATER_EQUAL
+          currentActionIndex = 2
+          break
+        case 15: // InstructionType.LESS_EQUAL
+          currentActionIndex = 2
+          break
+        case 16: // InstructionType.NOT_EQUAL
+          currentActionIndex = 2
+          break
+        case 17: // InstructionType.TRACKER_UPDATE
           currentActionIndex = 3
           break
-        case 18:
+        case 18: // InstructionType.MAPPED_TRACKER_UPDATE
           currentActionIndex = 4
           break
         default:
@@ -125,7 +137,7 @@ export function reverseParseInstructionSet(
       }
     } else {
       switch (currentAction) {
-        case 0:
+        case 0: // InstructionType.NUMERIC_LITERAL
           var found = false
           for (var raw of stringReplacements) {
             if (raw.instructionSetIndex == instructionNumber && raw.type == rawDataIndex) {
@@ -145,7 +157,7 @@ export function reverseParseInstructionSet(
           }
           currentMemAddress += 1
           break
-        case 1:
+        case 1: // InstructionType.NOT
           for (var memValue of memAddressesMap) {
             if (memValue.memAddr == instruction) {
               currentInstructionValues.push(memValue.value)
@@ -162,7 +174,7 @@ export function reverseParseInstructionSet(
             currentInstructionValues = []
           }
           break
-        case 2:
+        case 2: // InstructionType.PLACEHOLDER
           memAddressesMap.push({
             memAddr: currentMemAddress,
             value: placeHolderArray[instruction].split('~')[0],
@@ -171,7 +183,7 @@ export function reverseParseInstructionSet(
           currentMemAddress += 1
           retVal = placeHolderArray[instruction].split('~')[0]
           break
-        case 3:
+        case 3: // InstructionType.ASSIGNMENT
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
             currentMemAddress,
@@ -185,7 +197,7 @@ export function reverseParseInstructionSet(
             currentInstructionValues = []
           }
           break
-        case 4:
+        case 4: // InstructionType.MAPPED_PLACEHOLDER
           if (currentActionIndex == 2) {
             valueIndex = instruction
           } else {
@@ -207,7 +219,7 @@ export function reverseParseInstructionSet(
           }
 
           break
-        case 5:
+        case 5: // InstructionType.ADDITION
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
             currentMemAddress,
@@ -221,7 +233,7 @@ export function reverseParseInstructionSet(
             currentInstructionValues = []
           }
           break
-        case 6:
+        case 6: // InstructionType.SUBTRACTION
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
             currentMemAddress,
@@ -235,7 +247,7 @@ export function reverseParseInstructionSet(
             currentInstructionValues = []
           }
           break
-        case 7:
+        case 7: // InstructionType.MULTIPLICATION
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
             currentMemAddress,
@@ -249,7 +261,7 @@ export function reverseParseInstructionSet(
             currentInstructionValues = []
           }
           break
-        case 8:
+        case 8: // InstructionType.DIVISION
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
             currentMemAddress,
@@ -263,7 +275,7 @@ export function reverseParseInstructionSet(
             currentInstructionValues = []
           }
           break
-        case 9:
+        case 9: // InstructionType.LESS_THAN
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
             currentMemAddress,
@@ -277,7 +289,7 @@ export function reverseParseInstructionSet(
             currentInstructionValues = []
           }
           break
-        case 10:
+        case 10: // InstructionType.GREATER_THAN
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
             currentMemAddress,
@@ -291,7 +303,7 @@ export function reverseParseInstructionSet(
             currentInstructionValues = []
           }
           break
-        case 11:
+        case 11: // InstructionType.EQUAL
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
             currentMemAddress,
@@ -306,7 +318,7 @@ export function reverseParseInstructionSet(
             currentInstructionValues = []
           }
           break
-        case 12:
+        case 12: // InstructionType.AND
           retVal = logicalOperatorReverseInterpretation(
             instruction,
             currentMemAddress,
@@ -320,7 +332,7 @@ export function reverseParseInstructionSet(
             currentInstructionValues = []
           }
           break
-        case 13:
+        case 13: // InstructionType.OR
           retVal = logicalOperatorReverseInterpretation(
             instruction,
             currentMemAddress,
@@ -334,7 +346,7 @@ export function reverseParseInstructionSet(
             currentInstructionValues = []
           }
           break
-        case 14:
+        case 14: // InstructionType.GREATER_EQUAL
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
             currentMemAddress,
@@ -348,7 +360,7 @@ export function reverseParseInstructionSet(
             currentInstructionValues = []
           }
           break
-        case 15:
+        case 15: // InstructionType.LESS_EQUAL
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
             currentMemAddress,
@@ -362,7 +374,7 @@ export function reverseParseInstructionSet(
             currentInstructionValues = []
           }
           break
-        case 16:
+        case 16: // InstructionType.NOT_EQUAL
           retVal = arithmeticOperatorReverseInterpretation(
             instruction,
             currentMemAddress,
@@ -376,8 +388,8 @@ export function reverseParseInstructionSet(
             currentInstructionValues = []
           }
           break
-        case 17:
-        case 18:
+        case 17: // InstructionType.TRACKER_UPDATE
+        case 18: // InstructionType.MAPPED_TRACKER_UPDATE
           if (!truUpdated) {
             var str = memAddressesMap[currentMemAddress - 1].value
             var memVal: any = str.replace('TR:', 'TRU:')
