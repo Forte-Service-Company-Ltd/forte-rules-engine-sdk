@@ -443,13 +443,19 @@ export function parseEffect(
   var dynamic = false
   var plhIndex = 0
 
-  if (effect.includes('emit')) {
-    // Validate that only 'emit' is used, not 'emits'
-    if (effect.includes('emits')) {
-      console.error(`Validation Error: Use 'emit' instead of 'emits' for event effects.`)
+  // Check for common emit variations that should be rejected
+  const emitVariations = /^(emit|Emit|EMIT|emits|Emits|EMITS)/i
+  if (emitVariations.test(effect.trim())) {
+    // Validate emit syntax: must start with 'emit "' (exactly one space) followed by quoted message
+    // Allows additional parameters after the message: emit "message"[, param1, param2, ...]
+    const emitPattern = /^emit ".*"(?:, .*)?$/
+    if (!emitPattern.test(effect.trim())) {
+      console.error(`Validation Error: Emit must start with 'emit "message"' with exactly one space and proper quotes. Additional parameters allowed after the message. Found: '${effect.trim()}'`)
       return null
     }
-    
+  }
+
+  if (effect.includes('emit')) {
     effectType = EffectType.EVENT
     var placeHolder = effect.replace('emit ', '').trim()
     var spli = placeHolder.split(', ')
@@ -510,6 +516,13 @@ export function parseEffect(
     // Validate that only 'revert' is used, not 'reverts'
     if (effect.includes('reverts')) {
       console.error(`Validation Error: Use 'revert' instead of 'reverts' for revert effects.`)
+      return null
+    }
+    
+    // Validate revert format - must be exactly 'revert', 'revert()', or 'revert("message")'
+    const revertExactPattern = /^revert$|^revert\(\)$|^revert\("([^"]*)"\)$/
+    if (!revertExactPattern.test(effect.trim())) {
+      console.error(`Validation Error: Revert must be in the format 'revert', 'revert()', or 'revert("message")' with no spaces around 'revert'.`)
       return null
     }
     

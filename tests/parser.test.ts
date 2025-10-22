@@ -3956,6 +3956,68 @@ test('Should enforce emit keyword instead of emits', () => {
   expect(retVal).toBeNull()
 })
 
+test('Should enforce proper emit syntax with quotes', () => {
+  var ruleStringA = `{
+    "Condition": "value > 100",
+      "PositiveEffects": ["emit Test Event"],
+        "NegativeEffects": [],
+          "CallingFunction": "transfer"
+  } `
+  
+  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
+  expect(retVal).toBeNull()
+})
+
+test('Should enforce proper emit syntax without extra spaces', () => {
+  var ruleStringA = `{
+    "Condition": "value > 100",
+      "PositiveEffects": ["emit\\"Test Event\\""],
+        "NegativeEffects": [],
+          "CallingFunction": "transfer"
+  } `
+  
+  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
+  expect(retVal).toBeNull()
+})
+
+test('Should enforce proper emit syntax with double spaces', () => {
+  var ruleStringA = `{
+    "Condition": "value > 100",
+      "PositiveEffects": ["emit  \\"Test Event\\""],
+        "NegativeEffects": [],
+          "CallingFunction": "transfer"
+  } `
+  
+  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
+  expect(retVal).toBeNull()
+})
+
+test('Should enforce emit syntax with proper capitalization', () => {
+  var ruleStringA = `{
+    "Condition": "value > 100",
+      "PositiveEffects": ["Emit \\"Test Event\\""],
+        "NegativeEffects": [],
+          "CallingFunction": "transfer"
+  } `
+  
+  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
+  expect(retVal).toBeNull()
+})
+
+test('Should allow proper emit syntax', () => {
+  var ruleStringA = `{
+    "Condition": "value > 100",
+      "PositiveEffects": ["emit \\"Test Event\\""],
+        "NegativeEffects": [],
+          "CallingFunction": "transfer"
+  } `
+  
+  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
+  expect(retVal).not.toBeNull()
+  expect(retVal!.positiveEffects[0].type).toBe(EffectType.EVENT)
+  expect(retVal!.positiveEffects[0].text).toEqual('Test Event')
+})
+
 test('Should enforce revert keyword instead of reverts', () => {
   var ruleStringA = `{
     "Condition": "value > 100",

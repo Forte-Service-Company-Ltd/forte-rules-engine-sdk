@@ -135,13 +135,10 @@ function getProcessedEffects(
     return null
   }
   
-  // Check for effects after revert
-  if (revertIndices.length === 1) {
-    const revertIndex = revertIndices[0]
-    if (revertIndex < effects.length - 1) {
-      console.error('Validation Error: Effects found after revert. No effects can be placed after a revert as it stops execution.')
-      return null
-    }
+  // Check that if revert exists, no other effects exist
+  if (revertIndices.length === 1 && effects.length > 1) {
+    console.error('Validation Error: When a revert is present, no other effects should exist. Revert stops execution so other effects cannot execute.')
+    return null
   }
 
   var retVal
