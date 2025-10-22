@@ -520,9 +520,7 @@ export function buildRawData(
   type: number
 ): Maybe<number[]> {
   try {
-    var printInstruciton
     var retVal = instructionSet.map((instruction, index) => {
-      printInstruciton = instruction
       // Only capture values that aren't naturally numbers
       if (!isNaN(Number(instruction))) {
         return BigInt(instruction)

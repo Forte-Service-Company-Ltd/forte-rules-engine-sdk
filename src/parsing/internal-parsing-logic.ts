@@ -279,7 +279,7 @@ function convertASTToInstructionSet(
                 copyFound = true
                 break
               } else if (place.typeSpecificIndex == parameter.tIndex && place.flags == 0x04) {
-                if (parameter.name == 'GV:MSG_SENDER' && searchExpressionIndex == 0) {
+                if (parameter.name == 'GV:MSG_SENDER') {
                   acc.instructionSet.push('PLH')
                   acc.instructionSet.push(plhIter)
                   previousIndex = acc.iterator.value
@@ -719,10 +719,7 @@ function retrieveParenthesisContent(str: string, tuples: Tuple[], delim: string)
       if (str.includes(tuple.i)) {
         actualValue = actualValue.replace(tuple.i, tuple.s)
         if (actualValue.includes(delim)) {
-          // var substr = actualValue.substring(actualValue.indexOf(delim), actualValue.indexOf(delim) + 3)
-          // if (tuple.i.length > 3) {
           var substr = actualValue.substring(actualValue.indexOf(delim), actualValue.indexOf(delim) + 4)
-          // }
           actualValue = actualValue.replace(substr, retrieveParenthesisContent(substr, tuples, delim))
         }
         break
