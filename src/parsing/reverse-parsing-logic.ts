@@ -704,7 +704,7 @@ function retrieveDecoded(type: number, key: string): string {
   if (type == 0) {
     return decodeAbiParameters(parseAbiParameters('address'), key as `0x${string}`)[0].toLowerCase()
   } else if (type == 1) {
-    return decodeAbiParameters(parseAbiParameters('string'), key as `0x${string}`)[0]
+    return key as `0x${string}`
   } else if (type == 2) {
     return String(Number(key))
   } else if (type == 3) {

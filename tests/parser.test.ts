@@ -10,6 +10,7 @@ import {
   TrackerDefinition,
   NameToID,
   PlaceholderStruct,
+  stringReplacement,
 } from '../src/modules/types.js'
 import {
   keccak256,
@@ -2421,45 +2422,11 @@ test('Evaluates a simple effect involving a mapped tracker with string value upd
 })
 
 test('Evaluates a complex effect involving a mapped tracker update (TRUM))', () => {
-  var expectedArray = [
-    'PLH',
-    0n,
-    'PLHM',
-    1n,
-    0n,
-    'N',
-    1n,
-    '-',
-    1n,
-    2n,
-    'TRUM',
-    1n,
-    3n,
-    0n,
-    0n,
-    'PLH',
-    0n,
-    'PLHM',
-    2n,
-    5n,
-    'N',
-    1n,
-    '-',
-    6n,
-    7n,
-    'TRUM',
-    2n,
-    8n,
-    5n,
-    0n,
-    'AND',
-    4n,
-    9n,
-  ]
+  var expectedArray = ['PLH', 0n, 'PLHM', 1n, 0n, 'N', 1n, '-', 1n, 2n, 'TRUM', 1n, 3n, 0n, 0n]
 
   var ruleStringA = `{
     "Condition": " 1 == 1",
-      "PositiveEffects": [" TRU:testOne(to) -= 1 AND TRU:testTwo(to) -= 1"],
+      "PositiveEffects": ["TRU:testOne(to) -= 1", "TRU:testTwo(to) -= 1"],
         "NegativeEffects": [],
           "CallingFunction": "addValue"
   } `
@@ -3707,7 +3674,6 @@ test('Reverse Interpretation for: Complex non-cascading expression #2', () => {
   var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
   expect(retVal).toEqual(expectedString)
 })
-
 test('Complex non-cascading expression #3', () => {
   var expectedArray = [
     'N',

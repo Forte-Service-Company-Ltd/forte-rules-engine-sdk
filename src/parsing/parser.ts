@@ -94,8 +94,20 @@ export function processSyntax(
   components = [...components, ...effectCalls]
 
   const [finalSyntax, effectTrackers] = parseTrackers(updatedSyntax, components, trackerNameToID)
-  const gvEComponents = parseGlobalVariables(finalSyntax, currentIndex)
-  return [finalSyntax, [...components, ...effectTrackers, ...gvEComponents]]
+  let gvEComponents = parseGlobalVariables(finalSyntax, currentIndex)
+  var uniqueGV = []
+  for (var comp of gvEComponents) {
+    var found = false
+    for (var compI of uniqueGV) {
+      if (comp.name == compI.name) {
+        found = true
+      }
+    }
+    if (!found) {
+      uniqueGV.push(comp)
+    }
+  }
+  return [finalSyntax, [...components, ...effectTrackers, ...uniqueGV]]
 }
 
 function getProcessedEffects(
@@ -221,7 +233,6 @@ export function parseRuleSyntax(
     }
     effect.instructionSet = instructionSet
   })
-
   return {
     instructionSet,
     rawData,
