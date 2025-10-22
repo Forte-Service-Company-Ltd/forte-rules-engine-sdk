@@ -10,6 +10,7 @@ import {
   TrackerDefinition,
   NameToID,
   PlaceholderStruct,
+  INSTRUCTION_STRING_TO_TYPE,
   stringReplacement,
 } from '../src/modules/types.js'
 import {
@@ -30,6 +31,7 @@ import {
   parseForeignCallDefinition,
   parseMappedTrackerSyntax,
   processSyntax,
+  getInstructionType,
 } from '../src/parsing/parser.js'
 import { parseEffect } from '../src/parsing/parsing-utilities.js'
 import { reverseParseInstructionSet } from '../src/parsing/reverse-parsing-logic.js'
@@ -3853,4 +3855,96 @@ test('Reverse Interpretation for: Complex non-cascading expression #3', () => {
   var placeholderArray = ['value', 'valueTwo', 'FC:foreignCallOne', 'TR:trackerOne', 'TR:testTwo']
   var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
   expect(retVal).toEqual(expectedString)
+})
+
+// Tests for getInstructionType function
+test('getInstructionType correctly maps all instruction strings to their numeric types', () => {
+  // Numeric literal
+  expect(getInstructionType('N')).toBe(0)
+  
+  // Logical operations
+  expect(getInstructionType('NOT')).toBe(1)
+  expect(getInstructionType('AND')).toBe(12)
+  expect(getInstructionType('OR')).toBe(13)
+  
+  // Placeholder operations
+  expect(getInstructionType('PLH')).toBe(2)
+  expect(getInstructionType('PLHM')).toBe(4)
+  
+  // Assignment operations
+  expect(getInstructionType('=')).toBe(3)
+  
+  // Arithmetic operations
+  expect(getInstructionType('+')).toBe(5)
+  expect(getInstructionType('-')).toBe(6)
+  expect(getInstructionType('*')).toBe(7)
+  expect(getInstructionType('/')).toBe(8)
+  
+  // Comparison operations
+  expect(getInstructionType('<')).toBe(9)
+  expect(getInstructionType('>')).toBe(10)
+  expect(getInstructionType('==')).toBe(11)
+  expect(getInstructionType('>=')).toBe(14)
+  expect(getInstructionType('<=')).toBe(15)
+  expect(getInstructionType('!=')).toBe(16)
+  
+  // Tracker operations
+  expect(getInstructionType('TRU')).toBe(17)
+  expect(getInstructionType('TRUM')).toBe(18)
+})
+
+test('getInstructionType returns original value for non-string instructions', () => {
+  // Numbers should pass through unchanged
+  expect(getInstructionType(42)).toBe(42)
+  expect(getInstructionType(0)).toBe(0)
+  expect(getInstructionType(-5)).toBe(-5)
+  
+  // BigInt should pass through unchanged
+  expect(getInstructionType(123n)).toBe(123n)
+  expect(getInstructionType(0n)).toBe(0n)
+  
+  // Unknown strings should pass through unchanged
+  expect(getInstructionType('UNKNOWN')).toBe('UNKNOWN')
+  expect(getInstructionType('invalid')).toBe('invalid')
+  expect(getInstructionType('')).toBe('')
+})
+
+test('getInstructionType handles edge cases correctly', () => {
+  // Case sensitivity - should not match
+  expect(getInstructionType('and')).toBe('and')
+  expect(getInstructionType('OR')).toBe(13)
+  expect(getInstructionType('or')).toBe('or')
+  
+  // Whitespace - should not match
+  expect(getInstructionType(' AND ')).toBe(' AND ')
+  expect(getInstructionType('AND ')).toBe('AND ')
+  expect(getInstructionType(' AND')).toBe(' AND')
+  
+  // Similar but different strings
+  expect(getInstructionType('==')).toBe(11)
+  expect(getInstructionType('=')).toBe(3)
+  expect(getInstructionType('!=')).toBe(16)
+})
+
+test('cleanInstructionSet uses getInstructionType correctly and produces expected results', () => {
+  // Test that the refactored cleanInstructionSet produces the same results as before
+  const testInstructionSet = [
+    'N', 5n, 'PLH', 0n, 'AND', 'N', 10n, '>', 'PLH', 1n,
+    'TRU', 2n, 'PLHM', 3n, '==', 'NOT', 'OR'
+  ]
+  
+  const expectedResult = [
+    0, 5n, 2, 0n, 12, 0, 10n, 10, 2, 1n,
+    17, 2n, 4, 3n, 11, 1, 13
+  ]
+  
+  const result = cleanInstructionSet(testInstructionSet)
+  expect(result).toEqual(expectedResult)
+})
+
+test('getInstructionType covers all instruction types from INSTRUCTION_STRING_TO_TYPE mapping', () => {
+  // Test that every key in the mapping works correctly
+  Object.entries(INSTRUCTION_STRING_TO_TYPE).forEach(([instructionString, expectedType]) => {
+    expect(getInstructionType(instructionString)).toBe(expectedType)
+  })
 })
