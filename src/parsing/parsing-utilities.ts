@@ -87,6 +87,17 @@ export function parseTrackers(
   const mappedMatches = condition.match(trMappedRegex) || []
   const mappedUpdateMatches = condition.match(truMappedRegex) || []
   const mappedMatchesSet = [...new Set([...mappedMatches, ...mappedUpdateMatches])]
+  
+  // Validate that all mapped trackers exist
+  for (const match of mappedMatchesSet) {
+    const trackerName = match.split('(')[0].replace('TRU:', 'TR:')
+    const tracker = trackerNameToID.find((tr) => 'TR:' + tr.name === trackerName || tr.name === trackerName.replace('TR:', ''))
+    if (!tracker) {
+      console.error(`Validation Error: Mapped tracker '${match}' not found. Referenced trackers must be defined in the MappedTrackers array.`)
+      throw new Error(`Mapped tracker '${match}' not found`)
+    }
+  }
+  
   // replace mapped tracker parens syntx `trackerName(key) with pipe syntax `trackerName | key`
   const trCondition = mappedMatchesSet.reduce((acc, match) => {
     let initialSplit = match.split('(')[1]
@@ -112,6 +123,10 @@ export function parseTrackers(
       } else {
         rawTypeTwo = 'uint256'
       }
+    } else {
+      // Tracker not found - this should cause a validation error
+      console.error(`Validation Error: Tracker '${name}' not found. Referenced trackers must be defined in the Trackers or MappedTrackers array.`)
+      throw new Error(`Tracker '${name}' not found`)
     }
     return {
       name,
@@ -142,6 +157,10 @@ export function parseTrackers(
         } else {
           rawTypeTwo = 'uint256'
         }
+      } else {
+        // Tracker not found - this should cause a validation error
+        console.error(`Validation Error: Tracker '${name}' not found. Referenced trackers must be defined in the Trackers or MappedTrackers array.`)
+        throw new Error(`Tracker '${name}' not found`)
       }
       if (![...names, ...trackers].some((item) => item.name == name)) {
         return {
@@ -418,11 +437,23 @@ export function parseEffect(
   var effectType = EffectType.REVERT
   var effectText = ''
   var effectInstructionSet: any[] = []
-  const revertTextPattern = /(revert)\("([^"]*)"\)/
+  const revertTextPattern = /revert\("([^"]*)"\)/
   var pType = 2
   var parameterValue: any = 0
   var dynamic = false
   var plhIndex = 0
+
+  // Check for common emit variations that should be rejected
+  const emitVariations = /^(emit|Emit|EMIT|emits|Emits|EMITS)/i
+  if (emitVariations.test(effect.trim())) {
+    // Validate emit syntax: must start with 'emit "' (exactly one space) followed by quoted message
+    // Allows additional parameters after the message: emit "message"[, param1, param2, ...]
+    const emitPattern = /^emit ".*"(?:, .*)?$/
+    if (!emitPattern.test(effect.trim())) {
+      console.error(`Validation Error: Emit must start with 'emit "message"' with exactly one space and proper quotes. Additional parameters allowed after the message. Found: '${effect.trim()}'`)
+      return null
+    }
+  }
 
   if (effect.includes('emit')) {
     effectType = EffectType.EVENT
@@ -482,10 +513,40 @@ export function parseEffect(
       effectText = str.slice(1, -1)
     }
   } else if (effect.includes('revert')) {
+    // Validate that only 'revert' is used, not 'reverts'
+    if (effect.includes('reverts')) {
+      console.error(`Validation Error: Use 'revert' instead of 'reverts' for revert effects.`)
+      return null
+    }
+    
+    // Validate revert format - must be exactly 'revert', 'revert()', or 'revert("message")'
+    const revertExactPattern = /^revert$|^revert\(\)$|^revert\("([^"]*)"\)$/
+    if (!revertExactPattern.test(effect.trim())) {
+      console.error(`Validation Error: Revert must be in the format 'revert', 'revert()', or 'revert("message")' with no spaces around 'revert'.`)
+      return null
+    }
+    
     effectType = EffectType.REVERT
     const match = effect.match(revertTextPattern)
-    effectText = match ? match[2] : ''
+    effectText = match ? match[1] : ''
   } else {
+    // Validate against comparison operators in tracker effects (all comparison operators are invalid)
+    const invalidComparisonOperators = ['==', '!=', '>=', '<=', '>', '<']
+    const hasInvalidOperator = invalidComparisonOperators.some(op => effect.includes(op))
+    
+    if (hasInvalidOperator && effect.includes('TRU:')) {
+      const usedOperator = invalidComparisonOperators.find(op => effect.includes(op))
+      console.error(`Validation Error: Comparison operator '${usedOperator}' cannot be used in tracker effects. Use assignment operators like '=', '+=', '-=', '*=', '/=' instead.`)
+      return null
+    }
+    
+    // Validate against spaces in FC calls
+    const fcWithSpacePattern = /FC:\s+/
+    if (fcWithSpacePattern.test(effect)) {
+      console.error(`Validation Error: Foreign call syntax 'FC:' cannot have spaces after the colon. Use 'FC:functionName' instead of 'FC: functionName'.`)
+      return null
+    }
+    
     effectType = EffectType.EXPRESSION
     var instructionSet = convertHumanReadableToInstructionSet(effect, names, trackerNameToID, placeholders)
     effectInstructionSet = instructionSet

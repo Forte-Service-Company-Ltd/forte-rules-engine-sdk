@@ -1218,8 +1218,8 @@ describe('Rules Engine Interactions', async () => {
                                "Name": "Rule A",
                                "Description": "Rule A Description",
                                "Condition": "GV:TX_ORIGIN == GV:BLOCK_TIMESTAMP AND (GV:MSG_DATA == 2 AND (someValue == true AND GV:BLOCK_NUMBER == 4))",
-                               "PositiveEffects": ["emit \\"Success\\"", "FC:AnotherTestForeignCall", "[TRU:mappedTrackerOne(to) += 1]"],
-                               "NegativeEffects": ["revert(\\"Negative\\")", "[TRU:trackerOne += 12]"],
+                               "PositiveEffects": ["emit \\"Success\\"", "FC:AnotherTestForeignCall", "[TRU:mappedTrackerOne(to) += 1]", "[TRU:trackerOne += 12]"],
+                               "NegativeEffects": ["revert(\\"Negative\\")"],
                                "CallingFunction": "transfer"
                            }
                        ]
@@ -1264,7 +1264,8 @@ describe('Rules Engine Interactions', async () => {
 
     expect(retVal).toBeDefined()
 
-    input.Rules[0].NegativeEffects[0] = "revert('Negative')"
+    input.Rules[0].PositiveEffects = ["emit \"Success\"", "FC:AnotherTestForeignCall", "[TRU:mappedTrackerOne(to) += 1]", "[TRU:trackerOne += 12]"]
+    input.Rules[0].NegativeEffects = ["revert('Negative')"]
 
     // // Verify Policy data mirrors input fields
     assertPolicyDataMatchesInput(retVal!, input)
@@ -2189,8 +2190,8 @@ describe('Rules Engine Interactions', async () => {
                                            "Name": "Rule A",
                                            "Description": "Rule A Description",
                                            "Condition": "FC:ATestForeignCall > 1000",
-                                           "PositiveEffects": ["emit \\"Success\\"", "FC:AnotherTestForeignCall", "TRU:mappedTrackerOne(to) += 1"],
-                                           "NegativeEffects": ["revert(\\\"Negative\\\")", "TRU:trackerOne += 12"],
+                                           "PositiveEffects": ["emit \\"Success\\"", "FC:AnotherTestForeignCall", "TRU:mappedTrackerOne(to) += 1", "TRU:trackerOne += 12"],
+                                           "NegativeEffects": ["revert(\\\"Negative\\\")"],
                                            "CallingFunction": "transfer"
                                        }
                                    ]
@@ -2902,8 +2903,8 @@ describe('Rules Engine Interactions', async () => {
             {
               "Name": "Data Rule",
               "Description": "Rule that uses bytes tracker in condition",
-              "Condition": "TR:dataTracker == \\"0xdeadbeef\\"",
-              "PositiveEffects": ["TR:dataTracker = \\"0xdeadbeefdeadbeef\\""],
+              "Condition": "TR:dataTracker == \\"0xdeadbeef:bytes\\"",
+              "PositiveEffects": ["TR:dataTracker = \\"0xdeadbeefdeadbeef:bytes\\""],
               "NegativeEffects": ["revert(\\"Data comparison failed\\")"],
               "CallingFunction": "addData"
             }

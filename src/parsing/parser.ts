@@ -95,6 +95,7 @@ export function processSyntax(
   )
   components = [...components, ...effectCalls]
 
+  // This can throw if trackers don't exist
   const [finalSyntax, effectTrackers] = parseTrackers(updatedSyntax, components, trackerNameToID)
   let gvEComponents = parseGlobalVariables(finalSyntax, currentIndex)
   var uniqueGV = []
@@ -119,21 +120,48 @@ function getProcessedEffects(
   additionalEffectForeignCalls: string[],
   effects: string[]
 ): Maybe<[EffectDefinition[], PlaceholderStruct[]]> {
-  var retVal = effects.reduce(
-    (acc: [string[], RuleComponent[][]], effect) => {
-      const [updatedEffect, effectCalls] = processSyntax(
-        encodedValues,
-        foreignCallNameToID,
-        trackerNameToID,
-        additionalEffectForeignCalls,
-        effect
-      )
-      acc[0].push(updatedEffect)
-      acc[1].push(effectCalls)
-      return acc
-    },
-    [[], []]
-  )
+  // Validate effects array for revert placement
+  let revertIndices: number[] = []
+  for (let i = 0; i < effects.length; i++) {
+    const effect = effects[i].trim()
+    if (effect.includes('revert')) {
+      revertIndices.push(i)
+    }
+  }
+  
+  // Check for multiple reverts
+  if (revertIndices.length > 1) {
+    console.error('Validation Error: Multiple reverts found in effects array. Only one revert is allowed per effects array.')
+    return null
+  }
+  
+  // Check that if revert exists, no other effects exist
+  if (revertIndices.length === 1 && effects.length > 1) {
+    console.error('Validation Error: When a revert is present, no other effects should exist. Revert stops execution so other effects cannot execute.')
+    return null
+  }
+
+  var retVal
+  try {
+    retVal = effects.reduce(
+      (acc: [string[], RuleComponent[][]], effect) => {
+        const [updatedEffect, effectCalls] = processSyntax(
+          encodedValues,
+          foreignCallNameToID,
+          trackerNameToID,
+          additionalEffectForeignCalls,
+          effect
+        )
+        acc[0].push(updatedEffect)
+        acc[1].push(effectCalls)
+        return acc
+      },
+      [[], []]
+    )
+  } catch (error) {
+    // Return null when tracker validation fails
+    return null
+  }
   const efectNames = cleanseForeignCallLists(retVal[1])
   let effectPlaceHolders = buildPlaceholderList(efectNames)
   effectPlaceHolders = [...new Set(effectPlaceHolders)]
@@ -169,81 +197,87 @@ export function parseRuleSyntax(
   additionalForeignCalls: string[],
   additionalEffectForeignCalls: string[]
 ): Maybe<RuleDefinition> {
-  const [condition, ruleComponents] = processSyntax(
-    encodedValues,
-    foreignCallNameToID,
-    trackerNameToID,
-    additionalForeignCalls,
-    removeExtraParenthesis(syntax.Condition)
-  )
-  const placeHolders = buildPlaceholderList(ruleComponents)
-  const processedEffect = getProcessedEffects(
-    encodedValues,
-    foreignCallNameToID,
-    trackerNameToID,
-    additionalEffectForeignCalls,
-    syntax.PositiveEffects
-  )
-  if (processedEffect == null) {
-    return null
-  }
-  const [positiveEffects, positiveEffectPlaceHolders] = processedEffect
+  try {
+    const [condition, ruleComponents] = processSyntax(
+      encodedValues,
+      foreignCallNameToID,
+      trackerNameToID,
+      additionalForeignCalls,
+      removeExtraParenthesis(syntax.Condition)
+    )
+    const placeHolders = buildPlaceholderList(ruleComponents)
+    const processedEffect = getProcessedEffects(
+      encodedValues,
+      foreignCallNameToID,
+      trackerNameToID,
+      additionalEffectForeignCalls,
+      syntax.PositiveEffects
+    )
+    if (processedEffect == null) {
+      return null
+    }
+    const [positiveEffects, positiveEffectPlaceHolders] = processedEffect
 
-  var retE = getProcessedEffects(
-    encodedValues,
-    foreignCallNameToID,
-    trackerNameToID,
-    additionalEffectForeignCalls,
-    syntax.NegativeEffects
-  )
-  if (retE == null) {
-    return null
-  }
-  const [negativeEffects, negativeEffectPlaceHolders] = retE
-  const conditionInstructionSet = convertHumanReadableToInstructionSet(
-    condition,
-    ruleComponents,
-    trackerNameToID,
-    placeHolders
-  )
-  const excludeArray: string[] = ruleComponents.map((name) => name.name)
-  excludeArray.push(...matchArray)
-  excludeArray.push(...operandArray)
-  var rawData: RawData = {
-    instructionSetIndex: [],
-    dataValues: [],
-    argumentTypes: [],
-  }
-  const instructionSet = buildRawData(conditionInstructionSet, excludeArray, rawData, 0)
-  if (instructionSet == null) {
-    return null
-  }
-  var typeCount = 1
-  positiveEffects.forEach((effect) => {
-    var instructionSet = buildRawData(effect.instructionSet, excludeArray, rawData, typeCount)
-    typeCount += 1
+    var retE = getProcessedEffects(
+      encodedValues,
+      foreignCallNameToID,
+      trackerNameToID,
+      additionalEffectForeignCalls,
+      syntax.NegativeEffects
+    )
+    if (retE == null) {
+      return null
+    }
+    const [negativeEffects, negativeEffectPlaceHolders] = retE
+    
+    const conditionInstructionSet = convertHumanReadableToInstructionSet(
+      condition,
+      ruleComponents,
+      trackerNameToID,
+      placeHolders
+    )
+    const excludeArray: string[] = ruleComponents.map((name) => name.name)
+    excludeArray.push(...matchArray)
+    excludeArray.push(...operandArray)
+    var rawData: RawData = {
+      instructionSetIndex: [],
+      dataValues: [],
+      argumentTypes: [],
+    }
+    const instructionSet = buildRawData(conditionInstructionSet, excludeArray, rawData, 0)
     if (instructionSet == null) {
       return null
     }
-    effect.instructionSet = instructionSet
-  })
-  negativeEffects.forEach((effect) => {
-    var instructionSet = buildRawData(effect.instructionSet, excludeArray, rawData, typeCount)
-    typeCount += 1
-    if (instructionSet == null) {
-      return null
+    var typeCount = 1
+    positiveEffects.forEach((effect) => {
+      var instructionSet = buildRawData(effect.instructionSet, excludeArray, rawData, typeCount)
+      typeCount += 1
+      if (instructionSet == null) {
+        return null
+      }
+      effect.instructionSet = instructionSet
+    })
+    negativeEffects.forEach((effect) => {
+      var instructionSet = buildRawData(effect.instructionSet, excludeArray, rawData, typeCount)
+      typeCount += 1
+      if (instructionSet == null) {
+        return null
+      }
+      effect.instructionSet = instructionSet
+    })
+    return {
+      instructionSet,
+      rawData,
+      positiveEffects,
+      negativeEffects,
+      placeHolders,
+      positiveEffectPlaceHolders,
+      negativeEffectPlaceHolders,
+      ruleIndex: 0,
     }
-    effect.instructionSet = instructionSet
-  })
-  return {
-    instructionSet,
-    rawData,
-    positiveEffects,
-    negativeEffects,
-    placeHolders,
-    positiveEffectPlaceHolders,
-    negativeEffectPlaceHolders,
-    ruleIndex: 0,
+  } catch (error) {
+    // Return null when tracker validation fails
+    return null
   }
 }
 
