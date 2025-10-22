@@ -1105,7 +1105,7 @@ describe('Rules Engine Interactions', async () => {
                       "Trackers": [
                       {
                           "Name": "testTracker",
-                          "Type": "string",
+                          "Type": "uint256",
                           "InitialValue": "1000"
                       }
                       ],
@@ -3413,22 +3413,22 @@ describe('Rules Engine Interactions', async () => {
     )
 
     expect(retVal).toBeDefined()
-    
-    // Verify core policy structure 
+
+    // Verify core policy structure
     expect(retVal!.Policy).toEqual(input.Policy)
     expect(retVal!.Description).toEqual(input.Description)
     expect(retVal!.PolicyType).toEqual(input.PolicyType)
-    
+
     // Verify foreign call was created
     expect(retVal!.ForeignCalls.length).toEqual(1)
     expect(retVal!.ForeignCalls[0].Name).toEqual('GetBalance')
-    
+
     // Verify rule structure and that the event contains the expected structure
     expect(retVal!.Rules.length).toEqual(1)
     expect(retVal!.Rules[0].Name).toEqual(input.Rules[0].Name)
     expect(retVal!.Rules[0].Condition).toEqual(input.Rules[0].Condition)
     expect(retVal!.Rules[0].CallingFunction).toEqual(input.Rules[0].CallingFunction)
-    
+
     // Verify that the positive effect is an emit with BalanceCheck and some parameter (foreign call placeholder)
     expect(retVal!.Rules[0].PositiveEffects.length).toEqual(1)
     expect(retVal!.Rules[0].PositiveEffects[0]).toMatch(/emit "BalanceCheck"/)

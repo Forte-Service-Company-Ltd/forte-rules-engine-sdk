@@ -11,6 +11,7 @@ import {
 } from '../modules/types'
 import { determinePTEnumeration } from './parser'
 import { getPTEnum } from '../modules/utils'
+import { string } from 'zod'
 
 /**
  * @file internal-parsing-logic.ts
@@ -233,7 +234,10 @@ function convertASTToInstructionSet(
     searchExpressions.push(split)
     var expCount = 0
     var previousIndex = -1
-
+    var searchExpressionIndex = 0
+    if (searchExpressions.length == 1) {
+      searchExpressionIndex += 1
+    }
     // PPRF searchExpressions is ony more than 1 element if its a mapped tracker
     for (var expr of searchExpressions) {
       plhIndex = 0
@@ -275,7 +279,7 @@ function convertASTToInstructionSet(
                 copyFound = true
                 break
               } else if (place.typeSpecificIndex == parameter.tIndex && place.flags == 0x04) {
-                if (parameter.name == 'GV:MSG_SENDER') {
+                if (parameter.name == 'GV:MSG_SENDER' && searchExpressionIndex == 0) {
                   acc.instructionSet.push('PLH')
                   acc.instructionSet.push(plhIter)
                   previousIndex = acc.iterator.value
@@ -324,11 +328,13 @@ function convertASTToInstructionSet(
             previousIndex = acc.iterator.value
           }
           expCount += 1
-          acc.mem.push(acc.iterator.value)
+          if (searchExpressionIndex > 0) {
+            acc.mem.push(acc.iterator.value)
+          }
+          searchExpressionIndex += 1
           acc.iterator.value += 1
           if (expCount == searchExpressions.length) {
             var sliced = expression.slice(1)
-
             convertASTToInstructionSet(acc, sliced, parameterNames, placeHolders, trackerNameToID)
           }
 
@@ -533,6 +539,7 @@ function convertToTree(condition: string, splitOn: string): any[] {
     iter++
   }
   iter = 0
+  var repl = 'a'
   leng = condition.split('(').length
   while (iter <= leng - 2) {
     // Start with the final instance of "(" in the string, create a substring
@@ -541,8 +548,8 @@ function convertToTree(condition: string, splitOn: string): any[] {
     var start = condition.lastIndexOf('(')
     var substr = condition.substring(start, condition.indexOf(')', start) + 1)
 
-    condition = condition.replace(substr, 'i:'.concat(iter.toString()))
-    var index = 'i:'.concat(iter.toString())
+    condition = condition.replace(substr, 'i:'.concat(String(iter + 10)))
+    var index = 'i:'.concat(String(iter + 10))
     var tuple: Tuple = { i: index, s: substr }
     substrs.push(tuple)
     iter++
@@ -570,7 +577,6 @@ function convertToTree(condition: string, splitOn: string): any[] {
       // Retrieve the contents of the parenthesis for the last two i:n values
       var actualValue = retrieveParenthesisContent(delimiterSplit[endIndex - 1], substrs, 'i:')
       var actualValueTwo = retrieveParenthesisContent(delimiterSplit[endIndex], substrs, 'i:')
-
       if (actualValue.startsWith('(')) {
         actualValue = actualValue.substring(1, actualValue.length - 1)
         actualValue = retrieveParenthesisContent(actualValue, calculationSubstrs, 'q:')
@@ -707,17 +713,22 @@ function iterate(array: any[], splitOn: string): void {
 function retrieveParenthesisContent(str: string, tuples: Tuple[], delim: string): string {
   var actualValue = str
   var iter = 0
-  while (iter < tuples.length) {
-    let tuple: Tuple = tuples[iter]
-    if (str.includes(tuple.i)) {
-      actualValue = actualValue.replace(tuple.i, tuple.s)
-      if (actualValue.includes(delim)) {
-        var substr = actualValue.substring(actualValue.indexOf(delim), actualValue.indexOf(delim) + 3)
-        actualValue = actualValue.replace(substr, retrieveParenthesisContent(substr, tuples, delim))
+  while (actualValue.includes(delim)) {
+    while (iter < tuples.length) {
+      let tuple: Tuple = tuples[iter]
+      if (str.includes(tuple.i)) {
+        actualValue = actualValue.replace(tuple.i, tuple.s)
+        if (actualValue.includes(delim)) {
+          // var substr = actualValue.substring(actualValue.indexOf(delim), actualValue.indexOf(delim) + 3)
+          // if (tuple.i.length > 3) {
+          var substr = actualValue.substring(actualValue.indexOf(delim), actualValue.indexOf(delim) + 4)
+          // }
+          actualValue = actualValue.replace(substr, retrieveParenthesisContent(substr, tuples, delim))
+        }
+        break
       }
-      break
+      iter++
     }
-    iter++
   }
   return actualValue
 }

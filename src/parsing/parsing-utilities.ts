@@ -520,7 +520,9 @@ export function buildRawData(
   type: number
 ): Maybe<number[]> {
   try {
+    var printInstruciton
     var retVal = instructionSet.map((instruction, index) => {
+      printInstruciton = instruction
       // Only capture values that aren't naturally numbers
       if (!isNaN(Number(instruction))) {
         return BigInt(instruction)
@@ -617,7 +619,7 @@ export function removeExtraParenthesis(strToClean: string): string {
       strToClean = strToClean.replace(match, replacement)
     }
   }
-  iter = 0
+  iter = 10
   while (strToClean.includes('(')) {
     var initialIndex = strToClean.lastIndexOf('(')
     var closingIndex = strToClean.indexOf(')', initialIndex)
@@ -640,7 +642,7 @@ export function removeExtraParenthesis(strToClean: string): string {
   while (replaceCount < holders.length) {
     iter = 0
     for (var hold of holders) {
-      var str = 'rep:' + iter
+      var str = 'rep:' + (iter + 10)
       if (strToClean.includes(str)) {
         strToClean = strToClean.replace(str, holders[iter])
         replaceCount += 1
