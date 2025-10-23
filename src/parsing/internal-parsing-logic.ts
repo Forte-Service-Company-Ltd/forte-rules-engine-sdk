@@ -782,7 +782,9 @@ function intify(array: any[]): Array<number | BigInt> {
         const MAX_UINT256 = BigInt('0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff') // 2^256 - 1
         
         if (numValue > MAX_UINT256) {
-          console.error(`Validation Error: Number '${iter}' exceeds uint256 maximum value. Maximum allowed is ${MAX_UINT256.toString()}.`)
+          if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
+            console.error(`Validation Error: Number '${iter}' exceeds uint256 maximum value. Maximum allowed is ${MAX_UINT256.toString()}.`)
+          }
           throw new Error(`Number '${iter}' exceeds uint256 maximum`)
         }
         

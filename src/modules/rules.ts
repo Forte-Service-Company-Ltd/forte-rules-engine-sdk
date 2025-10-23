@@ -23,6 +23,26 @@ import { isLeft, unwrapEither } from './utils'
 import { validateRuleJSON } from './validation'
 
 /**
+ * Get the global variable name from its index based on Rules Engine constants
+ */
+function getGlobalVariableName(index: number): string {
+  switch (index) {
+    case 1:
+      return 'GV:MSG_SENDER'      // MSG_SENDER (ADDR)
+    case 2:
+      return 'GV:BLOCK_TIMESTAMP' // BLOCK_TIMESTAMP (UINT)
+    case 3:
+      return 'GV:MSG_DATA'        // MSG_DATA (BYTES)
+    case 4:
+      return 'GV:BLOCK_NUMBER'    // BLOCK_NUMBER (UINT)
+    case 5:
+      return 'GV:TX_ORIGIN'       // TX_ORIGIN (ADDR)
+    default:
+      return 'GV:UNKNOWN'
+  }
+}
+
+/**
  * @file Rules.ts
  * @description This module provides a comprehensive set of functions for interacting with the Rules within the Rules Engine smart contracts.
  *              It includes functionality for creating, updating, retrieving, and deleting rules.
@@ -142,6 +162,9 @@ export const createRule = async (
           } else if (ind.eType == 2) {
             var trackerInternal = await getTrackerMetadata(config, rulesEngineComponentContract, policyId, ind.index)
             fullFCList.push('TR:' + trackerInternal.trackerName)
+          } else if (ind.eType == 3) {
+            // Global variables (eType == 3) are handled automatically by the placeholder system
+            // No dependency tracking needed, but we handle the case to ensure proper processing
           }
         }
         fullFCList.push('FC:' + fcChainMeta.name)
@@ -184,6 +207,8 @@ export const createRule = async (
             var trackerInternal = await getTrackerMetadata(config, rulesEngineComponentContract, policyId, ind.index)
             fullFCListEff.push('TR:' + trackerInternal.trackerName)
           }
+          // Note: eType == 3 (global variables) are handled automatically by the placeholder system
+          // and don't need to be added to dependency lists
         }
         fullFCListEff.push('FC:' + fcChainMeta.name)
       }
@@ -330,6 +355,8 @@ export const updateRule = async (
             var trackerInternal = await getTrackerMetadata(config, rulesEngineComponentContract, policyId, ind.index)
             fullFCList.push('TR:' + trackerInternal.trackerName)
           }
+          // Note: eType == 3 (global variables) are handled automatically by the placeholder system
+          // and don't need to be added to dependency lists
         }
         fullFCList.push('FC:' + fcChainMeta.name)
       }
@@ -362,6 +389,8 @@ export const updateRule = async (
             var trackerInternal = await getTrackerMetadata(config, rulesEngineComponentContract, policyId, ind.index)
             fullFCListEff.push('TR:' + trackerInternal.trackerName)
           }
+          // Note: eType == 3 (global variables) are handled automatically by the placeholder system
+          // and don't need to be added to dependency lists
         }
         fullFCListEff.push('FC:' + fcChainMeta.name)
       }

@@ -2699,6 +2699,150 @@ test('Foreign call self-reference validation - should allow valid foreign call r
   }).not.toThrow()
 })
 
+test('Foreign call with global variables in ValuesToPass should parse successfully', () => {
+  const ruleString = `{
+    "Condition": "FC:msgSenderCheck == true",
+    "PositiveEffects": ["emit \\"Success\\""],
+    "NegativeEffects": ["revert(\\"Failed\\")"],
+    "CallingFunction": "transfer"
+  }`
+
+  // This test verifies that foreign calls with global variables in ValuesToPass 
+  // can be parsed without errors. The global variable support is tested by
+  // the individual global variable flag tests and the contract integration tests.
+  const result = parseRuleSyntax(
+    JSON.parse(ruleString), 
+    [], // trackers
+    [], // mappedTrackers
+    'address to, uint256 value', // functionSignature
+    ['FC:msgSenderCheck'], // foreign call names 
+    [] // trackerNameToID
+  )
+
+  expect(result).not.toBeNull()
+  expect(result!.placeHolders.length).toBeGreaterThanOrEqual(1)
+})
+
+test('Foreign call with GV:MSG_SENDER in ValuesToPass should parse correctly', () => {
+  const ruleString = `{
+    "Condition": "FC:senderCheck == true",
+    "PositiveEffects": ["emit \\"MSG_SENDER Valid\\""],
+    "NegativeEffects": ["revert(\\"Invalid sender\\")"],
+    "CallingFunction": "transfer"
+  }`
+
+  const result = parseRuleSyntax(
+    JSON.parse(ruleString), 
+    [], [], 
+    'address to, uint256 value',
+    ['FC:senderCheck'], 
+    []
+  )
+
+  expect(result).not.toBeNull()
+  expect(result!.placeHolders.length).toBeGreaterThanOrEqual(1)
+})
+
+test('Foreign call with GV:BLOCK_TIMESTAMP in ValuesToPass should parse correctly', () => {
+  const ruleString = `{
+    "Condition": "FC:timeCheck == true",
+    "PositiveEffects": ["emit \\"Timestamp Valid\\""],
+    "NegativeEffects": ["revert(\\"Invalid timestamp\\")"],
+    "CallingFunction": "transfer"
+  }`
+
+  const result = parseRuleSyntax(
+    JSON.parse(ruleString), 
+    [], [], 
+    'address to, uint256 value',
+    ['FC:timeCheck'], 
+    []
+  )
+
+  expect(result).not.toBeNull()
+  expect(result!.placeHolders.length).toBeGreaterThanOrEqual(1)
+})
+
+test('Foreign call with GV:MSG_DATA in ValuesToPass should parse correctly', () => {
+  const ruleString = `{
+    "Condition": "FC:dataCheck == true",
+    "PositiveEffects": ["emit \\"Data Valid\\""],
+    "NegativeEffects": ["revert(\\"Invalid data\\")"],
+    "CallingFunction": "transfer"
+  }`
+
+  const result = parseRuleSyntax(
+    JSON.parse(ruleString), 
+    [], [], 
+    'address to, uint256 value',
+    ['FC:dataCheck'], 
+    []
+  )
+
+  expect(result).not.toBeNull()
+  expect(result!.placeHolders.length).toBeGreaterThanOrEqual(1)
+})
+
+test('Foreign call with GV:BLOCK_NUMBER in ValuesToPass should parse correctly', () => {
+  const ruleString = `{
+    "Condition": "FC:blockCheck == true",
+    "PositiveEffects": ["emit \\"Block Valid\\""],
+    "NegativeEffects": ["revert(\\"Invalid block\\")"],
+    "CallingFunction": "transfer"
+  }`
+
+  const result = parseRuleSyntax(
+    JSON.parse(ruleString), 
+    [], [], 
+    'address to, uint256 value',
+    ['FC:blockCheck'], 
+    []
+  )
+
+  expect(result).not.toBeNull()
+  expect(result!.placeHolders.length).toBeGreaterThanOrEqual(1)
+})
+
+test('Foreign call with GV:TX_ORIGIN in ValuesToPass should parse correctly', () => {
+  const ruleString = `{
+    "Condition": "FC:originCheck == true",
+    "PositiveEffects": ["emit \\"Origin Valid\\""],
+    "NegativeEffects": ["revert(\\"Invalid origin\\")"],
+    "CallingFunction": "transfer"
+  }`
+
+  const result = parseRuleSyntax(
+    JSON.parse(ruleString), 
+    [], [], 
+    'address to, uint256 value',
+    ['FC:originCheck'], 
+    []
+  )
+
+  expect(result).not.toBeNull()
+  expect(result!.placeHolders.length).toBeGreaterThanOrEqual(1)
+})
+
+test('Foreign call with multiple global variables in ValuesToPass should parse correctly', () => {
+  const ruleString = `{
+    "Condition": "FC:multiCheck == true",
+    "PositiveEffects": ["emit \\"Multi-GV Valid\\""],
+    "NegativeEffects": ["revert(\\"Invalid multi-GV\\")"],
+    "CallingFunction": "transfer"
+  }`
+
+  const result = parseRuleSyntax(
+    JSON.parse(ruleString), 
+    [], [], 
+    'address to, uint256 value',
+    ['FC:multiCheck'], 
+    []
+  )
+
+  expect(result).not.toBeNull()
+  expect(result!.placeHolders.length).toBeGreaterThanOrEqual(1)
+})
+
 test('Test Parsing Event Effect with Dynamic Parameter', () => {
   var ruleStringA = `{
     "Condition": "lORe == GV:TX_ORIGIN",

@@ -97,7 +97,10 @@ export function processSyntax(
 
   // This can throw if trackers don't exist
   const [finalSyntax, effectTrackers] = parseTrackers(updatedSyntax, components, trackerNameToID)
+  
+  // Extract global variables from the rule condition
   let gvEComponents = parseGlobalVariables(finalSyntax, currentIndex)
+  
   var uniqueGV = []
   for (var comp of gvEComponents) {
     var found = false
@@ -131,13 +134,17 @@ function getProcessedEffects(
   
   // Check for multiple reverts
   if (revertIndices.length > 1) {
-    console.error('Validation Error: Multiple reverts found in effects array. Only one revert is allowed per effects array.')
+    if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
+      console.error('Validation Error: Multiple reverts found in effects array. Only one revert is allowed per effects array.')
+    }
     return null
   }
   
   // Check that if revert exists, no other effects exist
   if (revertIndices.length === 1 && effects.length > 1) {
-    console.error('Validation Error: When a revert is present, no other effects should exist. Revert stops execution so other effects cannot execute.')
+    if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
+      console.error('Validation Error: When a revert is present, no other effects should exist. Revert stops execution so other effects cannot execute.')
+    }
     return null
   }
 
@@ -433,6 +440,26 @@ export function parseTrackerSyntax(syntax: TrackerJSON): TrackerDefinition {
   }
 }
 
+/**
+ * Get the index for a global variable based on Rules Engine constants
+ */
+function getGlobalVariableIndex(gvName: string): number {
+  switch (gvName) {
+    case 'GV:MSG_SENDER':
+      return 1  // MSG_SENDER (ADDR)
+    case 'GV:BLOCK_TIMESTAMP':
+      return 2  // BLOCK_TIMESTAMP (UINT)
+    case 'GV:MSG_DATA':
+      return 3  // MSG_DATA (BYTES)
+    case 'GV:BLOCK_NUMBER':
+      return 4  // BLOCK_NUMBER (UINT)
+    case 'GV:TX_ORIGIN':
+      return 5  // TX_ORIGIN (ADDR)
+    default:
+      return -1
+  }
+}
+
 export function getFCEncodedIndex(
   foreignCallNameToID: NameToID[],
   trackerNameToID: NameToID[],
@@ -452,6 +479,12 @@ export function getFCEncodedIndex(
       } else {
         return { eType: 2, index: trMap.id }
       }
+    }
+  } else if (encodedIndex.includes('GV:')) {
+    // Handle global variables
+    const gvIndex = getGlobalVariableIndex(encodedIndex.trim())
+    if (gvIndex !== -1) {
+      return { eType: 3, index: gvIndex }
     }
   } else {
     const argIndex = functionArguments.findIndex((arg) => arg.trim() === encodedIndex.trim())
