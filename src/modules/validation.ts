@@ -815,7 +815,7 @@ export const validatePolicyJSON = (policy: string, existingPolicy?: PolicyJSON):
   }
 
   // Both validations passed - return the original input data (not the merged version)
-  return makeRight(parsed.data)
+  return makeRight(referenceCheck.data)
 }
 
 /**
