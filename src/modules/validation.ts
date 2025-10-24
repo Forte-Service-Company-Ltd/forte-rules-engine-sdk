@@ -239,6 +239,11 @@ const validateValuesToPass = (
       value = value.trim()
       if (value.startsWith('FC:')) {
         return foreignCallNames.includes(value.replace('FC:', '').trim())
+      } else if (value.startsWith('GV:')) {
+        // Validate global variables - check against supported list
+        const globalVar = value.replace('GV:', '').trim()
+        const supportedGlobalVars = ['MSG_SENDER', 'BLOCK_TIMESTAMP', 'MSG_DATA', 'BLOCK_NUMBER', 'TX_ORIGIN']
+        return supportedGlobalVars.includes(globalVar)
       } else if (value.startsWith('TR:') || value.startsWith('TRU:')) {
         value = value.replace(/^(TR|TRU):/, '').trim()
         if (value.includes('(')) {
@@ -423,7 +428,21 @@ export const foreignCallValidator = z.object({
     })
     .transform((input) => checksumAddress(input.trim() as Address)),
   ReturnType: z.preprocess(trimPossibleString, z.literal(PType, 'Unsupported return type')),
-  ValuesToPass: z.string().trim(),
+  ValuesToPass: z.string().trim().refine((valuesToPass) => {
+    // Check if any GV: parameters are valid
+    const params = valuesToPass.split(',').map(p => p.trim())
+    const supportedGlobalVars = ['MSG_SENDER', 'BLOCK_TIMESTAMP', 'MSG_DATA', 'BLOCK_NUMBER', 'TX_ORIGIN']
+    
+    for (const param of params) {
+      if (param.startsWith('GV:')) {
+        const globalVar = param.replace('GV:', '').trim()
+        if (!supportedGlobalVars.includes(globalVar)) {
+          return false
+        }
+      }
+    }
+    return true
+  }, { message: 'Unsupported global variable in ValuesToPass. Supported: GV:MSG_SENDER, GV:BLOCK_TIMESTAMP, GV:MSG_DATA, GV:BLOCK_NUMBER, GV:TX_ORIGIN' }),
   MappedTrackerKeyValues: z.string().trim(),
   CallingFunction: z.string().trim(),
 })

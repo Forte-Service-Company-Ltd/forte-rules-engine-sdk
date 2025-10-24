@@ -534,21 +534,31 @@ export const reverseParseEffect = (
         decodedParam = decodeAbiParameters(parseAbiParameters('string'), effect.param as `0x${string}`)[0]
       } else if (effect.pType == 2) {
         // uint256
-        decodedParam = String(decodeAbiParameters(parseAbiParameters('uint256'), effect.param as `0x${string}`)[0])
+        const uint256Value = decodeAbiParameters(parseAbiParameters('uint256'), effect.param as `0x${string}`)[0]
+        // Special case: if pType is 2 and value is 0, this represents a no-parameter event
+        if (uint256Value === 0n) {
+          // This is a no-parameter event, don't add any parameter
+          // Do nothing - param stays empty
+        } else {
+          decodedParam = String(uint256Value)
+          param = ', ' + decodedParam
+        }
       } else if (effect.pType == 3) {
         // bool
         const boolValue = decodeAbiParameters(parseAbiParameters('bool'), effect.param as `0x${string}`)[0]
         decodedParam = boolValue ? 'true' : 'false'
+        param = ', ' + decodedParam
       } else if (effect.pType == 5) {
         // bytes - decode and add :bytes suffix
         const bytesValue = decodeAbiParameters(parseAbiParameters('bytes'), effect.param as `0x${string}`)[0]
         // Convert hex bytes back to string for display
         decodedParam = hexToString(bytesValue) + ':bytes'
+        param = ', ' + decodedParam
       } else {
         // fallback
         decodedParam = String(effect.param)
+        param = ', ' + decodedParam
       }
-      param = ', ' + decodedParam
     }
     return 'emit ' + '"' + decodedText + '"' + param
   } else {

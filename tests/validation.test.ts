@@ -1931,3 +1931,147 @@ test('Policy update validation should allow new foreign call referencing existin
   const validated = validatePolicyJSON(updateInput, existingPolicy)
   expect(isRight(validated)).toBeTruthy()
 })
+
+// Global Variable Validation Tests
+test('Foreign call with GV:MSG_SENDER in ValuesToPass should validate successfully', () => {
+  const fcWithMsgSender = `{
+    "Name": "MSG_SENDER_Check",
+    "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+    "Function": "checkSender(address)",
+    "ReturnType": "bool",
+    "ValuesToPass": "GV:MSG_SENDER",
+    "MappedTrackerKeyValues": "",
+    "CallingFunction": "transfer"
+  }`
+
+  const validated = validateForeignCallJSON(fcWithMsgSender)
+  expect(isRight(validated)).toBeTruthy()
+})
+
+test('Foreign call with GV:BLOCK_TIMESTAMP in ValuesToPass should validate successfully', () => {
+  const fcWithBlockTimestamp = `{
+    "Name": "BLOCK_TIMESTAMP_Check",
+    "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+    "Function": "checkTimestamp(uint256)",
+    "ReturnType": "bool",
+    "ValuesToPass": "GV:BLOCK_TIMESTAMP",
+    "MappedTrackerKeyValues": "",
+    "CallingFunction": "transfer"
+  }`
+
+  const validated = validateForeignCallJSON(fcWithBlockTimestamp)
+  expect(isRight(validated)).toBeTruthy()
+})
+
+test('Foreign call with GV:MSG_DATA in ValuesToPass should validate successfully', () => {
+  const fcWithMsgData = `{
+    "Name": "MSG_DATA_Check",
+    "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+    "Function": "checkData(bytes)",
+    "ReturnType": "bool",
+    "ValuesToPass": "GV:MSG_DATA",
+    "MappedTrackerKeyValues": "",
+    "CallingFunction": "transfer"
+  }`
+
+  const validated = validateForeignCallJSON(fcWithMsgData)
+  expect(isRight(validated)).toBeTruthy()
+})
+
+test('Foreign call with GV:BLOCK_NUMBER in ValuesToPass should validate successfully', () => {
+  const fcWithBlockNumber = `{
+    "Name": "BLOCK_NUMBER_Check",
+    "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+    "Function": "checkBlockNumber(uint256)",
+    "ReturnType": "bool",
+    "ValuesToPass": "GV:BLOCK_NUMBER",
+    "MappedTrackerKeyValues": "",
+    "CallingFunction": "transfer"
+  }`
+
+  const validated = validateForeignCallJSON(fcWithBlockNumber)
+  expect(isRight(validated)).toBeTruthy()
+})
+
+test('Foreign call with GV:TX_ORIGIN in ValuesToPass should validate successfully', () => {
+  const fcWithTxOrigin = `{
+    "Name": "TX_ORIGIN_Check",
+    "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+    "Function": "checkOrigin(address)",
+    "ReturnType": "bool",
+    "ValuesToPass": "GV:TX_ORIGIN",
+    "MappedTrackerKeyValues": "",
+    "CallingFunction": "transfer"
+  }`
+
+  const validated = validateForeignCallJSON(fcWithTxOrigin)
+  expect(isRight(validated)).toBeTruthy()
+})
+
+test('Foreign call with multiple global variables in ValuesToPass should validate successfully', () => {
+  const fcWithMultipleGVs = `{
+    "Name": "Multi_GV_Check",
+    "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+    "Function": "checkMultiple(address,uint256,bytes)",
+    "ReturnType": "bool",
+    "ValuesToPass": "GV:MSG_SENDER, GV:BLOCK_TIMESTAMP, GV:MSG_DATA",
+    "MappedTrackerKeyValues": "",
+    "CallingFunction": "transfer"
+  }`
+
+  const validated = validateForeignCallJSON(fcWithMultipleGVs)
+  expect(isRight(validated)).toBeTruthy()
+})
+
+test('Foreign call with mixed global variables and regular parameters should validate successfully', () => {
+  const fcWithMixed = `{
+    "Name": "Mixed_Check",
+    "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+    "Function": "checkMixed(address,uint256,address)",
+    "ReturnType": "bool",
+    "ValuesToPass": "GV:MSG_SENDER, value, GV:TX_ORIGIN",
+    "MappedTrackerKeyValues": "",
+    "CallingFunction": "transfer"
+  }`
+
+  const validated = validateForeignCallJSON(fcWithMixed)
+  expect(isRight(validated)).toBeTruthy()
+})
+
+test('Foreign call with invalid global variable should fail validation', () => {
+  const fcWithInvalidGV = `{
+    "Name": "Invalid_GV_Check",
+    "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+    "Function": "checkInvalid(uint256)",
+    "ReturnType": "bool",
+    "ValuesToPass": "GV:INVALID_VARIABLE",
+    "MappedTrackerKeyValues": "",
+    "CallingFunction": "transfer"
+  }`
+
+  const validated = validateForeignCallJSON(fcWithInvalidGV)
+  expect(isLeft(validated)).toBeTruthy()
+  if (isLeft(validated)) {
+    const errors = unwrapEither(validated)
+    expect(errors.some((err) => err.message.includes('Unsupported global variable in ValuesToPass'))).toBeTruthy()
+  }
+})
+
+test('Foreign call with malformed global variable should fail validation', () => {
+  const fcWithMalformedGV = `{
+    "Name": "Malformed_GV_Check",
+    "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
+    "Function": "checkMalformed(uint256)",
+    "ReturnType": "bool",
+    "ValuesToPass": "GV:",
+    "MappedTrackerKeyValues": "",
+    "CallingFunction": "transfer"
+  }`
+
+  const validated = validateForeignCallJSON(fcWithMalformedGV)
+  expect(isLeft(validated)).toBeTruthy()
+  if (isLeft(validated)) {
+    const errors = unwrapEither(validated)
+    expect(errors.some((err) => err.message.includes('Unsupported global variable in ValuesToPass'))).toBeTruthy()
+  }
+})
