@@ -889,9 +889,15 @@ test('Creates a simple mapped tracker with a string value', () => {
   expect(retVal.initialKeys[0]).toEqual(encodePacked(['uint256'], [BigInt(0)]))
   expect(retVal.initialKeys[1]).toEqual(encodePacked(['uint256'], [BigInt(1)]))
   expect(retVal.initialKeys[2]).toEqual(encodePacked(['uint256'], [BigInt(2)]))
-  expect(retVal.initialValues[0]).toEqual('0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000045465737400000000000000000000000000000000000000000000000000000000')
-  expect(retVal.initialValues[1]).toEqual('0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000008546573742054776f000000000000000000000000000000000000000000000000')
-  expect(retVal.initialValues[2]).toEqual('0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000a5465737420546872656500000000000000000000000000000000000000000000')
+  expect(retVal.initialValues[0]).toEqual(
+    '0x000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000045465737400000000000000000000000000000000000000000000000000000000'
+  )
+  expect(retVal.initialValues[1]).toEqual(
+    '0x00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000008546573742054776f000000000000000000000000000000000000000000000000'
+  )
+  expect(retVal.initialValues[2]).toEqual(
+    '0x0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000a5465737420546872656500000000000000000000000000000000000000000000'
+  )
 })
 
 test('Reverse Interpretation for the: "Evaluates a simple syntax string (using AND + OR operators and function parameters)" test', () => {
@@ -1623,7 +1629,14 @@ test('Evaluate a simple syntax string for a revert effect', () => {
         "NegativeEffects": [],
           "CallingFunction": "addValue"
   } `
-  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [{ id: 1, name: 'simpleTracker', type: 0 }], [], 'uint256 value', [], [])
+  var retVal = parseRuleSyntax(
+    JSON.parse(ruleStringA),
+    [{ id: 1, name: 'simpleTracker', type: 0 }],
+    [],
+    'uint256 value',
+    [],
+    []
+  )
   expect(retVal).not.toBeNull()
   expect(retVal!.positiveEffects[0].type).toBe(EffectType.REVERT)
   expect(retVal!.positiveEffects[0].instructionSet).toEqual([])
@@ -1637,7 +1650,14 @@ test('Evaluate a simple syntax string for a revert effect with message', () => {
         "CallingFunction": "addValue"
   } `
   var str = `(TR: simpleTracker + 2 == 5) AND(value < 10000)-- > revert("Didn't pass the sniff test")-- > addValue(uint256 value)-- > uint256 value`
-  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [{ id: 1, name: 'simpleTracker', type: 0 }], [], 'uint256 value', [], [])
+  var retVal = parseRuleSyntax(
+    JSON.parse(ruleStringA),
+    [{ id: 1, name: 'simpleTracker', type: 0 }],
+    [],
+    'uint256 value',
+    [],
+    []
+  )
   expect(retVal).not.toBeNull()
   expect(retVal!.positiveEffects[0].type).toBe(EffectType.REVERT)
   expect(retVal!.positiveEffects[0].text).toEqual("Didn't pass the sniff test")
@@ -1651,7 +1671,14 @@ test('Evaluate a simple syntax string for a event effect', () => {
         "NegativeEffects": [],
           "CallingFunction": "addValue"
   } `
-  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [{ id: 1, name: 'simpleTracker', type: 0 }], [], 'uint256 value', [], [])
+  var retVal = parseRuleSyntax(
+    JSON.parse(ruleStringA),
+    [{ id: 1, name: 'simpleTracker', type: 0 }],
+    [],
+    'uint256 value',
+    [],
+    []
+  )
   expect(retVal).not.toBeNull()
   expect(retVal!.positiveEffects[0].type).toBe(EffectType.EVENT)
   expect(retVal!.positiveEffects[0].text).toEqual('Something wrong')
@@ -1665,7 +1692,14 @@ test('Evaluate a simple syntax string for a event effect without text', () => {
         "NegativeEffects": [],
           "CallingFunction": "addValue"
   } `
-  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [{ id: 1, name: 'simpleTracker', type: 0 }], [], 'uint256 value', [], [])
+  var retVal = parseRuleSyntax(
+    JSON.parse(ruleStringA),
+    [{ id: 1, name: 'simpleTracker', type: 0 }],
+    [],
+    'uint256 value',
+    [],
+    []
+  )
   expect(retVal).not.toBeNull()
   expect(retVal!.positiveEffects[0].type).toBe(EffectType.EVENT)
   expect(retVal!.positiveEffects[0].text).toEqual('Goodvibes')
@@ -1679,7 +1713,14 @@ test('Evaluate a simple syntax string that contains a positive and negative effe
         "NegativeEffects": ["revert"],
           "CallingFunction": "addValue"
   } `
-  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [{ id: 1, name: 'simpleTracker', type: 0 }], [], 'uint256 value', [], [])
+  var retVal = parseRuleSyntax(
+    JSON.parse(ruleStringA),
+    [{ id: 1, name: 'simpleTracker', type: 0 }],
+    [],
+    'uint256 value',
+    [],
+    []
+  )
   expect(retVal).not.toBeNull()
   expect(retVal!.positiveEffects[0].type).toBe(EffectType.EVENT)
   expect(retVal!.positiveEffects[0].text).toEqual('Goodvibes')
@@ -1696,7 +1737,14 @@ test('Evaluate a simple syntax string that contains multiple positive effects an
         "NegativeEffects": ["revert"],
           "CallingFunction": "addValue"
   } `
-  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [{ id: 1, name: 'simpleTracker', type: 0 }], [], 'uint256 value', [], [])
+  var retVal = parseRuleSyntax(
+    JSON.parse(ruleStringA),
+    [{ id: 1, name: 'simpleTracker', type: 0 }],
+    [],
+    'uint256 value',
+    [],
+    []
+  )
   expect(retVal).not.toBeNull()
   expect(retVal!.positiveEffects[0].type).toBe(EffectType.EVENT)
   expect(retVal!.positiveEffects[0].text).toEqual('Goodvibes')
@@ -2707,15 +2755,15 @@ test('Foreign call with global variables in ValuesToPass should parse successful
     "CallingFunction": "transfer"
   }`
 
-  // This test verifies that foreign calls with global variables in ValuesToPass 
+  // This test verifies that foreign calls with global variables in ValuesToPass
   // can be parsed without errors. The global variable support is tested by
   // the individual global variable flag tests and the contract integration tests.
   const result = parseRuleSyntax(
-    JSON.parse(ruleString), 
+    JSON.parse(ruleString),
     [], // trackers
     [], // mappedTrackers
     'address to, uint256 value', // functionSignature
-    ['FC:msgSenderCheck'], // foreign call names 
+    ['FC:msgSenderCheck'], // foreign call names
     [] // trackerNameToID
   )
 
@@ -2731,13 +2779,7 @@ test('Foreign call with GV:MSG_SENDER in ValuesToPass should parse correctly', (
     "CallingFunction": "transfer"
   }`
 
-  const result = parseRuleSyntax(
-    JSON.parse(ruleString), 
-    [], [], 
-    'address to, uint256 value',
-    ['FC:senderCheck'], 
-    []
-  )
+  const result = parseRuleSyntax(JSON.parse(ruleString), [], [], 'address to, uint256 value', ['FC:senderCheck'], [])
 
   expect(result).not.toBeNull()
   expect(result!.placeHolders.length).toBeGreaterThanOrEqual(1)
@@ -2751,13 +2793,7 @@ test('Foreign call with GV:BLOCK_TIMESTAMP in ValuesToPass should parse correctl
     "CallingFunction": "transfer"
   }`
 
-  const result = parseRuleSyntax(
-    JSON.parse(ruleString), 
-    [], [], 
-    'address to, uint256 value',
-    ['FC:timeCheck'], 
-    []
-  )
+  const result = parseRuleSyntax(JSON.parse(ruleString), [], [], 'address to, uint256 value', ['FC:timeCheck'], [])
 
   expect(result).not.toBeNull()
   expect(result!.placeHolders.length).toBeGreaterThanOrEqual(1)
@@ -2771,13 +2807,7 @@ test('Foreign call with GV:MSG_DATA in ValuesToPass should parse correctly', () 
     "CallingFunction": "transfer"
   }`
 
-  const result = parseRuleSyntax(
-    JSON.parse(ruleString), 
-    [], [], 
-    'address to, uint256 value',
-    ['FC:dataCheck'], 
-    []
-  )
+  const result = parseRuleSyntax(JSON.parse(ruleString), [], [], 'address to, uint256 value', ['FC:dataCheck'], [])
 
   expect(result).not.toBeNull()
   expect(result!.placeHolders.length).toBeGreaterThanOrEqual(1)
@@ -2791,13 +2821,7 @@ test('Foreign call with GV:BLOCK_NUMBER in ValuesToPass should parse correctly',
     "CallingFunction": "transfer"
   }`
 
-  const result = parseRuleSyntax(
-    JSON.parse(ruleString), 
-    [], [], 
-    'address to, uint256 value',
-    ['FC:blockCheck'], 
-    []
-  )
+  const result = parseRuleSyntax(JSON.parse(ruleString), [], [], 'address to, uint256 value', ['FC:blockCheck'], [])
 
   expect(result).not.toBeNull()
   expect(result!.placeHolders.length).toBeGreaterThanOrEqual(1)
@@ -2811,13 +2835,7 @@ test('Foreign call with GV:TX_ORIGIN in ValuesToPass should parse correctly', ()
     "CallingFunction": "transfer"
   }`
 
-  const result = parseRuleSyntax(
-    JSON.parse(ruleString), 
-    [], [], 
-    'address to, uint256 value',
-    ['FC:originCheck'], 
-    []
-  )
+  const result = parseRuleSyntax(JSON.parse(ruleString), [], [], 'address to, uint256 value', ['FC:originCheck'], [])
 
   expect(result).not.toBeNull()
   expect(result!.placeHolders.length).toBeGreaterThanOrEqual(1)
@@ -2831,13 +2849,7 @@ test('Foreign call with multiple global variables in ValuesToPass should parse c
     "CallingFunction": "transfer"
   }`
 
-  const result = parseRuleSyntax(
-    JSON.parse(ruleString), 
-    [], [], 
-    'address to, uint256 value',
-    ['FC:multiCheck'], 
-    []
-  )
+  const result = parseRuleSyntax(JSON.parse(ruleString), [], [], 'address to, uint256 value', ['FC:multiCheck'], [])
 
   expect(result).not.toBeNull()
   expect(result!.placeHolders.length).toBeGreaterThanOrEqual(1)
@@ -4013,7 +4025,7 @@ test('Prevent multiple reverts in positive effects array', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
   expect(retVal).toBeNull()
 })
@@ -4025,7 +4037,7 @@ test('Prevent multiple reverts in negative effects array', () => {
         "NegativeEffects": ["revert(\\"First failure\\")", "revert", "revert(\\"Third failure\\")"],
           "CallingFunction": "transfer"
   } `
-  
+
   var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
   expect(retVal).toBeNull()
 })
@@ -4041,9 +4053,9 @@ test('Prevent mixed reverts and non-reverts in positive effects array', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
-  expect(retVal).toBeNull()  // Should return null due to validation error
+  expect(retVal).toBeNull() // Should return null due to validation error
 })
 
 test('Prevent effects after revert in negative effects array', () => {
@@ -4053,16 +4065,16 @@ test('Prevent effects after revert in negative effects array', () => {
         "NegativeEffects": ["emit \\"Error occurred\\"", "revert(\\"Critical failure\\")", "TRU:errorCount += 1"],
           "CallingFunction": "transfer"
   } `
-  
+
   var retVal = parseRuleSyntax(
-    JSON.parse(ruleStringA), 
-    [{ id: 1, name: 'errorCount', type: 2 }], 
-    [], 
-    'uint256 value', 
-    [], 
+    JSON.parse(ruleStringA),
+    [{ id: 1, name: 'errorCount', type: 2 }],
+    [],
+    'uint256 value',
+    [],
     []
   )
-  expect(retVal).toBeNull()  // Should return null due to validation error
+  expect(retVal).toBeNull() // Should return null due to validation error
 })
 
 /**
@@ -4076,7 +4088,7 @@ test('Test emit keyword works correctly', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
   expect(retVal).not.toBeNull()
   expect(retVal!.positiveEffects).toHaveLength(1)
@@ -4095,7 +4107,7 @@ test('Should enforce emit keyword instead of emits', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
   expect(retVal).toBeNull()
 })
@@ -4107,7 +4119,7 @@ test('Should enforce proper emit syntax with quotes', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
   expect(retVal).toBeNull()
 })
@@ -4119,7 +4131,7 @@ test('Should enforce proper emit syntax without extra spaces', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
   expect(retVal).toBeNull()
 })
@@ -4131,7 +4143,7 @@ test('Should enforce proper emit syntax with double spaces', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
   expect(retVal).toBeNull()
 })
@@ -4143,7 +4155,7 @@ test('Should enforce emit syntax with proper capitalization', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
   expect(retVal).toBeNull()
 })
@@ -4155,7 +4167,7 @@ test('Should allow proper emit syntax', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
   expect(retVal).not.toBeNull()
   expect(retVal!.positiveEffects[0].type).toBe(EffectType.EVENT)
@@ -4169,7 +4181,7 @@ test('Should enforce revert keyword instead of reverts', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
   expect(retVal).toBeNull()
 })
@@ -4185,7 +4197,7 @@ test('Should handle non-existent tracker gracefully in effects', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   // This should return null since the tracker doesn't exist
   var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
   expect(retVal).toBeNull()
@@ -4198,7 +4210,7 @@ test('Should handle non-existent mapped tracker gracefully in effects', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"  
   } `
-  
+
   // This should return null since the mapped tracker doesn't exist
   var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value, address to', [], [])
   expect(retVal).toBeNull()
@@ -4223,7 +4235,7 @@ test('Should prevent numbers exceeding uint256 max in tracker increments', () =>
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   // This should return null since the number exceeds uint256 max (2^256 - 1)
   var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], simpleTracker, 'uint256 value', [], [])
   expect(retVal).toBeNull()
@@ -4236,9 +4248,16 @@ test('Should handle uint256 maximum value in tracker increments', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   // This should succeed since the number is exactly uint256 max (2^256 - 1)
-  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [{ id: 1, name: 'testOne', type: 2 }], [], 'uint256 value', [], [])
+  var retVal = parseRuleSyntax(
+    JSON.parse(ruleStringA),
+    [{ id: 1, name: 'testOne', type: 2 }],
+    [],
+    'uint256 value',
+    [],
+    []
+  )
   expect(retVal).not.toBeNull()
 })
 
@@ -4249,7 +4268,7 @@ test('Should prevent numbers exceeding uint256 max in conditions', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   // This should return null since the number exceeds uint256 max (2^256 - 1)
   var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
   expect(retVal).toBeNull()
@@ -4262,7 +4281,7 @@ test('Should handle uint256 maximum value in conditions', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   // This should succeed since the number is exactly uint256 max (2^256 - 1)
   var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [], 'uint256 value', [], [])
   expect(retVal).not.toBeNull()
@@ -4279,9 +4298,16 @@ test('Should prevent == operators in tracker effects', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   // This should return null since == is a comparison operator, not assignment
-  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [{ id: 1, name: 'testOne', type: 0 }], [], 'uint256 value', [], [])
+  var retVal = parseRuleSyntax(
+    JSON.parse(ruleStringA),
+    [{ id: 1, name: 'testOne', type: 0 }],
+    [],
+    'uint256 value',
+    [],
+    []
+  )
   expect(retVal).toBeNull()
 })
 
@@ -4292,9 +4318,16 @@ test('Should allow = operators in tracker effects', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   // This should succeed since = is a valid assignment operator
-  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [{ id: 1, name: 'testOne', type: 0 }], [], 'uint256 value', [], [])
+  var retVal = parseRuleSyntax(
+    JSON.parse(ruleStringA),
+    [{ id: 1, name: 'testOne', type: 0 }],
+    [],
+    'uint256 value',
+    [],
+    []
+  )
   expect(retVal).not.toBeNull()
 })
 
@@ -4305,9 +4338,16 @@ test('Should prevent != operators in tracker effects', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   // This should return null since != is a comparison operator, not assignment
-  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [{ id: 1, name: 'testOne', type: 0 }], [], 'uint256 value', [], [])
+  var retVal = parseRuleSyntax(
+    JSON.parse(ruleStringA),
+    [{ id: 1, name: 'testOne', type: 0 }],
+    [],
+    'uint256 value',
+    [],
+    []
+  )
   expect(retVal).toBeNull()
 })
 
@@ -4318,9 +4358,16 @@ test('Should prevent >= operators in tracker effects', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   // This should return null since >= is a comparison operator, not assignment
-  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [{ id: 1, name: 'testOne', type: 0 }], [], 'uint256 value', [], [])
+  var retVal = parseRuleSyntax(
+    JSON.parse(ruleStringA),
+    [{ id: 1, name: 'testOne', type: 0 }],
+    [],
+    'uint256 value',
+    [],
+    []
+  )
   expect(retVal).toBeNull()
 })
 
@@ -4331,9 +4378,16 @@ test('Should prevent <= operators in tracker effects', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   // This should return null since <= is a comparison operator, not assignment
-  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [{ id: 1, name: 'testOne', type: 0 }], [], 'uint256 value', [], [])
+  var retVal = parseRuleSyntax(
+    JSON.parse(ruleStringA),
+    [{ id: 1, name: 'testOne', type: 0 }],
+    [],
+    'uint256 value',
+    [],
+    []
+  )
   expect(retVal).toBeNull()
 })
 
@@ -4344,9 +4398,16 @@ test('Should prevent > operators in tracker effects', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   // This should return null since > is a comparison operator, not assignment
-  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [{ id: 1, name: 'testOne', type: 0 }], [], 'uint256 value', [], [])
+  var retVal = parseRuleSyntax(
+    JSON.parse(ruleStringA),
+    [{ id: 1, name: 'testOne', type: 0 }],
+    [],
+    'uint256 value',
+    [],
+    []
+  )
   expect(retVal).toBeNull()
 })
 
@@ -4357,9 +4418,16 @@ test('Should prevent < operators in tracker effects', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   // This should return null since < is a comparison operator, not assignment
-  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [{ id: 1, name: 'testOne', type: 0 }], [], 'uint256 value', [], [])
+  var retVal = parseRuleSyntax(
+    JSON.parse(ruleStringA),
+    [{ id: 1, name: 'testOne', type: 0 }],
+    [],
+    'uint256 value',
+    [],
+    []
+  )
   expect(retVal).toBeNull()
 })
 
@@ -4374,9 +4442,16 @@ test('Should prevent spaces after FC: in foreign calls', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   // This should return null since there's a space after FC:
-  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [{ id: 1, name: 'testFunction', type: 0 }], 'uint256 value', ['FC:testFunction'], [])
+  var retVal = parseRuleSyntax(
+    JSON.parse(ruleStringA),
+    [],
+    [{ id: 1, name: 'testFunction', type: 0 }],
+    'uint256 value',
+    ['FC:testFunction'],
+    []
+  )
   expect(retVal).toBeNull()
 })
 
@@ -4387,9 +4462,16 @@ test('Should allow valid FC syntax without spaces', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   // This should succeed since FC: has no space
-  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [{ id: 1, name: 'testFunction', type: 0 }], 'uint256 value', ['FC:testFunction'], [])
+  var retVal = parseRuleSyntax(
+    JSON.parse(ruleStringA),
+    [],
+    [{ id: 1, name: 'testFunction', type: 0 }],
+    'uint256 value',
+    ['FC:testFunction'],
+    []
+  )
   expect(retVal).not.toBeNull()
 })
 
@@ -4400,9 +4482,16 @@ test('Should prevent spaces in FC calls within effects', () => {
         "NegativeEffects": [],
           "CallingFunction": "transfer"
   } `
-  
+
   // This should return null since there's a space after FC:
-  var retVal = parseRuleSyntax(JSON.parse(ruleStringA), [], [{ id: 1, name: 'invalidCall', type: 0 }], 'uint256 value', ['FC:invalidCall'], [])
+  var retVal = parseRuleSyntax(
+    JSON.parse(ruleStringA),
+    [],
+    [{ id: 1, name: 'invalidCall', type: 0 }],
+    'uint256 value',
+    ['FC:invalidCall'],
+    []
+  )
   expect(retVal).toBeNull()
 })
 
@@ -4410,25 +4499,25 @@ test('Should prevent spaces in FC calls within effects', () => {
 test('getInstructionType correctly maps all instruction strings to their numeric types', () => {
   // Numeric literal
   expect(getInstructionType('N')).toBe(0)
-  
+
   // Logical operations
   expect(getInstructionType('NOT')).toBe(1)
   expect(getInstructionType('AND')).toBe(12)
   expect(getInstructionType('OR')).toBe(13)
-  
+
   // Placeholder operations
   expect(getInstructionType('PLH')).toBe(2)
   expect(getInstructionType('PLHM')).toBe(4)
-  
+
   // Assignment operations
   expect(getInstructionType('=')).toBe(3)
-  
+
   // Arithmetic operations
   expect(getInstructionType('+')).toBe(5)
   expect(getInstructionType('-')).toBe(6)
   expect(getInstructionType('*')).toBe(7)
   expect(getInstructionType('/')).toBe(8)
-  
+
   // Comparison operations
   expect(getInstructionType('<')).toBe(9)
   expect(getInstructionType('>')).toBe(10)
@@ -4436,7 +4525,7 @@ test('getInstructionType correctly maps all instruction strings to their numeric
   expect(getInstructionType('>=')).toBe(14)
   expect(getInstructionType('<=')).toBe(15)
   expect(getInstructionType('!=')).toBe(16)
-  
+
   // Tracker operations
   expect(getInstructionType('TRU')).toBe(17)
   expect(getInstructionType('TRUM')).toBe(18)
@@ -4447,11 +4536,11 @@ test('getInstructionType returns original value for non-string instructions', ()
   expect(getInstructionType(42)).toBe(42)
   expect(getInstructionType(0)).toBe(0)
   expect(getInstructionType(-5)).toBe(-5)
-  
+
   // BigInt should pass through unchanged
   expect(getInstructionType(123n)).toBe(123n)
   expect(getInstructionType(0n)).toBe(0n)
-  
+
   // Unknown strings should pass through unchanged
   expect(getInstructionType('UNKNOWN')).toBe('UNKNOWN')
   expect(getInstructionType('invalid')).toBe('invalid')
@@ -4463,12 +4552,12 @@ test('getInstructionType handles edge cases correctly', () => {
   expect(getInstructionType('and')).toBe('and')
   expect(getInstructionType('OR')).toBe(13)
   expect(getInstructionType('or')).toBe('or')
-  
+
   // Whitespace - should not match
   expect(getInstructionType(' AND ')).toBe(' AND ')
   expect(getInstructionType('AND ')).toBe('AND ')
   expect(getInstructionType(' AND')).toBe(' AND')
-  
+
   // Similar but different strings
   expect(getInstructionType('==')).toBe(11)
   expect(getInstructionType('=')).toBe(3)
@@ -4478,15 +4567,27 @@ test('getInstructionType handles edge cases correctly', () => {
 test('cleanInstructionSet uses getInstructionType correctly and produces expected results', () => {
   // Test that the refactored cleanInstructionSet produces the same results as before
   const testInstructionSet = [
-    'N', 5n, 'PLH', 0n, 'AND', 'N', 10n, '>', 'PLH', 1n,
-    'TRU', 2n, 'PLHM', 3n, '==', 'NOT', 'OR'
+    'N',
+    5n,
+    'PLH',
+    0n,
+    'AND',
+    'N',
+    10n,
+    '>',
+    'PLH',
+    1n,
+    'TRU',
+    2n,
+    'PLHM',
+    3n,
+    '==',
+    'NOT',
+    'OR',
   ]
-  
-  const expectedResult = [
-    0, 5n, 2, 0n, 12, 0, 10n, 10, 2, 1n,
-    17, 2n, 4, 3n, 11, 1, 13
-  ]
-  
+
+  const expectedResult = [0, 5n, 2, 0n, 12, 0, 10n, 10, 2, 1n, 17, 2n, 4, 3n, 11, 1, 13]
+
   const result = cleanInstructionSet(testInstructionSet)
   expect(result).toEqual(expectedResult)
 })

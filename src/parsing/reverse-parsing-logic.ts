@@ -472,7 +472,7 @@ export const reverseParsePlaceholder = (
     strTR = strTR + '~' + placeholder.typeSpecificIndex
     return 'TR:' + strTR
   } else if (placeholder.flags == 0x04) {
-    return 'GV:MSG_SENDER'
+    return 'GV:MSG_SENDER!address'
   } else if (placeholder.flags == 0x08) {
     return 'GV:BLOCK_TIMESTAMP'
   } else if (placeholder.flags == 0x0c) {
@@ -480,7 +480,7 @@ export const reverseParsePlaceholder = (
   } else if (placeholder.flags == 0x10) {
     return 'GV:BLOCK_NUMBER'
   } else if (placeholder.flags == 0x14) {
-    return 'GV:TX_ORIGIN'
+    return 'GV:TX_ORIGIN!address'
   } else {
     return names[placeholder.typeSpecificIndex].name + '!' + names[placeholder.typeSpecificIndex].rawType
   }
@@ -517,7 +517,7 @@ export const reverseParseEffect = (
 ): string => {
   if (effect.effectType == 0) {
     const decodedText = decodeHexString(effect.text)
-    return "revert('" + decodedText + "')"
+    return 'revert("' + decodedText + '")'
   } else if (effect.effectType == 1) {
     const decodedText = decodeHexString(effect.text)
     var param = ''

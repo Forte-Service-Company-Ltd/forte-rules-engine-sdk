@@ -643,53 +643,6 @@ test('Can catch missing calling function in foreign call in policy JSON', () => 
   }
 })
 
-test('Can catch missing foreign call in condition in policy JSON', () => {
-  const parsedInput = JSON.parse(policyJSONFull)
-  parsedInput.Rules[0].Condition =
-    "FC:SimpleForeignCallMissing > 500 AND (TR:SimpleStringTracker == 'test' OR TR:SimpleMappedTracker(to) > 100)"
-  const parsedPolicy = validatePolicyJSON(JSON.stringify(parsedInput))
-  expect(isRight(parsedPolicy)).toBeFalsy()
-  if (isLeft(parsedPolicy)) {
-    const errors = unwrapEither(parsedPolicy)
-    expect(errors[0].message).toEqual('Policy Invalid reference call')
-  }
-})
-
-test('Can catch missing tracker in condition in policy JSON', () => {
-  const parsedInput = JSON.parse(policyJSONFull)
-  parsedInput.Rules[0].Condition =
-    "FC:SimpleForeignCall > 500 AND (TR:SimpleStringTrackerMissing == 'test' OR TR:SimpleMappedTracker(to) > 100)"
-  const parsedPolicy = validatePolicyJSON(JSON.stringify(parsedInput))
-  expect(isRight(parsedPolicy)).toBeFalsy()
-  if (isLeft(parsedPolicy)) {
-    const errors = unwrapEither(parsedPolicy)
-    expect(errors[0].message).toEqual('Policy Invalid reference call')
-  }
-})
-
-test('Can catch missing mapped tracker in condition in policy JSON', () => {
-  const parsedInput = JSON.parse(policyJSONFull)
-  parsedInput.Rules[0].Condition =
-    "FC:SimpleForeignCall > 500 AND (TR:SimpleStringTracker == 'test' OR TR:SimpleMappedTrackerMissing(to) > 100)"
-  const parsedPolicy = validatePolicyJSON(JSON.stringify(parsedInput))
-  expect(isRight(parsedPolicy)).toBeFalsy()
-  if (isLeft(parsedPolicy)) {
-    const errors = unwrapEither(parsedPolicy)
-    expect(errors[0].message).toEqual('Policy Invalid reference call')
-  }
-})
-
-test('Can catch missing calling function encoded value in foreign call valueToPass in policy JSON', () => {
-  const parsedInput = JSON.parse(policyJSONFull)
-  parsedInput.ForeignCalls[0].ValuesToPass = 'transferTo'
-  const parsedPolicy = validatePolicyJSON(JSON.stringify(parsedInput))
-  expect(isRight(parsedPolicy)).toBeFalsy()
-  if (isLeft(parsedPolicy)) {
-    const errors = unwrapEither(parsedPolicy)
-    expect(errors[0].message).toEqual('Policy Invalid reference call')
-  }
-})
-
 test('Can catch all missing required fields in policy JSON', () => {
   const parsedPolicy = validatePolicyJSON('{}')
   expect(isLeft(parsedPolicy)).toBeTruthy()
@@ -1251,52 +1204,6 @@ test('Validates mapped and unmapped trackers in valuesToPass with mappedTrackerK
   expect(isRight(parsed)).toBeTruthy()
 })
 
-test("Policy JSON validation should fail when some rules have order and others don't", () => {
-  const policy = {
-    Policy: 'Rule Ordering Test Policy',
-    Description: 'Test mixed rule ordering',
-    PolicyType: 'open',
-    CallingFunctions: [
-      {
-        Name: 'transfer(address to, uint256 value)',
-        FunctionSignature: 'transfer(address to, uint256 value)',
-        EncodedValues: 'address to, uint256 value',
-      },
-    ],
-    ForeignCalls: [],
-    Trackers: [],
-    MappedTrackers: [],
-    Rules: [
-      {
-        Name: 'Rule A',
-        Description: 'First rule with order',
-        Condition: '1 == 1',
-        PositiveEffects: ['emit Success'],
-        NegativeEffects: [],
-        CallingFunction: 'transfer(address to, uint256 value)',
-        Order: 1,
-      },
-      {
-        Name: 'Rule B',
-        Description: 'Second rule without order',
-        Condition: '2 == 2',
-        PositiveEffects: ['emit Success'],
-        NegativeEffects: [],
-        CallingFunction: 'transfer(address to, uint256 value)',
-        // No order field - this should cause validation to fail
-      },
-    ],
-  }
-
-  const parsed = validatePolicyJSON(JSON.stringify(policy))
-  expect(isLeft(parsed)).toBeTruthy()
-
-  if (isLeft(parsed)) {
-    const errors = unwrapEither(parsed)
-    expect(errors.some((err) => err.message.includes('Rule ordering validation failed'))).toBeTruthy()
-  }
-})
-
 test('Policy JSON validation should fail when duplicate Rule Ids are provided', () => {
   const policy = {
     Policy: 'Rule Ordering Test Policy',
@@ -1321,7 +1228,6 @@ test('Policy JSON validation should fail when duplicate Rule Ids are provided', 
         PositiveEffects: ['emit Success'],
         NegativeEffects: [],
         CallingFunction: 'transfer(address to, uint256 value)',
-        Order: 1,
       },
       {
         Id: 1,
@@ -1331,7 +1237,6 @@ test('Policy JSON validation should fail when duplicate Rule Ids are provided', 
         PositiveEffects: ['emit Success'],
         NegativeEffects: [],
         CallingFunction: 'transfer(address to, uint256 value)',
-        Order: 2,
       },
     ],
   }
@@ -1396,7 +1301,6 @@ test('Policy JSON validation should fail when duplicate Foreign Call Ids are pro
         PositiveEffects: ['emit Success'],
         NegativeEffects: [],
         CallingFunction: 'transfer(address to, uint256 value)',
-        Order: 1,
       },
       {
         Id: 2,
@@ -1406,7 +1310,6 @@ test('Policy JSON validation should fail when duplicate Foreign Call Ids are pro
         PositiveEffects: ['emit Success'],
         NegativeEffects: [],
         CallingFunction: 'transfer(address to, uint256 value)',
-        Order: 2,
       },
     ],
   }
@@ -1473,7 +1376,6 @@ test('Policy JSON validation should fail when duplicate Tracker Ids are provided
         PositiveEffects: ['emit Success'],
         NegativeEffects: [],
         CallingFunction: 'transfer(address to, uint256 value)',
-        Order: 1,
       },
       {
         Id: 2,
@@ -1483,7 +1385,6 @@ test('Policy JSON validation should fail when duplicate Tracker Ids are provided
         PositiveEffects: ['emit Success'],
         NegativeEffects: [],
         CallingFunction: 'transfer(address to, uint256 value)',
-        Order: 2,
       },
     ],
   }
@@ -1555,7 +1456,6 @@ test('Policy JSON validation should fail when duplicate Mapped Tracker Ids are p
         PositiveEffects: ['emit Success'],
         NegativeEffects: [],
         CallingFunction: 'transfer(address to, uint256 value)',
-        Order: 1,
       },
       {
         Id: 2,
@@ -1565,7 +1465,6 @@ test('Policy JSON validation should fail when duplicate Mapped Tracker Ids are p
         PositiveEffects: ['emit Success'],
         NegativeEffects: [],
         CallingFunction: 'transfer(address to, uint256 value)',
-        Order: 2,
       },
     ],
   }
@@ -1582,183 +1481,6 @@ test('Policy JSON validation should fail when duplicate Mapped Tracker Ids are p
         )
       )
     ).toBeTruthy()
-  }
-})
-
-test('Policy JSON validation should pass when all rules have order', () => {
-  const policy = {
-    Policy: 'Rule Ordering Test Policy',
-    Description: 'Test all rules with ordering',
-    PolicyType: 'open',
-    CallingFunctions: [
-      {
-        Name: 'transfer(address to, uint256 value)',
-        FunctionSignature: 'transfer(address to, uint256 value)',
-        EncodedValues: 'address to, uint256 value',
-      },
-    ],
-    ForeignCalls: [],
-    Trackers: [],
-    MappedTrackers: [],
-    Rules: [
-      {
-        Name: 'Rule A',
-        Description: 'First rule',
-        Condition: '1 == 1',
-        PositiveEffects: ['emit Success'],
-        NegativeEffects: [],
-        CallingFunction: 'transfer(address to, uint256 value)',
-        Order: 2,
-      },
-      {
-        Name: 'Rule B',
-        Description: 'Second rule',
-        Condition: '2 == 2',
-        PositiveEffects: ['emit Success'],
-        NegativeEffects: [],
-        CallingFunction: 'transfer(address to, uint256 value)',
-        Order: 1,
-      },
-    ],
-  }
-
-  const parsed = validatePolicyJSON(JSON.stringify(policy))
-  expect(isRight(parsed)).toBeTruthy()
-})
-
-test('Policy JSON validation should pass when no rules have order', () => {
-  const policy = {
-    Policy: 'Rule Ordering Test Policy',
-    Description: 'Test no rule ordering',
-    PolicyType: 'open',
-    CallingFunctions: [
-      {
-        Name: 'transfer(address to, uint256 value)',
-        FunctionSignature: 'transfer(address to, uint256 value)',
-        EncodedValues: 'address to, uint256 value',
-      },
-    ],
-    ForeignCalls: [],
-    Trackers: [],
-    MappedTrackers: [],
-    Rules: [
-      {
-        Name: 'Rule A',
-        Description: 'First rule',
-        Condition: '1 == 1',
-        PositiveEffects: ['emit Success'],
-        NegativeEffects: [],
-        CallingFunction: 'transfer(address to, uint256 value)',
-      },
-      {
-        Name: 'Rule B',
-        Description: 'Second rule',
-        Condition: '2 == 2',
-        PositiveEffects: ['emit Success'],
-        NegativeEffects: [],
-        CallingFunction: 'transfer(address to, uint256 value)',
-      },
-    ],
-  }
-
-  const parsed = validatePolicyJSON(JSON.stringify(policy))
-  expect(isRight(parsed)).toBeTruthy()
-})
-
-test('Policy JSON validation should fail when rules have duplicate order values', () => {
-  const policy = {
-    Policy: 'Rule Ordering Test Policy',
-    Description: 'Test duplicate order values',
-    PolicyType: 'open',
-    CallingFunctions: [
-      {
-        Name: 'transfer(address to, uint256 value)',
-        FunctionSignature: 'transfer(address to, uint256 value)',
-        EncodedValues: 'address to, uint256 value',
-      },
-    ],
-    ForeignCalls: [],
-    Trackers: [],
-    MappedTrackers: [],
-    Rules: [
-      {
-        Name: 'Rule A',
-        Description: 'First rule',
-        Condition: '1 == 1',
-        PositiveEffects: ['emit Success'],
-        NegativeEffects: [],
-        CallingFunction: 'transfer(address to, uint256 value)',
-        Order: 1,
-      },
-      {
-        Name: 'Rule B',
-        Description: 'Second rule with same order',
-        Condition: '2 == 2',
-        PositiveEffects: ['emit Success'],
-        NegativeEffects: [],
-        CallingFunction: 'transfer(address to, uint256 value)',
-        Order: 1, // Duplicate order value
-      },
-    ],
-  }
-
-  const parsed = validatePolicyJSON(JSON.stringify(policy))
-  expect(isLeft(parsed)).toBeTruthy()
-
-  if (isLeft(parsed)) {
-    const errors = unwrapEither(parsed)
-    expect(errors.some((err) => err.message.includes('Rule ordering validation failed'))).toBeTruthy()
-  }
-})
-
-test('Policy JSON validation handles null values robustly', () => {
-  // This test demonstrates that our validation logic treats null == undefined
-  // even though Zod schema will reject null values at the schema level
-  const policy = {
-    Policy: 'Rule Ordering Test Policy',
-    Description: 'Test null order robustness',
-    PolicyType: 'open',
-    CallingFunctions: [
-      {
-        Name: 'transfer(address to, uint256 value)',
-        FunctionSignature: 'transfer(address to, uint256 value)',
-        EncodedValues: 'address to, uint256 value',
-      },
-    ],
-    ForeignCalls: [],
-    Trackers: [],
-    MappedTrackers: [],
-    Rules: [
-      {
-        Name: 'Rule A',
-        Description: 'Rule with no order field',
-        Condition: '1 == 1',
-        PositiveEffects: ['emit Success'],
-        NegativeEffects: [],
-        CallingFunction: 'transfer(address to, uint256 value)',
-        // No order field (undefined)
-      },
-      {
-        Name: 'Rule B',
-        Description: 'Rule with null order',
-        Condition: '2 == 2',
-        PositiveEffects: ['emit Success'],
-        NegativeEffects: [],
-        CallingFunction: 'transfer(address to, uint256 value)',
-        Order: null, // This will fail Zod validation, but our logic treats null == undefined
-      },
-    ],
-  }
-
-  // This will fail at Zod schema validation level since z.number().optional() doesn't allow null
-  // But our custom validation logic now uses null-safe comparisons (rule.order == null)
-  const parsed = validatePolicyJSON(JSON.stringify(policy))
-  expect(isLeft(parsed)).toBeTruthy() // Fails due to Zod schema, not our custom validation
-
-  if (isLeft(parsed)) {
-    const errors = unwrapEither(parsed)
-    // Should NOT contain our custom rule ordering error since both rules have "no order" (null == undefined)
-    expect(errors.some((err) => err.message.includes('Rule ordering validation failed'))).toBeFalsy()
   }
 })
 

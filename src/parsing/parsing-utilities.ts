@@ -87,19 +87,23 @@ export function parseTrackers(
   const mappedMatches = condition.match(trMappedRegex) || []
   const mappedUpdateMatches = condition.match(truMappedRegex) || []
   const mappedMatchesSet = [...new Set([...mappedMatches, ...mappedUpdateMatches])]
-  
+
   // Validate that all mapped trackers exist
   for (const match of mappedMatchesSet) {
     const trackerName = match.split('(')[0].replace('TRU:', 'TR:')
-    const tracker = trackerNameToID.find((tr) => 'TR:' + tr.name === trackerName || tr.name === trackerName.replace('TR:', ''))
+    const tracker = trackerNameToID.find(
+      (tr) => 'TR:' + tr.name === trackerName || tr.name === trackerName.replace('TR:', '')
+    )
     if (!tracker) {
       if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
-        console.error(`Validation Error: Mapped tracker '${match}' not found. Referenced trackers must be defined in the MappedTrackers array.`)
+        console.error(
+          `Validation Error: Mapped tracker '${match}' not found. Referenced trackers must be defined in the MappedTrackers array.`
+        )
       }
       throw new Error(`Mapped tracker '${match}' not found`)
     }
   }
-  
+
   // replace mapped tracker parens syntx `trackerName(key) with pipe syntax `trackerName | key`
   const trCondition = mappedMatchesSet.reduce((acc, match) => {
     let initialSplit = match.split('(')[1]
@@ -128,7 +132,9 @@ export function parseTrackers(
     } else {
       // Tracker not found - this should cause a validation error
       if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
-        console.error(`Validation Error: Tracker '${name}' not found. Referenced trackers must be defined in the Trackers or MappedTrackers array.`)
+        console.error(
+          `Validation Error: Tracker '${name}' not found. Referenced trackers must be defined in the Trackers or MappedTrackers array.`
+        )
       }
       throw new Error(`Tracker '${name}' not found`)
     }
@@ -164,7 +170,9 @@ export function parseTrackers(
       } else {
         // Tracker not found - this should cause a validation error
         if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
-          console.error(`Validation Error: Tracker '${name}' not found. Referenced trackers must be defined in the Trackers or MappedTrackers array.`)
+          console.error(
+            `Validation Error: Tracker '${name}' not found. Referenced trackers must be defined in the Trackers or MappedTrackers array.`
+          )
         }
         throw new Error(`Tracker '${name}' not found`)
       }
@@ -398,19 +406,19 @@ export function buildPlaceholderList(names: any[]): PlaceholderStruct[] {
     } else if (name.rawType == 'Global') {
       if (name.name == 'GV:MSG_SENDER') {
         flags = 0x04
-        placeHolderEnum = 0  // address type
+        placeHolderEnum = 0 // address type
       } else if (name.name == 'GV:BLOCK_TIMESTAMP') {
         flags = 0x08
-        placeHolderEnum = 2  // uint256 type
+        placeHolderEnum = 2 // uint256 type
       } else if (name.name == 'GV:MSG_DATA') {
         flags = 0x0c
-        placeHolderEnum = 5  // bytes type
+        placeHolderEnum = 5 // bytes type
       } else if (name.name == 'GV:BLOCK_NUMBER') {
         flags = 0x10
-        placeHolderEnum = 2  // uint256 type
+        placeHolderEnum = 2 // uint256 type
       } else if (name.name == 'GV:TX_ORIGIN') {
         flags = 0x14
-        placeHolderEnum = 0  // address type
+        placeHolderEnum = 0 // address type
       }
     }
 
@@ -470,7 +478,9 @@ export function parseEffect(
     if (!emitPattern.test(effect.trim())) {
       // Only log validation errors in non-test environments
       if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
-        console.error(`Validation Error: Emit must start with 'emit "message"' with exactly one space and proper quotes. Additional parameters allowed after the message. Found: '${effect.trim()}'`)
+        console.error(
+          `Validation Error: Emit must start with 'emit "message"' with exactly one space and proper quotes. Additional parameters allowed after the message. Found: '${effect.trim()}'`
+        )
       }
       return null
     }
@@ -523,8 +533,8 @@ export function parseEffect(
     } else {
       // No parameter case - set both pType and parameterValue for no-parameter events
       effectText = spli[0]
-      pType = 2  // Keep original uint256 type
-      parameterValue = 0  // Use 0 instead of null for no-parameter events
+      pType = 2 // Keep original uint256 type
+      parameterValue = 0 // Use 0 instead of null for no-parameter events
     }
     // Regex check ^".*"$
     const quotesCheck = /^".*"$/g
@@ -542,41 +552,47 @@ export function parseEffect(
       }
       return null
     }
-    
+
     // Validate revert format - must be exactly 'revert', 'revert()', or 'revert("message")'
     const revertExactPattern = /^revert$|^revert\(\)$|^revert\("([^"]*)"\)$/
     if (!revertExactPattern.test(effect.trim())) {
       if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
-        console.error(`Validation Error: Revert must be in the format 'revert', 'revert()', or 'revert("message")' with no spaces around 'revert'.`)
+        console.error(
+          `Validation Error: Revert must be in the format 'revert', 'revert()', or 'revert("message")' with no spaces around 'revert'.`
+        )
       }
       return null
     }
-    
+
     effectType = EffectType.REVERT
     const match = effect.match(revertTextPattern)
     effectText = match ? match[1] : ''
   } else {
     // Validate against comparison operators in tracker effects (all comparison operators are invalid)
     const invalidComparisonOperators = ['==', '!=', '>=', '<=', '>', '<']
-    const hasInvalidOperator = invalidComparisonOperators.some(op => effect.includes(op))
-    
+    const hasInvalidOperator = invalidComparisonOperators.some((op) => effect.includes(op))
+
     if (hasInvalidOperator && effect.includes('TRU:')) {
-      const usedOperator = invalidComparisonOperators.find(op => effect.includes(op))
+      const usedOperator = invalidComparisonOperators.find((op) => effect.includes(op))
       if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
-        console.error(`Validation Error: Comparison operator '${usedOperator}' cannot be used in tracker effects. Use assignment operators like '=', '+=', '-=', '*=', '/=' instead.`)
+        console.error(
+          `Validation Error: Comparison operator '${usedOperator}' cannot be used in tracker effects. Use assignment operators like '=', '+=', '-=', '*=', '/=' instead.`
+        )
       }
       return null
     }
-    
+
     // Validate against spaces in FC calls
     const fcWithSpacePattern = /FC:\s+/
     if (fcWithSpacePattern.test(effect)) {
       if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
-        console.error(`Validation Error: Foreign call syntax 'FC:' cannot have spaces after the colon. Use 'FC:functionName' instead of 'FC: functionName'.`)
+        console.error(
+          `Validation Error: Foreign call syntax 'FC:' cannot have spaces after the colon. Use 'FC:functionName' instead of 'FC: functionName'.`
+        )
       }
       return null
     }
-    
+
     effectType = EffectType.EXPRESSION
     var instructionSet = convertHumanReadableToInstructionSet(effect, names, trackerNameToID, placeholders)
     effectInstructionSet = instructionSet

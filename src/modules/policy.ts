@@ -1,6 +1,6 @@
 /// SPDX-License-Identifier: BUSL-1.1
 
-import { toFunctionSelector, Address, getAddress } from 'viem'
+import { toFunctionSelector, Address, getAddress, toFunctionSignature } from 'viem'
 
 import { Config, readContract, simulateContract, waitForTransactionReceipt, writeContract } from '@wagmi/core'
 
@@ -26,9 +26,11 @@ import {
   ContractBlockParameters,
   convertToVersionStruct,
   SUPPORTEDVERSION,
+  trackerArrayType,
+  CallingFunctionOnChain,
 } from './types'
 import { createForeignCall, getAllForeignCalls, getForeignCallMetadata, updateForeignCall } from './foreign-calls'
-import { createRule, getRuleMetadata, getAllRules, updateRule } from './rules'
+import { createRule, getRuleMetadata, getAllRules, updateRule, getRule } from './rules'
 import { createMappedTracker, getAllTrackers, getTrackerMetadata, updateMappedTracker, updateTracker } from './trackers'
 import { sleep } from './contract-interaction-utils'
 import {
@@ -52,6 +54,7 @@ import {
   createCallingFunctionLookupMaps,
   resolveCallingFunction,
   ForeignCallJSON,
+  RuleJSON,
 } from './validation'
 import { isLeft, unwrapEither } from './utils'
 import { ru } from 'zod/v4/locales/index.cjs'
@@ -140,7 +143,9 @@ export const createPolicy = async (
       callingFunctionResults = await buildCallingFunctions(
         config,
         rulesEnginePolicyContract,
+        rulesEngineRulesContract,
         rulesEngineComponentContract,
+        rulesEngineForeignCallContract,
         callingFunctions,
         policyJSON,
         policyId,
@@ -170,7 +175,9 @@ export const createPolicy = async (
       trackerResults = await buildTrackers(
         config,
         rulesEnginePolicyContract,
+        rulesEngineRulesContract,
         rulesEngineComponentContract,
+        rulesEngineForeignCallContract,
         trackerIds,
         policyJSON,
         policyId,
@@ -186,6 +193,7 @@ export const createPolicy = async (
       foreignCallResults = await buildForeignCalls(
         config,
         rulesEnginePolicyContract,
+        rulesEngineRulesContract,
         rulesEngineComponentContract,
         rulesEngineForeignCallContract,
         callingFunctions,
@@ -245,7 +253,9 @@ export const createPolicy = async (
 const buildCallingFunctions = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
+  rulesEngineRulesContract: RulesEngineRulesContract,
   rulesEngineComponentContract: RulesEngineComponentContract,
+  rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   callingFunctions: string[],
   policyJSON: PolicyJSON,
   policyId: number,
@@ -260,8 +270,9 @@ const buildCallingFunctions = async (
   var emptyRules = []
   var existingIds = []
   var transactionHashes: { functionId: number; transactionHash: `0x${string}` }[] = []
+  var existingCallingFunctions: CallingFunctionOnChain[] = []
   if (policyId > 0) {
-    var existingCallingFunctions = await getCallingFunctions(config, rulesEngineComponentContract, policyId)
+    existingCallingFunctions = await getCallingFunctions(config, rulesEngineComponentContract, policyId)
     for (var callingFunc of existingCallingFunctions) {
       existingIds.push(callingFunc.signature)
     }
@@ -326,17 +337,49 @@ const buildCallingFunctions = async (
       console.log('Policy JSON contained a duplicate calling function, the duplicate was not created')
     }
   }
+  for (var callingFunc of existingCallingFunctions) {
+    var meta = await getCallingFunctionMetadata(config, rulesEngineComponentContract, policyId, callingFunc.signature)
+    if (!callingFunctions.includes(toFunctionSignature(meta.callingFunction))) {
+      callingFunctions.push(toFunctionSignature(meta.callingFunction))
+      callingFunctionParamSets.push(meta.encodedValues.split(', ').map((val) => val.trim().split(' ')[1]))
+    }
+  }
 
-  await updatePolicyInternal(
-    config,
-    rulesEnginePolicyContract,
-    policyId,
-    fsSelectors,
-    emptyRules,
-    policyJSON.Policy,
-    policyJSON.Description,
-    confirmationCount
-  )
+  if (policyId != 0) {
+    var local = await getPolicy(
+      config,
+      rulesEnginePolicyContract,
+      rulesEngineRulesContract,
+      rulesEngineComponentContract,
+      rulesEngineForeignCallContract,
+      policyId
+    )
+    for (var cf of local!.CallingFunctions) {
+      var found = false
+      for (var innercf of nonDuplicatedCallingFunctions) {
+        if (innercf.FunctionSignature == cf.FunctionSignature) {
+          found = true
+          break
+        }
+      }
+      if (!found) {
+        nonDuplicatedCallingFunctions.push(cf)
+      }
+    }
+  }
+
+  if (create) {
+    await updatePolicyInternal(
+      config,
+      rulesEnginePolicyContract,
+      policyId,
+      fsSelectors,
+      emptyRules,
+      policyJSON.Policy,
+      policyJSON.Description,
+      confirmationCount
+    )
+  }
 
   return transactionHashes
 }
@@ -344,7 +387,9 @@ const buildCallingFunctions = async (
 const buildTrackers = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
+  rulesEngineRulesContract: RulesEngineRulesContract,
   rulesEngineComponentContract: RulesEngineComponentContract,
+  rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   trackerIds: NameToID[],
   policyJSON: PolicyJSON,
   policyId: number,
@@ -352,6 +397,78 @@ const buildTrackers = async (
   create: boolean
 ): Promise<{ trackerId: number; transactionHash: `0x${string}` }[]> => {
   var transactionHashes: { trackerId: number; transactionHash: `0x${string}` }[] = []
+
+  if (!create) {
+    var local = await getPolicy(
+      config,
+      rulesEnginePolicyContract,
+      rulesEngineRulesContract,
+      rulesEngineComponentContract,
+      rulesEngineForeignCallContract,
+      policyId
+    )
+
+    for (var trac of local!.Trackers) {
+      var trackerValueType = 0
+      if (trac.Type == 'string[]') {
+        trackerValueType = trackerArrayType.STR_ARRAY
+      } else if (trac.Type == 'bool[]') {
+        trackerValueType = trackerArrayType.BOOL_ARRAY
+      } else if (trac.Type == 'bytes[]') {
+        trackerValueType = trackerArrayType.BYTES_ARRAY
+      } else if (trac.Type == 'address[]') {
+        trackerValueType = trackerArrayType.ADDR_ARRAY
+      } else if (trac.Type == 'uint256[]') {
+        trackerValueType = trackerArrayType.UINT_ARRAY
+      } else if (trac.Type == 'uint256') {
+        trackerValueType = trackerArrayType.VOID
+      } else if (trac.Type == 'address') {
+        trackerValueType = trackerArrayType.VOID
+      } else if (trac.Type == 'bytes') {
+        trackerValueType = trackerArrayType.VOID
+      } else if (trac.Type == 'bool') {
+        trackerValueType = trackerArrayType.VOID
+      } else {
+        trackerValueType = trackerArrayType.VOID
+      }
+      var struc: NameToID = {
+        id: trac.Id!,
+        name: trac.Name,
+        type: trackerValueType,
+      }
+      trackerIds.push(struc)
+    }
+    for (var tr of local!.MappedTrackers) {
+      var trackerValueType = 0
+      if (tr.ValueType == 'string[]') {
+        trackerValueType = trackerArrayType.STR_ARRAY
+      } else if (tr.ValueType == 'bool[]') {
+        trackerValueType = trackerArrayType.BOOL_ARRAY
+      } else if (tr.ValueType == 'bytes[]') {
+        trackerValueType = trackerArrayType.BYTES_ARRAY
+      } else if (tr.ValueType == 'address[]') {
+        trackerValueType = trackerArrayType.ADDR_ARRAY
+      } else if (tr.ValueType == 'uint256[]') {
+        trackerValueType = trackerArrayType.UINT_ARRAY
+      } else if (tr.ValueType == 'uint256') {
+        trackerValueType = trackerArrayType.VOID
+      } else if (tr.ValueType == 'address') {
+        trackerValueType = trackerArrayType.VOID
+      } else if (tr.ValueType == 'bytes') {
+        trackerValueType = trackerArrayType.VOID
+      } else if (tr.ValueType == 'bool') {
+        trackerValueType = trackerArrayType.VOID
+      } else {
+        trackerValueType = trackerArrayType.VOID
+      }
+      var struc: NameToID = {
+        id: tr.Id!,
+        name: tr.Name,
+        type: trackerValueType,
+      }
+      trackerIds.push(struc)
+    }
+  }
 
   if (policyJSON.Trackers != null) {
     for (var tracker of policyJSON.Trackers) {
@@ -377,12 +494,21 @@ const buildTrackers = async (
       }
       if (result.trackerId != -1) {
         transactionHashes.push(result)
-        var struc: NameToID = {
-          id: result.trackerId,
-          name: parsedTracker.name,
-          type: parsedTracker.type,
+        var found = false
+        for (var tra of trackerIds) {
+          if (tra.id == result.trackerId) {
+            found = true
+            break
+          }
         }
-        trackerIds.push(struc)
+        if (!found) {
+          var struc: NameToID = {
+            id: result.trackerId,
+            name: parsedTracker.name,
+            type: parsedTracker.type,
+          }
+          trackerIds.push(struc)
+        }
       } else {
         if (create) {
           var deleteVerification = await deletePolicy(config, rulesEnginePolicyContract, policyId, confirmationCount)
@@ -429,12 +555,21 @@ const buildTrackers = async (
         trackerTransactionHash = trackerResult.transactionHash
       }
       if (trId != -1) {
-        var struc: NameToID = {
-          id: trId,
-          name: parsedTracker.name,
-          type: parsedTracker.valueType,
+        var found = false
+        for (var tra of trackerIds) {
+          if (tra.id == trId) {
+            found = true
+            break
+          }
         }
-        trackerIds.push(struc)
+        if (!found) {
+          var struc: NameToID = {
+            id: trId,
+            name: parsedTracker.name,
+            type: parsedTracker.valueType,
+          }
+          trackerIds.push(struc)
+        }
         transactionHashes.push({ trackerId: trId, transactionHash: trackerTransactionHash })
       } else {
         throw new Error(`Invalid mapped tracker syntax: ${JSON.stringify(mTracker)}`)
@@ -448,6 +583,7 @@ const buildTrackers = async (
 const buildForeignCalls = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
+  rulesEngineRulesContract: RulesEngineRulesContract,
   rulesEngineComponentContract: RulesEngineComponentContract,
   rulesEngineForeignCallContract: RulesEngineForeignCallContract,
   callingFunctions: string[],
@@ -462,12 +598,34 @@ const buildForeignCalls = async (
 ): Promise<{ foreignCallId: number; transactionHash: `0x${string}` }[]> => {
   var transactionHashes: { foreignCallId: number; transactionHash: `0x${string}` }[] = []
 
+  if (!create) {
+    var local = await getPolicy(
+      config,
+      rulesEnginePolicyContract,
+      rulesEngineRulesContract,
+      rulesEngineComponentContract,
+      rulesEngineForeignCallContract,
+      policyId
+    )
+
+    for (var foreign of local!.ForeignCalls) {
+      var struc: NameToID = {
+        id: foreign.Id!,
+        name: foreign.Name.split('(')[0],
+        type: 0,
+      }
+      fcIds.push(struc)
+    }
+  }
+
   if (policyJSON.ForeignCalls != null) {
     for (var foreignCall of policyJSON.ForeignCalls) {
       const resolvedForeignCallFunction = resolveFunction(foreignCall.CallingFunction)
       try {
         // Find the calling function and its encoded values using the resolved function name
-        let callingFunctionIndex = callingFunctions.findIndex((cf) => cf.trim() === resolvedForeignCallFunction.trim())
+        let callingFunctionIndex = callingFunctions.findIndex((cf) => {
+          return cf.trim() === resolvedForeignCallFunction.trim()
+        })
         let encodedValues: string[]
 
         if (callingFunctionIndex === -1) {
@@ -544,12 +702,22 @@ const buildForeignCalls = async (
         // Only add successfully created foreign calls to the mapping
         if (result.foreignCallId !== -1) {
           transactionHashes.push(result)
-          var struc: NameToID = {
-            id: result.foreignCallId,
-            name: fcStruct.Name.split('(')[0],
-            type: 0,
+          var found = false
+          for (var fc of fcIds) {
+            if (fc.id == result.foreignCallId) {
+              found = true
+              break
+            }
           }
-          fcIds.push(struc)
+          if (!found) {
+            var struc: NameToID = {
+              id: result.foreignCallId,
+              name: fcStruct.Name.split('(')[0],
+              type: 0,
+            }
+
+            fcIds.push(struc)
+          }
         } else {
           if (create) {
             var deleteVerification = await deletePolicy(config, rulesEnginePolicyContract, policyId, confirmationCount)
@@ -606,81 +774,277 @@ const buildRules = async (
   confirmationCount: number,
   create: boolean
 ): Promise<{ transactionHashes: { ruleId: number; transactionHash: `0x${string}` }[]; policyId: number }> => {
-  let ruleIds = []
+  type updateCognizantRule = {
+    update: boolean
+    json: RuleJSON
+  }
+
+  if (policyId != 0) {
+    var local = await getPolicy(
+      config,
+      rulesEnginePolicyContract,
+      rulesEngineRulesContract,
+      rulesEngineComponentContract,
+      rulesEngineForeignCallContract,
+      policyId
+    )
+  }
+
+  var newRulesPresent = false
+  var existingRulesPresent = false
+  var allExistingRulesPresent = true
   let ruleToCallingFunction = new Map<string, number[]>()
   let rulesDoubleMapping = []
   let callingFunctionSelectors = []
   var transactionHashes: { ruleId: number; transactionHash: `0x${string}` }[] = []
-  // Sort rules by order field if provided, otherwise maintain original order
-  const sortedRules = [...policyJSON.Rules].sort((a, b) => {
-    const orderA = a.Order !== undefined ? a.Order : Number.MAX_SAFE_INTEGER
-    const orderB = b.Order !== undefined ? b.Order : Number.MAX_SAFE_INTEGER
-    return orderA - orderB
-  })
 
-  for (var rule of sortedRules) {
-    let result: { ruleId: number; transactionHash: `0x${string}` }
-    if (rule.Id !== undefined) {
-      result = await updateRule(
-        config,
-        rulesEnginePolicyContract,
-        rulesEngineRulesContract,
-        rulesEngineComponentContract,
-        rulesEngineForeignCallContract,
-        policyId,
-        rule.Id,
-        JSON.stringify(rule),
-        fcIds,
-        trackerIds,
-        confirmationCount
-      )
-    } else {
-      result = await createRule(
-        config,
-        rulesEnginePolicyContract,
-        rulesEngineRulesContract,
-        rulesEngineComponentContract,
-        rulesEngineForeignCallContract,
-        policyId,
-        JSON.stringify(rule),
-        fcIds,
-        trackerIds,
-        confirmationCount
-      )
-    }
-
-    if (result.ruleId == -1) {
-      if (create) {
-        var deleteVerification = await deletePolicy(config, rulesEnginePolicyContract, policyId, confirmationCount)
-        if (deleteVerification.result == -1) {
-          throw new Error(
-            `Invalid rule syntax: ${JSON.stringify(
-              rule
-            )} Failed to delete policy. Partial Policy with id: ${policyId} exists`
-          )
-        } else {
-          throw new Error(`Invalid rule syntax: ${JSON.stringify(rule)} Policy Deleted`)
-        }
-      } else {
-        throw new Error(`Invalid rule syntax: ${JSON.stringify(rule)}`)
-      }
-    }
-    transactionHashes.push(result)
-    ruleIds.push(result.ruleId)
-    const resolvedCallingFunction = resolveFunction(rule.CallingFunction)
-    if (ruleToCallingFunction.has(resolvedCallingFunction)) {
-      ruleToCallingFunction.get(resolvedCallingFunction)?.push(result.ruleId)
-    } else {
-      ruleToCallingFunction.set(resolvedCallingFunction, [result.ruleId])
+  // Determine if there are new rules present
+  for (var ru of policyJSON.Rules) {
+    if (ru.Id == null) {
+      newRulesPresent = true
+      break
     }
   }
-  for (var cf of callingFunctions) {
-    if (ruleToCallingFunction.has(cf)) {
-      rulesDoubleMapping.push(ruleToCallingFunction.get(cf))
-    } else {
-      rulesDoubleMapping.push([])
+  // Determine if there are existing rules present
+  for (var ru of policyJSON.Rules) {
+    if (ru.Id != null) {
+      for (var origRu of local!.Rules) {
+        if (origRu.Id == ru.Id) {
+          existingRulesPresent = true
+        }
+      }
     }
-    callingFunctionSelectors.push(toFunctionSelector(cf))
+  }
+  // Determine if all existing rules are present
+  for (var origRu of local!.Rules) {
+    var found = false
+    for (var ru of policyJSON.Rules) {
+      if (ru.Id != null) {
+        if (ru.Id == origRu.Id) {
+          found = true
+          break
+        }
+      }
+    }
+    if (!found) {
+      allExistingRulesPresent = false
+      break
+    }
+  }
+
+  if (allExistingRulesPresent && !create) {
+    // We do care about order
+    for (var rule of policyJSON.Rules) {
+      var result = null
+      var ruleId = -1
+      if (rule.Id !== undefined) {
+        var changed = false
+        for (var origRu of local!.Rules) {
+          if (origRu.Id == rule.Id) {
+            if (origRu.Name != rule.Name) {
+              changed = true
+              break
+            }
+            if (origRu.Description != rule.Description) {
+              changed = true
+              break
+            }
+            if (origRu.Condition != rule.Condition) {
+              changed = true
+              break
+            }
+            if (origRu.PositiveEffects.length != rule.PositiveEffects.length) {
+              changed = true
+              break
+            }
+            for (var index in origRu.PositiveEffects) {
+              if (origRu.PositiveEffects[index] != rule.PositiveEffects[index]) {
+                changed = true
+                break
+              }
+            }
+            if (origRu.NegativeEffects.length != rule.NegativeEffects.length) {
+              changed = true
+              break
+            }
+            for (var index in origRu.NegativeEffects) {
+              if (origRu.NegativeEffects[index] != rule.NegativeEffects[index]) {
+                changed = true
+                break
+              }
+            }
+            if (origRu.CallingFunction != rule.CallingFunction) {
+              changed = true
+              false
+            }
+            break
+          }
+        }
+        if (changed) {
+          result = await updateRule(
+            config,
+            rulesEnginePolicyContract,
+            rulesEngineRulesContract,
+            rulesEngineComponentContract,
+            rulesEngineForeignCallContract,
+            policyId,
+            rule.Id,
+            JSON.stringify(rule),
+            fcIds,
+            trackerIds,
+            confirmationCount
+          )
+          ruleId = result.ruleId
+        } else {
+          ruleId = rule.Id
+        }
+      } else {
+        result = await createRule(
+          config,
+          rulesEnginePolicyContract,
+          rulesEngineRulesContract,
+          rulesEngineComponentContract,
+          rulesEngineForeignCallContract,
+          policyId,
+          JSON.stringify(rule),
+          fcIds,
+          trackerIds,
+          confirmationCount
+        )
+        ruleId = result.ruleId
+      }
+      if (ruleId == -1) {
+        if (create) {
+          var deleteVerification = await deletePolicy(config, rulesEnginePolicyContract, policyId, confirmationCount)
+          if (deleteVerification.result == -1) {
+            throw new Error(
+              `Invalid rule syntax: ${JSON.stringify(
+                rule
+              )} Failed to delete policy. Partial Policy with id: ${policyId} exists`
+            )
+          } else {
+            throw new Error(`Invalid rule syntax: ${JSON.stringify(rule)} Policy Deleted`)
+          }
+        } else {
+          throw new Error(`Invalid rule syntax: ${JSON.stringify(rule)}`)
+        }
+      }
+      if (result != null) {
+        transactionHashes.push(result)
+      }
+      // ruleIds.push(result.ruleId)
+      const resolvedCallingFunction = resolveFunction(rule.CallingFunction)
+      if (ruleToCallingFunction.has(resolvedCallingFunction)) {
+        ruleToCallingFunction.get(resolvedCallingFunction)?.push(ruleId)
+      } else {
+        ruleToCallingFunction.set(resolvedCallingFunction, [ruleId])
+      }
+    }
+    for (var cf of callingFunctions) {
+      const resolvedCallingFunction = resolveFunction(cf)
+      if (ruleToCallingFunction.has(resolvedCallingFunction)) {
+        rulesDoubleMapping.push(ruleToCallingFunction.get(resolvedCallingFunction))
+      } else {
+        rulesDoubleMapping.push([])
+      }
+      callingFunctionSelectors.push(toFunctionSelector(cf))
+    }
+  } else {
+    // We do not care about order
+
+    var allRules: RuleJSON[] = [...local!.Rules]
+    for (var rule of allRules) {
+      const resolvedCallingFunction = resolveFunction(rule.CallingFunction)
+      if (ruleToCallingFunction.has(resolvedCallingFunction)) {
+        ruleToCallingFunction.get(resolvedCallingFunction)?.push(rule.Id!)
+      } else {
+        ruleToCallingFunction.set(resolvedCallingFunction, [rule.Id!])
+      }
+    }
+    var ruleIter = 0
+    // Replace rules (in order) with updated versions
+    for (var rule of policyJSON.Rules) {
+      if (rule.Id != null) {
+        for (var origRule of allRules) {
+          if (origRule.Id != null) {
+            if (rule.Id == origRule.Id) {
+              allRules[ruleIter] = rule
+              let result: { ruleId: number; transactionHash: `0x${string}` }
+              result = await updateRule(
+                config,
+                rulesEnginePolicyContract,
+                rulesEngineRulesContract,
+                rulesEngineComponentContract,
+                rulesEngineForeignCallContract,
+                policyId,
+                rule.Id,
+                JSON.stringify(rule),
+                fcIds,
+                trackerIds,
+                confirmationCount
+              )
+              if (result.ruleId == -1) {
+                throw new Error(`Invalid rule syntax: ${JSON.stringify(rule)}`)
+              }
+              transactionHashes.push(result)
+
+              break
+            }
+          }
+        }
+      }
+      ruleIter += 1
+    }
+
+    for (var rule of policyJSON.Rules) {
+      if (rule.Id == null) {
+        let result: { ruleId: number; transactionHash: `0x${string}` }
+        result = await createRule(
+          config,
+          rulesEnginePolicyContract,
+          rulesEngineRulesContract,
+          rulesEngineComponentContract,
+          rulesEngineForeignCallContract,
+          policyId,
+          JSON.stringify(rule),
+          fcIds,
+          trackerIds,
+          confirmationCount
+        )
+
+        if (result.ruleId == -1) {
+          if (create) {
+            var deleteVerification = await deletePolicy(config, rulesEnginePolicyContract, policyId, confirmationCount)
+            if (deleteVerification.result == -1) {
+              throw new Error(
+                `Invalid rule syntax: ${JSON.stringify(
+                  rule
+                )} Failed to delete policy. Partial Policy with id: ${policyId} exists`
+              )
+            } else {
+              throw new Error(`Invalid rule syntax: ${JSON.stringify(rule)} Policy Deleted`)
+            }
+          } else {
+            throw new Error(`Invalid rule syntax: ${JSON.stringify(rule)}`)
+          }
+        }
+        transactionHashes.push(result)
+        const resolvedCallingFunction = resolveFunction(rule.CallingFunction)
+        if (ruleToCallingFunction.has(resolvedCallingFunction)) {
+          ruleToCallingFunction.get(resolvedCallingFunction)?.push(result.ruleId)
+        } else {
+          ruleToCallingFunction.set(resolvedCallingFunction, [result.ruleId])
+        }
+      }
+    }
+    for (var cf of callingFunctions) {
+      if (ruleToCallingFunction.has(cf)) {
+        rulesDoubleMapping.push(ruleToCallingFunction.get(cf))
+      } else {
+        rulesDoubleMapping.push([])
+      }
+      callingFunctionSelectors.push(toFunctionSelector(cf))
+    }
   }
 
   policyId = await updatePolicyInternal(
@@ -751,7 +1115,9 @@ export const updatePolicy = async (
       callingFunctionResults = await buildCallingFunctions(
         config,
         rulesEnginePolicyContract,
+        rulesEngineRulesContract,
         rulesEngineComponentContract,
+        rulesEngineForeignCallContract,
         callingFunctions,
         policyJSON,
         policyId,
@@ -781,7 +1147,9 @@ export const updatePolicy = async (
       trackerResults = await buildTrackers(
         config,
         rulesEnginePolicyContract,
+        rulesEngineRulesContract,
         rulesEngineComponentContract,
+        rulesEngineForeignCallContract,
         trackerIds,
         policyJSON,
         policyId,
@@ -797,6 +1165,7 @@ export const updatePolicy = async (
       foreignCallResults = await buildForeignCalls(
         config,
         rulesEnginePolicyContract,
+        rulesEngineRulesContract,
         rulesEngineComponentContract,
         rulesEngineForeignCallContract,
         callingFunctions,
