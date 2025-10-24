@@ -97,10 +97,10 @@ export function processSyntax(
 
   // This can throw if trackers don't exist
   const [finalSyntax, effectTrackers] = parseTrackers(updatedSyntax, components, trackerNameToID)
-  
+
   // Extract global variables from the rule condition
   let gvEComponents = parseGlobalVariables(finalSyntax, currentIndex)
-  
+
   var uniqueGV = []
   for (var comp of gvEComponents) {
     var found = false
@@ -131,19 +131,23 @@ function getProcessedEffects(
       revertIndices.push(i)
     }
   }
-  
+
   // Check for multiple reverts
   if (revertIndices.length > 1) {
     if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
-      console.error('Validation Error: Multiple reverts found in effects array. Only one revert is allowed per effects array.')
+      console.error(
+        'Validation Error: Multiple reverts found in effects array. Only one revert is allowed per effects array.'
+      )
     }
     return null
   }
-  
+
   // Check that if revert exists, no other effects exist
   if (revertIndices.length === 1 && effects.length > 1) {
     if (process.env.NODE_ENV !== 'test' && !process.env.VITEST) {
-      console.error('Validation Error: When a revert is present, no other effects should exist. Revert stops execution so other effects cannot execute.')
+      console.error(
+        'Validation Error: When a revert is present, no other effects should exist. Revert stops execution so other effects cannot execute.'
+      )
     }
     return null
   }
@@ -236,7 +240,7 @@ export function parseRuleSyntax(
       return null
     }
     const [negativeEffects, negativeEffectPlaceHolders] = retE
-    
+
     const conditionInstructionSet = convertHumanReadableToInstructionSet(
       condition,
       ruleComponents,
@@ -441,15 +445,15 @@ export function parseTrackerSyntax(syntax: TrackerJSON): TrackerDefinition {
 function getGlobalVariableIndex(gvName: string): number {
   switch (gvName) {
     case 'GV:MSG_SENDER':
-      return 1  // MSG_SENDER (ADDR)
+      return 1 // MSG_SENDER (ADDR)
     case 'GV:BLOCK_TIMESTAMP':
-      return 2  // BLOCK_TIMESTAMP (UINT)
+      return 2 // BLOCK_TIMESTAMP (UINT)
     case 'GV:MSG_DATA':
-      return 3  // MSG_DATA (BYTES)
+      return 3 // MSG_DATA (BYTES)
     case 'GV:BLOCK_NUMBER':
-      return 4  // BLOCK_NUMBER (UINT)
+      return 4 // BLOCK_NUMBER (UINT)
     case 'GV:TX_ORIGIN':
-      return 5  // TX_ORIGIN (ADDR)
+      return 5 // TX_ORIGIN (ADDR)
     default:
       return -1
   }

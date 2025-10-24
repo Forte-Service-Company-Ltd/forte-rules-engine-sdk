@@ -1158,8 +1158,8 @@ describe('Rules Engine Interactions', async () => {
 
     const input = JSON.parse(policyJSON)
     input.Trackers[0].initialValue = '1000'
-    input.Rules[0].NegativeEffects = ["revert('Negative')"]
-    input.Rules[0].PositiveEffects = ["revert('Positive')"]
+    input.Rules[0].NegativeEffects = ['revert("Negative")']
+    input.Rules[0].PositiveEffects = ['revert("Positive")']
 
     // Verify Policy data mirrors input fields
     assertPolicyDataMatchesInput(retVal!, input)
@@ -1264,8 +1264,13 @@ describe('Rules Engine Interactions', async () => {
 
     expect(retVal).toBeDefined()
 
-    input.Rules[0].PositiveEffects = ["emit \"Success\"", "FC:AnotherTestForeignCall", "[TRU:mappedTrackerOne(to) += 1]", "[TRU:trackerOne += 12]"]
-    input.Rules[0].NegativeEffects = ["revert('Negative')"]
+    input.Rules[0].PositiveEffects = [
+      'emit "Success"',
+      'FC:AnotherTestForeignCall',
+      '[TRU:mappedTrackerOne(to) += 1]',
+      '[TRU:trackerOne += 12]',
+    ]
+    input.Rules[0].NegativeEffects = ['revert("Negative")']
 
     // // Verify Policy data mirrors input fields
     assertPolicyDataMatchesInput(retVal!, input)
@@ -1404,31 +1409,10 @@ describe('Rules Engine Interactions', async () => {
                               "Description": "Updated Policy Description",
                               "PolicyType": "open",
                               "CallingFunctions": [
-                                {
-                                  "Name": "transfer",
-                                  "FunctionSignature": "transfer(address to, uint256 value)",
-                                  "EncodedValues": "address to, uint256 value"
-                                }
                               ],
                               "ForeignCalls": [
-                                  {
-                                      "Id": 1,
-                                      "Name": "testSig",
-                                      "Function": "testSig(address)",
-                                      "Address": "0xa5cc3c03994DB5b0d9A5eEdD10CabaB0813678AC",
-                                      "ReturnType": "uint256",
-                                      "ValuesToPass": "to",
-                                      "MappedTrackerKeyValues": "",
-                                      "CallingFunction": "transfer"
-                                  }
                               ],
                               "Trackers": [
-                              {
-                                  "Id": 1,
-                                  "Name": "testTracker",
-                                  "Type": "string",
-                                  "InitialValue": "test"
-                              }
                               ],
                               "MappedTrackers": [],
                               "Rules": [
@@ -2229,91 +2213,6 @@ describe('Rules Engine Interactions', async () => {
     expect(trackerMetadata.arrayType).toEqual(trackerArrayType.UINT_ARRAY)
     expect(mappedTrackerMetadata.arrayType).toEqual(trackerArrayType.UINT_ARRAY)
   })
-
-  test('Can create rules with custom ordering', async () => {
-    var policyJSON = `{
-                          "Policy": "Test Rule Ordering",
-                          "Description": "Test that rules are created in specified order",
-                          "PolicyType": "open",
-                          "CallingFunctions": [
-                            {
-                              "Name": "transfer",
-                              "FunctionSignature": "transfer(address to, uint256 value)",
-                              "EncodedValues": "address to, uint256 value"
-                            }
-                          ],
-                          "ForeignCalls": [],
-                          "Trackers": [],
-                          "MappedTrackers": [],
-                          "Rules": [
-                            {
-                              "Name": "Rule C - Should be Third",
-                              "Description": "Third rule by order",
-                              "Condition": "value > 300",
-                              "PositiveEffects": ["emit \\"RuleC\\""],
-                              "NegativeEffects": ["revert()"],
-                              "CallingFunction": "transfer",
-                              "Order": 3
-                            },
-                            {
-                              "Name": "Rule A - Should be First",
-                              "Description": "First rule by order",
-                              "Condition": "value > 100",
-                              "PositiveEffects": ["emit \\"RuleA\\""],
-                              "NegativeEffects": ["revert()"],
-                              "CallingFunction": "transfer",
-                              "Order": 1
-                            },
-                            {
-                              "Name": "Rule B - Should be Second",
-                              "Description": "Second rule by order",
-                              "Condition": "value > 200",
-                              "PositiveEffects": ["emit \\"RuleB\\""],
-                              "NegativeEffects": ["revert()"],
-                              "CallingFunction": "transfer",
-                              "Order": 2
-                            }
-                          ]
-                        }`
-
-    var result = await createPolicy(
-      config,
-      getRulesEnginePolicyContract(rulesEngineContract, client),
-      getRulesEngineRulesContract(rulesEngineContract, client),
-      getRulesEngineComponentContract(rulesEngineContract, client),
-      getRulesEngineForeignCallContract(rulesEngineContract, client),
-      1,
-      policyJSON
-    )
-    expect(result.policyId).toBeGreaterThan(0)
-
-    // Retrieve the policy to verify rule order
-    var retVal = await getPolicy(
-      config,
-      getRulesEnginePolicyContract(rulesEngineContract, client),
-      getRulesEngineRulesContract(rulesEngineContract, client),
-      getRulesEngineComponentContract(rulesEngineContract, client),
-      getRulesEngineForeignCallContract(rulesEngineContract, client),
-      result.policyId
-    )
-
-    expect(retVal).toBeDefined()
-    expect(retVal!.Policy).toBeDefined()
-
-    const parsed = retVal
-    expect(parsed).toBeDefined()
-    expect(parsed!.Rules).toHaveLength(3)
-
-    // Verify that rules are in the correct order based on the 'order' field
-    expect(parsed!.Rules[0].Name).toEqual('Rule A - Should be First')
-    expect(parsed!.Rules[1].Name).toEqual('Rule B - Should be Second')
-    expect(parsed!.Rules[2].Name).toEqual('Rule C - Should be Third')
-
-    // Also verify descriptions are preserved
-    expect(parsed!.Rules[0].Description).toEqual('First rule by order')
-    expect(parsed!.Rules[1].Description).toEqual('Second rule by order')
-    expect(parsed!.Rules[2].Description).toEqual('Third rule by order')
-  }, 1000000) // 100 second timeout
 
   test('Can create policy with foreign calls having empty parameters and void return type', options, async () => {
     var policyJSON = `{

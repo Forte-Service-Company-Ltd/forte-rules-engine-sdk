@@ -362,7 +362,6 @@ export const ruleValidator = z.object({
   PositiveEffects: z.array(z.string()),
   NegativeEffects: z.array(z.string()),
   CallingFunction: z.string(),
-  Order: z.number().optional(), // Optional field for rule ordering
 })
 export interface RuleJSON extends z.infer<typeof ruleValidator> {}
 
@@ -710,34 +709,6 @@ export const policyJSONValidator = z
     MappedTrackers: z.array(mappedTrackerValidator),
     Rules: z.array(ruleValidator),
   })
-  .refine(
-    (data) => {
-      // Validate rule ordering consistency: if any rule has an order field, all rules must have it
-      // Treat both null and undefined as "no order" for robustness
-      const rulesWithOrder = data.Rules.filter((rule) => rule.Order != null)
-      const rulesWithoutOrder = data.Rules.filter((rule) => rule.Order == null)
-
-      // If some rules have order and some don't, it's invalid
-      if (rulesWithOrder.length > 0 && rulesWithoutOrder.length > 0) {
-        return false
-      }
-      // If all rules have order, validate they are unique
-      if (rulesWithOrder.length === data.Rules.length && data.Rules.length > 0) {
-        const orders = rulesWithOrder.map((rule) => rule.Order!)
-
-        // Check for duplicate order values using convenience function
-        if (!validateUniqueKeys(orders)) {
-          return false
-        }
-      }
-
-      return true
-    },
-    {
-      message:
-        'Rule ordering validation failed: If any rule has an "order" field, all rules must have unique "order" values',
-    }
-  )
   .refine(validateUniqueNames, { message: 'Names cannot be duplicated' })
   .refine(
     (data) => {
