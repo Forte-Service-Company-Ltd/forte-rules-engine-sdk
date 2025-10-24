@@ -330,15 +330,10 @@ const getBigIntForBool = (value: string): bigint => {
 }
 
 const getEncodedString = (value: string): string => {
-  const interim = BigInt(keccak256(encodeAbiParameters(parseAbiParameters('string'), [value])))
-  return encodePacked(['uint256'], [BigInt(interim)])
+  return encodeAbiParameters(parseAbiParameters('string'), [value])
 }
-
 const getEncodedBytes = (value: string): string => {
-  var interim = BigInt(
-    keccak256(encodeAbiParameters(parseAbiParameters('bytes'), [toHex(stringToBytes(String(value)))]))
-  )
-  return encodePacked(['uint256'], [BigInt(interim)])
+  return encodeAbiParameters(parseAbiParameters('bytes'), [toHex(stringToBytes(String(value)))])
 }
 
 const getEncodedAddress = (value: string): string => {
