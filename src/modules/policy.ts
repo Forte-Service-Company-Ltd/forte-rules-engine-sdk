@@ -354,16 +354,16 @@ const buildCallingFunctions = async (
       rulesEngineForeignCallContract,
       policyId
     )
-    for (var caca of local!.CallingFunctions) {
+    for (var cf of local!.CallingFunctions) {
       var found = false
-      for (var thisguy of nonDuplicatedCallingFunctions) {
-        if (thisguy.FunctionSignature == caca.FunctionSignature) {
+      for (var innercf of nonDuplicatedCallingFunctions) {
+        if (innercf.FunctionSignature == cf.FunctionSignature) {
           found = true
           break
         }
       }
       if (!found) {
-        nonDuplicatedCallingFunctions.push(caca)
+        nonDuplicatedCallingFunctions.push(cf)
       }
     }
   }
@@ -608,10 +608,10 @@ const buildForeignCalls = async (
       policyId
     )
 
-    for (var trac of local!.ForeignCalls) {
+    for (var foreign of local!.ForeignCalls) {
       var struc: NameToID = {
-        id: trac.Id!,
-        name: trac.Name.split('(')[0],
+        id: foreign.Id!,
+        name: foreign.Name.split('(')[0],
         type: 0,
       }
       fcIds.push(struc)
@@ -703,8 +703,8 @@ const buildForeignCalls = async (
         if (result.foreignCallId !== -1) {
           transactionHashes.push(result)
           var found = false
-          for (var tra of fcIds) {
-            if (tra.id == result.foreignCallId) {
+          for (var fc of fcIds) {
+            if (fc.id == result.foreignCallId) {
               found = true
               break
             }
@@ -793,13 +793,12 @@ const buildRules = async (
   var newRulesPresent = false
   var existingRulesPresent = false
   var allExistingRulesPresent = true
-  // let ruleIds = []
   let ruleToCallingFunction = new Map<string, number[]>()
   let rulesDoubleMapping = []
   let callingFunctionSelectors = []
   var transactionHashes: { ruleId: number; transactionHash: `0x${string}` }[] = []
 
-  // Determione if there are new rules present
+  // Determine if there are new rules present
   for (var ru of policyJSON.Rules) {
     if (ru.Id == null) {
       newRulesPresent = true
@@ -836,10 +835,9 @@ const buildRules = async (
   if (allExistingRulesPresent && !create) {
     // We do care about order
     for (var rule of policyJSON.Rules) {
-      let result: { ruleId: number; transactionHash: `0x${string}` }
+      var result = null
       var ruleId = -1
       if (rule.Id !== undefined) {
-        //TODO: need to check if this has changed or not
         var changed = false
         for (var origRu of local!.Rules) {
           if (origRu.Id == rule.Id) {
@@ -971,7 +969,6 @@ const buildRules = async (
           if (origRule.Id != null) {
             if (rule.Id == origRule.Id) {
               allRules[ruleIter] = rule
-              // TODO: Do the update here
               let result: { ruleId: number; transactionHash: `0x${string}` }
               result = await updateRule(
                 config,
@@ -990,7 +987,6 @@ const buildRules = async (
                 throw new Error(`Invalid rule syntax: ${JSON.stringify(rule)}`)
               }
               transactionHashes.push(result)
-              // ruleIds.push(result.ruleId)
 
               break
             }
@@ -1000,7 +996,6 @@ const buildRules = async (
       ruleIter += 1
     }
 
-    //TODO: Then create new rules
     for (var rule of policyJSON.Rules) {
       if (rule.Id == null) {
         let result: { ruleId: number; transactionHash: `0x${string}` }
@@ -1034,7 +1029,6 @@ const buildRules = async (
           }
         }
         transactionHashes.push(result)
-        // ruleIds.push(result.ruleId)
         const resolvedCallingFunction = resolveFunction(rule.CallingFunction)
         if (ruleToCallingFunction.has(resolvedCallingFunction)) {
           ruleToCallingFunction.get(resolvedCallingFunction)?.push(result.ruleId)
