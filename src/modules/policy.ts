@@ -1,6 +1,6 @@
 /// SPDX-License-Identifier: BUSL-1.1
 
-import { toFunctionSelector, Address, getAddress } from 'viem'
+import { toFunctionSelector, Address, getAddress, toFunctionSignature } from 'viem'
 
 import { Config, readContract, simulateContract, waitForTransactionReceipt, writeContract } from '@wagmi/core'
 
@@ -799,6 +799,7 @@ const buildRules = async (
   var transactionHashes: { ruleId: number; transactionHash: `0x${string}` }[] = []
 
   // Determine if there are new rules present
+
   for (var ru of policyJSON.Rules) {
     if (ru.Id == null) {
       newRulesPresent = true
@@ -835,7 +836,7 @@ const buildRules = async (
   if (allExistingRulesPresent && !create) {
     // We do care about order
     for (var rule of policyJSON.Rules) {
-      var result = null
+      let result: { ruleId: number; transactionHash: `0x${string}` }
       var ruleId = -1
       if (rule.Id !== undefined) {
         var changed = false
@@ -987,7 +988,6 @@ const buildRules = async (
                 throw new Error(`Invalid rule syntax: ${JSON.stringify(rule)}`)
               }
               transactionHashes.push(result)
-
               break
             }
           }
