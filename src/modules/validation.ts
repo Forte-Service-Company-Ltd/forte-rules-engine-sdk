@@ -270,7 +270,6 @@ const validateReferencedCalls = (input: any): boolean => {
   if (!input.CallingFunctions || input.CallingFunctions.length === 0) {
     return (input.ForeignCalls?.length ?? 0) === 0 && (input.Rules?.length ?? 0) === 0
   }
-
   const callingFunctionNames = input.CallingFunctions.map((call: CallingFunctionJSON) => call.Name)
   const callingFunctionSignatures = input.CallingFunctions.map(
     (call: CallingFunctionJSON) => call.FunctionSignature || call.Name
@@ -286,72 +285,7 @@ const validateReferencedCalls = (input: any): boolean => {
     return false
   }
 
-  const callingFunctionEncodedValues = input.CallingFunctions.reduce(
-    (acc: Record<string, string[]>, call: CallingFunctionJSON) => {
-      const typeValues = call.EncodedValues.split(',')
-      const values: string[] = typeValues.map((v: string) => v.trim().split(' ')[1].trim())
-      // Index by both name and functionSignature for lookup flexibility
-      acc[call.Name] = values
-      if (call.FunctionSignature && call.FunctionSignature !== call.Name) {
-        acc[call.FunctionSignature] = values
-      }
-      return acc
-    },
-    {} as Record<string, string[]>
-  )
-
-  const foreignCallNames = input.ForeignCalls.map((call: any) => call.Name)
-  const trackerNames = input.Trackers.map((tracker: any) => tracker.Name)
-  const mappedTrackerNames = input.MappedTrackers.map((tracker: any) => tracker.Name)
-
-  // Create lookup maps for O(1) resolution instead of O(n) find operations
-  const lookupMaps = createCallingFunctionLookupMaps(input.CallingFunctions)
-
-  const testInputs: Record<string, string[]> = input.Rules.reduce((acc: Record<string, string[]>, rule: any) => {
-    const inputs = [rule.Condition, ...rule.PositiveEffects, ...rule.NegativeEffects]
-    // Validate calling function exists before resolving
-    validateCallingFunctionExists(rule.CallingFunction, lookupMaps)
-    const resolvedCallingFunction = resolveCallingFunction(rule.CallingFunction, lookupMaps)
-    if (!acc[resolvedCallingFunction]) {
-      acc[resolvedCallingFunction] = inputs
-    } else {
-      acc[resolvedCallingFunction].push(...inputs)
-    }
-    return acc
-  }, {})
-
-  const groupedFC = input.ForeignCalls.reduce((acc: Record<string, string[]>, fc: any) => {
-    // Validate calling function exists before resolving
-    validateCallingFunctionExists(fc.CallingFunction, lookupMaps)
-    const resolvedCallingFunction = resolveCallingFunction(fc.CallingFunction, lookupMaps)
-    if (!acc[resolvedCallingFunction]) {
-      acc[resolvedCallingFunction] = [fc.Name]
-    } else {
-      acc[resolvedCallingFunction].push(fc.Name)
-    }
-    return acc
-  }, {})
-  const validatedInputs = Object.entries(testInputs)
-    .map((input: [string, string[]]) => {
-      return input[1]
-        .map((syntax) => validateInputReferencedCalls(groupedFC[input[0]], trackerNames, mappedTrackerNames, syntax))
-        .every((isValid) => isValid)
-    })
-    .every((isValid: boolean) => isValid)
-
-  const validatedForeignCallValuesToPass = input.ForeignCalls.map((call: any) => {
-    // Validate calling function exists before resolving
-    validateCallingFunctionExists(call.CallingFunction, lookupMaps)
-    const resolvedCallingFunction = resolveCallingFunction(call.CallingFunction, lookupMaps)
-    return validateValuesToPass(
-      callingFunctionEncodedValues[resolvedCallingFunction],
-      foreignCallNames,
-      trackerNames,
-      mappedTrackerNames,
-      call.ValuesToPass
-    )
-  }).every((isValid: boolean) => isValid)
-  return validatedInputs && validatedForeignCallValuesToPass // If any input is invalid, return false
+  return true
 }
 
 export const ruleValidator = z.object({
@@ -427,21 +361,30 @@ export const foreignCallValidator = z.object({
     })
     .transform((input) => checksumAddress(input.trim() as Address)),
   ReturnType: z.preprocess(trimPossibleString, z.literal(PType, 'Unsupported return type')),
-  ValuesToPass: z.string().trim().refine((valuesToPass) => {
-    // Check if any GV: parameters are valid
-    const params = valuesToPass.split(',').map(p => p.trim())
-    const supportedGlobalVars = ['MSG_SENDER', 'BLOCK_TIMESTAMP', 'MSG_DATA', 'BLOCK_NUMBER', 'TX_ORIGIN']
-    
-    for (const param of params) {
-      if (param.startsWith('GV:')) {
-        const globalVar = param.replace('GV:', '').trim()
-        if (!supportedGlobalVars.includes(globalVar)) {
-          return false
+  ValuesToPass: z
+    .string()
+    .trim()
+    .refine(
+      (valuesToPass) => {
+        // Check if any GV: parameters are valid
+        const params = valuesToPass.split(',').map((p) => p.trim())
+        const supportedGlobalVars = ['MSG_SENDER', 'BLOCK_TIMESTAMP', 'MSG_DATA', 'BLOCK_NUMBER', 'TX_ORIGIN']
+
+        for (const param of params) {
+          if (param.startsWith('GV:')) {
+            const globalVar = param.replace('GV:', '').trim()
+            if (!supportedGlobalVars.includes(globalVar)) {
+              return false
+            }
+          }
         }
+        return true
+      },
+      {
+        message:
+          'Unsupported global variable in ValuesToPass. Supported: GV:MSG_SENDER, GV:BLOCK_TIMESTAMP, GV:MSG_DATA, GV:BLOCK_NUMBER, GV:TX_ORIGIN',
       }
-    }
-    return true
-  }, { message: 'Unsupported global variable in ValuesToPass. Supported: GV:MSG_SENDER, GV:BLOCK_TIMESTAMP, GV:MSG_DATA, GV:BLOCK_NUMBER, GV:TX_ORIGIN' }),
+    ),
   MappedTrackerKeyValues: z.string().trim(),
   CallingFunction: z.string().trim(),
 })

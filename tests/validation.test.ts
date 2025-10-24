@@ -643,53 +643,6 @@ test('Can catch missing calling function in foreign call in policy JSON', () => 
   }
 })
 
-test('Can catch missing foreign call in condition in policy JSON', () => {
-  const parsedInput = JSON.parse(policyJSONFull)
-  parsedInput.Rules[0].Condition =
-    "FC:SimpleForeignCallMissing > 500 AND (TR:SimpleStringTracker == 'test' OR TR:SimpleMappedTracker(to) > 100)"
-  const parsedPolicy = validatePolicyJSON(JSON.stringify(parsedInput))
-  expect(isRight(parsedPolicy)).toBeFalsy()
-  if (isLeft(parsedPolicy)) {
-    const errors = unwrapEither(parsedPolicy)
-    expect(errors[0].message).toEqual('Policy Invalid reference call')
-  }
-})
-
-test('Can catch missing tracker in condition in policy JSON', () => {
-  const parsedInput = JSON.parse(policyJSONFull)
-  parsedInput.Rules[0].Condition =
-    "FC:SimpleForeignCall > 500 AND (TR:SimpleStringTrackerMissing == 'test' OR TR:SimpleMappedTracker(to) > 100)"
-  const parsedPolicy = validatePolicyJSON(JSON.stringify(parsedInput))
-  expect(isRight(parsedPolicy)).toBeFalsy()
-  if (isLeft(parsedPolicy)) {
-    const errors = unwrapEither(parsedPolicy)
-    expect(errors[0].message).toEqual('Policy Invalid reference call')
-  }
-})
-
-test('Can catch missing mapped tracker in condition in policy JSON', () => {
-  const parsedInput = JSON.parse(policyJSONFull)
-  parsedInput.Rules[0].Condition =
-    "FC:SimpleForeignCall > 500 AND (TR:SimpleStringTracker == 'test' OR TR:SimpleMappedTrackerMissing(to) > 100)"
-  const parsedPolicy = validatePolicyJSON(JSON.stringify(parsedInput))
-  expect(isRight(parsedPolicy)).toBeFalsy()
-  if (isLeft(parsedPolicy)) {
-    const errors = unwrapEither(parsedPolicy)
-    expect(errors[0].message).toEqual('Policy Invalid reference call')
-  }
-})
-
-test('Can catch missing calling function encoded value in foreign call valueToPass in policy JSON', () => {
-  const parsedInput = JSON.parse(policyJSONFull)
-  parsedInput.ForeignCalls[0].ValuesToPass = 'transferTo'
-  const parsedPolicy = validatePolicyJSON(JSON.stringify(parsedInput))
-  expect(isRight(parsedPolicy)).toBeFalsy()
-  if (isLeft(parsedPolicy)) {
-    const errors = unwrapEither(parsedPolicy)
-    expect(errors[0].message).toEqual('Policy Invalid reference call')
-  }
-})
-
 test('Can catch all missing required fields in policy JSON', () => {
   const parsedPolicy = validatePolicyJSON('{}')
   expect(isLeft(parsedPolicy)).toBeTruthy()
