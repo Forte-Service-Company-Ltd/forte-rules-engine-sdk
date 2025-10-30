@@ -1,6 +1,6 @@
 /// SPDX-License-Identifier: BUSL-1.1
 
-import { toFunctionSelector, Address, getAddress, toFunctionSignature } from 'viem'
+import { toFunctionSelector, Address, getAddress } from 'viem'
 
 import { Config, readContract, simulateContract, waitForTransactionReceipt, writeContract } from '@wagmi/core'
 
@@ -339,8 +339,8 @@ const buildCallingFunctions = async (
   }
   for (var callingFunc of existingCallingFunctions) {
     var meta = await getCallingFunctionMetadata(config, rulesEngineComponentContract, policyId, callingFunc.signature)
-    if (!callingFunctions.includes(toFunctionSignature(meta.callingFunction))) {
-      callingFunctions.push(toFunctionSignature(meta.callingFunction))
+    if (!callingFunctions.includes(meta.callingFunction)) {
+      callingFunctions.push(meta.callingFunction)
       callingFunctionParamSets.push(meta.encodedValues.split(', ').map((val) => val.trim().split(' ')[1]))
     }
   }
