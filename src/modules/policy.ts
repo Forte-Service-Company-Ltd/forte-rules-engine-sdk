@@ -799,7 +799,6 @@ const buildRules = async (
   var transactionHashes: { ruleId: number; transactionHash: `0x${string}` }[] = []
 
   // Determine if there are new rules present
-
   for (var ru of policyJSON.Rules) {
     if (ru.Id == null) {
       newRulesPresent = true
@@ -836,7 +835,7 @@ const buildRules = async (
   if (allExistingRulesPresent && !create) {
     // We do care about order
     for (var rule of policyJSON.Rules) {
-      let result: { ruleId: number; transactionHash: `0x${string}` }
+      var result = null
       var ruleId = -1
       if (rule.Id !== undefined) {
         var changed = false
