@@ -2856,7 +2856,6 @@ describe('Rules Engine Interactions', async () => {
     expect(createResult.rules[0].ruleId).toBeGreaterThan(0)
     expect(createResult.rules[0].transactionHash).toMatch(/^0x[a-fA-F0-9]{64}$/)
 
-
     // Retrieve rule metadata to verify it references the bytes tracker
     const ruleMetadata = await getRuleMetadata(
       config,
@@ -3347,7 +3346,7 @@ describe('Rules Engine Interactions', async () => {
     }`
 
     var input = JSON.parse(policyJSON)
-    
+
     // This should fail with "BLOCK_NUMBER can only be used with uint type" or similar error
     // because the current SDK doesn't properly handle global variables in foreign calls
     await expect(
@@ -3361,5 +3360,167 @@ describe('Rules Engine Interactions', async () => {
         policyJSON
       )
     ).rejects.toThrow()
+  })
+  test('Can update a mapped trackers key/value pairs', options, async () => {
+    let initialJSON = `
+          {
+          "Policy": "Test Policy",
+          "Description": "This is a test policy",
+          "PolicyType": "open",
+          "CallingFunctions": [
+          ],
+          "ForeignCalls": [
+
+          ],
+          "Trackers": [
+
+          ],
+          "MappedTrackers": [{
+            "Name": "VestAmount",
+            "KeyType": "address",
+            "ValueType": "uint256",
+            "InitialKeys": [],
+            "InitialValues": []
+          }],
+          "Rules": [
+              ]
+              }`
+    var result = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      initialJSON
+    )
+
+    let updatedJSON = `
+          {
+          "Policy": "Test Policy",
+          "Description": "This is a test policy",
+          "PolicyType": "open",
+          "CallingFunctions": [
+          ],
+          "ForeignCalls": [
+
+          ],
+          "Trackers": [
+
+          ],
+          "MappedTrackers": [{
+            "Id": 1,
+            "Name": "VestAmount",
+            "KeyType": "address",
+            "ValueType": "uint256",
+            "InitialKeys": ["0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"],
+            "InitialValues": ["1234"]
+          }],
+          "Rules": [
+              ]
+              }`
+
+    await updatePolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      updatedJSON,
+      result.policyId
+    )
+    var retVal = await getPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      result.policyId
+    )
+    expect(retVal?.MappedTrackers[0].InitialKeys.length).toEqual(1)
+    expect(retVal?.MappedTrackers[0].InitialValues.length).toEqual(1)
+  })
+  test('Cannot change mapped tracker key type', options, async () => {
+    let initialJSON = `
+          {
+          "Policy": "Test Policy",
+          "Description": "This is a test policy",
+          "PolicyType": "open",
+          "CallingFunctions": [
+          ],
+          "ForeignCalls": [
+
+          ],
+          "Trackers": [
+
+          ],
+          "MappedTrackers": [{
+            "Name": "VestAmount",
+            "KeyType": "address",
+            "ValueType": "uint256",
+            "InitialKeys": [],
+            "InitialValues": []
+          }],
+          "Rules": [
+              ]
+              }`
+    var result = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      initialJSON
+    )
+
+    let updatedJSON = `
+          {
+          "Policy": "Test Policy",
+          "Description": "This is a test policy",
+          "PolicyType": "open",
+          "CallingFunctions": [
+          ],
+          "ForeignCalls": [
+
+          ],
+          "Trackers": [
+
+          ],
+          "MappedTrackers": [{
+            "Id": 1,
+            "Name": "VestAmount",
+            "KeyType": "address",
+            "ValueType": "string",
+            "InitialKeys": ["0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266"],
+            "InitialValues": ["test"]
+          }],
+          "Rules": [
+              ]
+              }`
+
+    await expect(
+      updatePolicy(
+        config,
+        getRulesEnginePolicyContract(rulesEngineContract, client),
+        getRulesEngineRulesContract(rulesEngineContract, client),
+        getRulesEngineComponentContract(rulesEngineContract, client),
+        getRulesEngineForeignCallContract(rulesEngineContract, client),
+        1,
+        updatedJSON,
+        result.policyId
+      )
+    ).rejects.toThrow()
+    var retVal = await getPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      result.policyId
+    )
+    expect(retVal?.MappedTrackers[0].InitialKeys.length).toEqual(0)
+    expect(retVal?.MappedTrackers[0].InitialValues.length).toEqual(0)
   })
 })
