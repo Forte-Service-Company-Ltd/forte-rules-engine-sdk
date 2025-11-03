@@ -217,62 +217,52 @@ export const updateMappedTracker = async (
     throw new Error(getRulesErrorMessages(unwrapEither(json)))
   }
   const parsedTracker = parseMappedTrackerSyntax(unwrapEither(json))
-  var duplicate = await checkIfTrackerExists(
-    config,
-    rulesEngineComponentContract,
-    policyId,
-    parsedTracker.name,
-    mappedTrackerId
-  )
-  if (!duplicate) {
-    var transactionTracker = {
-      set: true,
-      pType: parsedTracker.valueType,
-      mapped: true,
-      trackerKeyType: parsedTracker.keyType,
-      trackerValue: encodePacked(['uint256'], [BigInt(0)]),
-      trackerIndex: 0,
-    }
-    var addTR
-    var failureCount = 0
-    while (true) {
-      try {
-        addTR = await simulateContract(config, {
-          address: rulesEngineComponentContract.address,
-          abi: rulesEngineComponentContract.abi,
-          functionName: 'updateTracker',
-          args: [
-            policyId,
-            mappedTrackerId,
-            transactionTracker,
-            parsedTracker.name,
-            parsedTracker.initialKeys,
-            parsedTracker.initialValues,
-          ],
-        })
-        break
-      } catch (err) {
-        if (failureCount < 5) {
-          failureCount += 1
-        } else {
-          return { trackerId: -1, transactionHash: '0x0' as `0x${string}` }
-        }
-        await sleep(1000)
-      }
-    }
-    if (addTR != null) {
-      const returnHash = await writeContract(config, {
-        ...addTR.request,
-        account: config.getClient().account,
-      })
-      await waitForTransactionReceipt(config, {
-        confirmations: confirmationCount,
-        hash: returnHash,
-      })
 
-      let trackerResult = addTR.result
-      return { trackerId: trackerResult, transactionHash: returnHash }
+  var originalTracker = await getTracker(config, rulesEngineComponentContract, policyId, mappedTrackerId)
+  if (originalTracker.pType != parsedTracker.valueType || originalTracker.trackerKeyType != parsedTracker.keyType) {
+    console.log('Once a Mapped Tracker has been created its Key and Value type cannot be changed')
+    return { trackerId: -1, transactionHash: '0x0' as `0x${string}` }
+  }
+  var transactionTracker = {
+    set: true,
+    pType: parsedTracker.valueType,
+    mapped: true,
+    trackerKeyType: parsedTracker.keyType,
+    trackerValue: encodePacked(['uint256'], [BigInt(0)]),
+    trackerIndex: 0,
+  }
+  var addTR
+  var failureCount = 0
+  while (true) {
+    try {
+      addTR = await simulateContract(config, {
+        address: rulesEngineComponentContract.address,
+        abi: rulesEngineComponentContract.abi,
+        functionName: 'updateTracker',
+        args: [policyId, mappedTrackerId, transactionTracker, parsedTracker.initialKeys, parsedTracker.initialValues],
+      })
+      break
+    } catch (err) {
+      console.log(err)
+      if (failureCount < 5) {
+        failureCount += 1
+      } else {
+        return { trackerId: -1, transactionHash: '0x0' as `0x${string}` }
+      }
+      await sleep(1000)
     }
+  }
+  if (addTR != null) {
+    const returnHash = await writeContract(config, {
+      ...addTR.request,
+      account: config.getClient().account,
+    })
+    await waitForTransactionReceipt(config, {
+      confirmations: confirmationCount,
+      hash: returnHash,
+    })
+
+    return { trackerId: mappedTrackerId, transactionHash: returnHash }
   }
   return { trackerId: -1, transactionHash: '0x0' as `0x${string}` }
 }

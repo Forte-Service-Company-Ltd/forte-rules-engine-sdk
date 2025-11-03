@@ -798,6 +798,10 @@ const buildRules = async (
   let callingFunctionSelectors = []
   var transactionHashes: { ruleId: number; transactionHash: `0x${string}` }[] = []
 
+  if (policyJSON.Rules.length == 0) {
+    allExistingRulesPresent = false
+  }
+
   // Determine if there are new rules present
   for (var ru of policyJSON.Rules) {
     if (ru.Id == null) {
@@ -1036,6 +1040,7 @@ const buildRules = async (
         }
       }
     }
+
     for (var cf of callingFunctions) {
       if (ruleToCallingFunction.has(cf)) {
         rulesDoubleMapping.push(ruleToCallingFunction.get(cf))
@@ -1045,7 +1050,6 @@ const buildRules = async (
       callingFunctionSelectors.push(toFunctionSelector(cf))
     }
   }
-
   policyId = await updatePolicyInternal(
     config,
     rulesEnginePolicyContract,
@@ -1129,7 +1133,6 @@ export const updatePolicy = async (
     } catch (err) {
       throw err
     }
-
     // Create lookup maps for O(1) resolution instead of O(n) find operations
     const lookupMaps = createCallingFunctionLookupMaps(nonDuplicatedCallingFunctions)
 
