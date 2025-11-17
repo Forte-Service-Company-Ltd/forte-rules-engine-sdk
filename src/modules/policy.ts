@@ -231,6 +231,11 @@ export const createPolicy = async (
       throw err
     }
 
+    // If PolicyType is "closed", close the policy after all components are created
+    if (policyJSON.PolicyType?.toLowerCase() === 'closed') {
+      await closePolicy(config, rulesEnginePolicyContract, policyId, confirmationCount)
+    }
+
     return {
       callingFunctions: callingFunctionResults,
       trackers: trackerResults,
