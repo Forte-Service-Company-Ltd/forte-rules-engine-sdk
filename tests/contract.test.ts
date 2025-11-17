@@ -2121,6 +2121,72 @@ describe('Rules Engine Interactions', async () => {
     expect(isSubscriber).toEqual(false)
   })
 
+  test('Can create a closed policy directly from PolicyType field', options, async () => {
+    var policyJSON = `
+      {
+        "Policy": "Test Closed Policy",
+        "Description": "Test policy created as closed",
+        "PolicyType": "closed",
+        "CallingFunctions": [
+          {
+            "Name": "transfer",
+            "FunctionSignature": "transfer(address to, uint256 value)",
+            "EncodedValues": "address to, uint256 value"
+          }
+        ],
+        "ForeignCalls": [],
+        "Trackers": [],
+        "MappedTrackers": [],
+        "Rules": [
+          {
+            "Name": "Test Rule",
+            "Description": "Test Rule Description",
+            "Condition": "value > 100",
+            "PositiveEffects": ["emit \\"Transfer Allowed\\""],
+            "NegativeEffects": ["revert(\\"Transfer Not Allowed\\")"],
+            "CallingFunction": "transfer"
+          }
+        ]
+      }`
+
+    var result = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      policyJSON
+    )
+
+    // Verify the policy was created as closed
+    var isClosed = await isClosedPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      result.policyId
+    )
+    expect(isClosed).toEqual(true)
+
+    // Also verify that an "open" policy is created as open
+    var openPolicyJSON = policyJSON.replace('"PolicyType": "closed"', '"PolicyType": "open"')
+    var openResult = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      openPolicyJSON
+    )
+
+    var isOpen = await isClosedPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      openResult.policyId
+    )
+    expect(isOpen).toEqual(false)
+  })
+
   test('Can retrieve tracker array value types', options, async () => {
     var policyJSON = `
                                    {
