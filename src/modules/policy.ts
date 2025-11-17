@@ -1210,6 +1210,18 @@ export const updatePolicy = async (
       throw err
     }
 
+    // Check if the policy should be closed or opened based on PolicyType
+    const currentlyClosed = await isClosedPolicy(config, rulesEnginePolicyContract, policyId)
+    const shouldBeClosed = policyJSON.PolicyType?.toLowerCase() === 'closed'
+
+    if (shouldBeClosed && !currentlyClosed) {
+      // Policy should be closed but is currently open - close it
+      await closePolicy(config, rulesEnginePolicyContract, policyId, confirmationCount)
+    } else if (!shouldBeClosed && currentlyClosed) {
+      // Policy should be open but is currently closed - open it
+      await openPolicy(config, rulesEnginePolicyContract, policyId, confirmationCount)
+    }
+
     return {
       callingFunctions: callingFunctionResults,
       trackers: trackerResults,

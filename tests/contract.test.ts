@@ -2187,6 +2187,377 @@ describe('Rules Engine Interactions', async () => {
     expect(isOpen).toEqual(false)
   })
 
+  test('Verify policies honor PolicyType field during creation', options, async () => {
+    // Test 1: Create policy with PolicyType "closed" - should be created as CLOSED
+    var closedPolicyJSON = `
+      {
+        "Policy": "Test Policy with Closed Type",
+        "Description": "Policy with PolicyType closed",
+        "PolicyType": "closed",
+        "CallingFunctions": [
+          {
+            "Name": "transfer",
+            "FunctionSignature": "transfer(address to, uint256 value)",
+            "EncodedValues": "address to, uint256 value"
+          }
+        ],
+        "ForeignCalls": [],
+        "Trackers": [],
+        "MappedTrackers": [],
+        "Rules": [
+          {
+            "Name": "Test Rule",
+            "Description": "Test Rule Description",
+            "Condition": "value > 100",
+            "PositiveEffects": ["emit \\"Transfer Allowed\\""],
+            "NegativeEffects": ["revert(\\"Transfer Not Allowed\\")"],
+            "CallingFunction": "transfer"
+          }
+        ]
+      }`
+
+    var closedResult = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      closedPolicyJSON
+    )
+
+    // Verify the policy was created as CLOSED (createPolicy now honors PolicyType field)
+    var isClosedAfterCreate = await isClosedPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      closedResult.policyId
+    )
+    expect(isClosedAfterCreate).toEqual(true) // Should be CLOSED (true), createPolicy honors PolicyType
+
+    // Test 2: Create policy with PolicyType "open" - should be OPEN
+    var openPolicyJSON = closedPolicyJSON.replace('"PolicyType": "closed"', '"PolicyType": "open"')
+    var openResult = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      openPolicyJSON
+    )
+
+    var isOpenAfterCreate = await isClosedPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      openResult.policyId
+    )
+    expect(isOpenAfterCreate).toEqual(false) // Should be OPEN (false)
+
+    // Verify when retrieved, the closed policy shows as "closed"
+    var retrievedPolicy = await getPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      closedResult.policyId
+    )
+    expect(retrievedPolicy?.PolicyType).toEqual('closed') // Returns actual state
+  })
+
+  test('Verify policies can be opened and closed after creation', options, async () => {
+    // Create policy with PolicyType "closed" (will be created as CLOSED since createPolicy honors it)
+    var policyJSON = `
+      {
+        "Policy": "Test Policy to Close",
+        "Description": "Policy to be closed manually",
+        "PolicyType": "closed",
+        "CallingFunctions": [
+          {
+            "Name": "transfer",
+            "FunctionSignature": "transfer(address to, uint256 value)",
+            "EncodedValues": "address to, uint256 value"
+          }
+        ],
+        "ForeignCalls": [],
+        "Trackers": [],
+        "MappedTrackers": [],
+        "Rules": [
+          {
+            "Name": "Test Rule",
+            "Description": "Test Rule Description",
+            "Condition": "value > 100",
+            "PositiveEffects": ["emit \\"Transfer Allowed\\""],
+            "NegativeEffects": ["revert(\\"Transfer Not Allowed\\")"],
+            "CallingFunction": "transfer"
+          }
+        ]
+      }`
+
+    var result = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      policyJSON
+    )
+
+    // Verify policy is CLOSED after creation (PolicyType field was honored)
+    var isClosedAfterCreate = await isClosedPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      result.policyId
+    )
+    expect(isClosedAfterCreate).toEqual(true) // CLOSED
+
+    // Manually open the policy using openPolicy function
+    await openPolicy(config, getRulesEnginePolicyContract(rulesEngineContract, client), result.policyId, 1)
+
+    // Manually close the policy using closePolicy function
+    await closePolicy(config, getRulesEnginePolicyContract(rulesEngineContract, client), result.policyId, 1)
+
+    // Verify policy is now CLOSED
+    var isClosedAfterManualClose = await isClosedPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      result.policyId
+    )
+    expect(isClosedAfterManualClose).toEqual(true) // CLOSED
+
+    // Now update the policy with PolicyType "closed" to maintain closed state
+    var updateJSON = `
+      {
+        "Policy": "Test Policy to Close",
+        "Description": "Policy to be closed manually - updated",
+        "PolicyType": "closed",
+        "CallingFunctions": [
+          {
+            "Name": "transfer",
+            "FunctionSignature": "transfer(address to, uint256 value)",
+            "EncodedValues": "address to, uint256 value"
+          }
+        ],
+        "ForeignCalls": [],
+        "Trackers": [],
+        "MappedTrackers": [],
+        "Rules": [
+          {
+            "Name": "Test Rule",
+            "Description": "Test Rule Description - Updated",
+            "Condition": "value > 100",
+            "PositiveEffects": ["emit \\"Transfer Allowed\\""],
+            "NegativeEffects": ["revert(\\"Transfer Not Allowed\\")"],
+            "CallingFunction": "transfer"
+          }
+        ]
+      }`
+
+    await updatePolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      updateJSON,
+      result.policyId
+    )
+
+    // Verify policy is STILL closed after update with PolicyType "closed"
+    var isClosedAfterUpdate = await isClosedPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      result.policyId
+    )
+    expect(isClosedAfterUpdate).toEqual(true) // Should remain CLOSED (updatePolicy honors PolicyType)
+  })
+
+  test('Verify PolicyType field is honored during both creation and updates', options, async () => {
+    var policyJSON = `
+      {
+        "Policy": "Test Closed Policy",
+        "Description": "Test policy created as closed",
+        "PolicyType": "closed",
+        "CallingFunctions": [
+          {
+            "Name": "transfer",
+            "FunctionSignature": "transfer(address to, uint256 value)",
+            "EncodedValues": "address to, uint256 value"
+          }
+        ],
+        "ForeignCalls": [],
+        "Trackers": [],
+        "MappedTrackers": [],
+        "Rules": [
+          {
+            "Name": "Test Rule",
+            "Description": "Test Rule Description",
+            "Condition": "value > 100",
+            "PositiveEffects": ["emit \\"Transfer Allowed\\""],
+            "NegativeEffects": ["revert(\\"Transfer Not Allowed\\")"],
+            "CallingFunction": "transfer"
+          }
+        ]
+      }`
+
+    var result = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      policyJSON
+    )
+
+    // Verify the policy was created as CLOSED (PolicyType "closed" was honored)
+    var isClosed = await isClosedPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      result.policyId
+    )
+    expect(isClosed).toEqual(true) // Should be CLOSED
+
+    // Also verify that an "open" policy is created as open
+    var openPolicyJSON = policyJSON.replace('"PolicyType": "closed"', '"PolicyType": "open"')
+    var openResult = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      openPolicyJSON
+    )
+
+    var isOpen = await isClosedPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      openResult.policyId
+    )
+    expect(isOpen).toEqual(false)
+  })
+
+  test('Can update a closed policy and maintain closed state', options, async () => {
+    // Create initial policy with minimal components (will be created as OPEN)
+    var initialPolicyJSON = `
+      {
+        "Policy": "Test Closed Policy",
+        "Description": "Initial closed policy",
+        "PolicyType": "open",
+        "CallingFunctions": [
+          {
+            "Name": "transfer",
+            "FunctionSignature": "transfer(address to, uint256 value)",
+            "EncodedValues": "address to, uint256 value"
+          }
+        ],
+        "ForeignCalls": [],
+        "Trackers": [],
+        "MappedTrackers": [],
+        "Rules": []
+      }`
+
+    var result = await createPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      initialPolicyJSON
+    )
+
+    // Verify policy is OPEN after creation
+    var isClosedAfterCreate = await isClosedPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      result.policyId
+    )
+    expect(isClosedAfterCreate).toEqual(false)
+
+    // Manually close the policy
+    await closePolicy(config, getRulesEnginePolicyContract(rulesEngineContract, client), result.policyId, 1)
+
+    // Verify policy is now closed
+    var isClosedAfterManualClose = await isClosedPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      result.policyId
+    )
+    expect(isClosedAfterManualClose).toEqual(true)
+
+    // Update the policy with additional components but keep PolicyType: "closed"
+    var updatePolicyJSON = `
+      {
+        "Policy": "Test Closed Policy",
+        "Description": "Updated closed policy with more components",
+        "PolicyType": "closed",
+        "CallingFunctions": [
+          {
+            "Name": "transfer",
+            "FunctionSignature": "transfer(address to, uint256 value)",
+            "EncodedValues": "address to, uint256 value"
+          }
+        ],
+        "ForeignCalls": [],
+        "Trackers": [],
+        "MappedTrackers": [],
+        "Rules": [
+          {
+            "Name": "Test Rule",
+            "Description": "Test Rule Description",
+            "Condition": "value > 100",
+            "PositiveEffects": ["emit \\"Transfer Allowed\\""],
+            "NegativeEffects": ["revert(\\"Transfer Not Allowed\\")"],
+            "CallingFunction": "transfer"
+          }
+        ]
+      }`
+
+    await updatePolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      updatePolicyJSON,
+      result.policyId
+    )
+
+    // Verify policy is STILL closed after update
+    var isClosedAfterUpdate = await isClosedPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      result.policyId
+    )
+    expect(isClosedAfterUpdate).toEqual(true)
+
+    // Also test changing from closed to open
+    var openPolicyJSON = updatePolicyJSON.replace('"PolicyType": "closed"', '"PolicyType": "open"')
+    await updatePolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      getRulesEngineRulesContract(rulesEngineContract, client),
+      getRulesEngineComponentContract(rulesEngineContract, client),
+      getRulesEngineForeignCallContract(rulesEngineContract, client),
+      1,
+      openPolicyJSON,
+      result.policyId
+    )
+
+    // Verify policy is now open
+    var isOpenAfterChange = await isClosedPolicy(
+      config,
+      getRulesEnginePolicyContract(rulesEngineContract, client),
+      result.policyId
+    )
+    expect(isOpenAfterChange).toEqual(false)
+  })
+
   test('Can retrieve tracker array value types', options, async () => {
     var policyJSON = `
                                    {
