@@ -2187,8 +2187,8 @@ describe('Rules Engine Interactions', async () => {
     expect(isOpen).toEqual(false)
   })
 
-  test('Verify policies are always created as OPEN regardless of PolicyType field', options, async () => {
-    // Test 1: Create policy with PolicyType "closed" - should still be OPEN (createPolicy ignores it)
+  test('Verify policies honor PolicyType field during creation', options, async () => {
+    // Test 1: Create policy with PolicyType "closed" - should be created as CLOSED
     var closedPolicyJSON = `
       {
         "Policy": "Test Policy with Closed Type",
@@ -2226,13 +2226,13 @@ describe('Rules Engine Interactions', async () => {
       closedPolicyJSON
     )
 
-    // Verify the policy was created as OPEN, not closed (createPolicy ignores PolicyType field)
+    // Verify the policy was created as CLOSED (createPolicy now honors PolicyType field)
     var isClosedAfterCreate = await isClosedPolicy(
       config,
       getRulesEnginePolicyContract(rulesEngineContract, client),
       closedResult.policyId
     )
-    expect(isClosedAfterCreate).toEqual(false) // Should be OPEN (false), createPolicy doesn't honor PolicyType
+    expect(isClosedAfterCreate).toEqual(true) // Should be CLOSED (true), createPolicy honors PolicyType
 
     // Test 2: Create policy with PolicyType "open" - should be OPEN
     var openPolicyJSON = closedPolicyJSON.replace('"PolicyType": "closed"', '"PolicyType": "open"')
@@ -2253,7 +2253,7 @@ describe('Rules Engine Interactions', async () => {
     )
     expect(isOpenAfterCreate).toEqual(false) // Should be OPEN (false)
 
-    // Verify when retrieved, the policy shows as "open" even though we specified "closed"
+    // Verify when retrieved, the closed policy shows as "closed"
     var retrievedPolicy = await getPolicy(
       config,
       getRulesEnginePolicyContract(rulesEngineContract, client),
@@ -2262,11 +2262,11 @@ describe('Rules Engine Interactions', async () => {
       getRulesEngineForeignCallContract(rulesEngineContract, client),
       closedResult.policyId
     )
-    expect(retrievedPolicy?.PolicyType).toEqual('open') // Returns actual state, not what was in JSON
+    expect(retrievedPolicy?.PolicyType).toEqual('closed') // Returns actual state
   })
 
-  test('Verify policies can be closed manually after creation', options, async () => {
-    // Create policy with PolicyType "closed" (but it will be created as OPEN because createPolicy ignores it)
+  test('Verify policies can be opened and closed after creation', options, async () => {
+    // Create policy with PolicyType "closed" (will be created as CLOSED since createPolicy honors it)
     var policyJSON = `
       {
         "Policy": "Test Policy to Close",
@@ -2304,13 +2304,16 @@ describe('Rules Engine Interactions', async () => {
       policyJSON
     )
 
-    // Verify policy is OPEN after creation (PolicyType field was ignored)
-    var isOpenAfterCreate = await isClosedPolicy(
+    // Verify policy is CLOSED after creation (PolicyType field was honored)
+    var isClosedAfterCreate = await isClosedPolicy(
       config,
       getRulesEnginePolicyContract(rulesEngineContract, client),
       result.policyId
     )
-    expect(isOpenAfterCreate).toEqual(false) // OPEN
+    expect(isClosedAfterCreate).toEqual(true) // CLOSED
+
+    // Manually open the policy using openPolicy function
+    await openPolicy(config, getRulesEnginePolicyContract(rulesEngineContract, client), result.policyId, 1)
 
     // Manually close the policy using closePolicy function
     await closePolicy(config, getRulesEnginePolicyContract(rulesEngineContract, client), result.policyId, 1)
@@ -2371,7 +2374,7 @@ describe('Rules Engine Interactions', async () => {
     expect(isClosedAfterUpdate).toEqual(true) // Should remain CLOSED (updatePolicy honors PolicyType)
   })
 
-  test('Verify PolicyType field is ignored during creation but honored during updates', options, async () => {
+  test('Verify PolicyType field is honored during both creation and updates', options, async () => {
     var policyJSON = `
       {
         "Policy": "Test Closed Policy",
@@ -2409,13 +2412,13 @@ describe('Rules Engine Interactions', async () => {
       policyJSON
     )
 
-    // Verify the policy was created as OPEN (PolicyType "closed" was ignored)
+    // Verify the policy was created as CLOSED (PolicyType "closed" was honored)
     var isClosed = await isClosedPolicy(
       config,
       getRulesEnginePolicyContract(rulesEngineContract, client),
       result.policyId
     )
-    expect(isClosed).toEqual(false) // Should be OPEN, not closed
+    expect(isClosed).toEqual(true) // Should be CLOSED
 
     // Also verify that an "open" policy is created as open
     var openPolicyJSON = policyJSON.replace('"PolicyType": "closed"', '"PolicyType": "open"')
