@@ -325,6 +325,14 @@ export function parseMappedTrackerSyntax(syntax: MappedTrackerJSON): MappedTrack
   }
 }
 
+const getBigIntForBoolEncoded = (value: string) => {
+  if (value == 'true') {
+    return encodeAbiParameters(parseAbiParameters('uint256'), [1n])
+  } else {
+    return encodeAbiParameters(parseAbiParameters('uint256'), [0n])
+  }
+}
+
 const getBigIntForBool = (value: string): bigint => {
   if (value == 'true') {
     return 1n
@@ -360,7 +368,7 @@ function encodeTrackerData(valueSet: any[], keyType: string): any[] {
       const values = val.map((v: string) => toHex(stringToBytes(String(v))))
       return encodeAbiParameters(parseAbiParameters(['bytes[]']), [values])
     } else if (keyType == 'bool[]') {
-      const values = val.map((v: string) => getBigIntForBool(v))
+      const values = val.map((v: string) => getBigIntForBoolEncoded(v))
       return encodePacked(['uint256[]'], [values])
     } else if (keyType == 'string[]') {
       const values = val.map((v: string) => getEncodedString(v))
@@ -372,7 +380,7 @@ function encodeTrackerData(valueSet: any[], keyType: string): any[] {
     } else if (keyType == 'bytes') {
       return getEncodedBytes(val)
     } else if (keyType == 'bool') {
-      return getBigIntForBool(val as string)
+      return getBigIntForBoolEncoded(val as string)
     } else {
       return getEncodedString(val)
     }
