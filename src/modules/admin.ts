@@ -2,7 +2,7 @@
 import { Address, toFunctionSelector } from 'viem'
 import { simulateContract, waitForTransactionReceipt, writeContract, Config, readContract } from '@wagmi/core'
 import { ContractBlockParameters, RulesEngineAdminContract } from './types'
-import { sleep } from './contract-interaction-utils'
+import { simulateWithRetry } from './contract-interaction-utils'
 
 /**
  * @file admin.ts
@@ -36,7 +36,7 @@ import { sleep } from './contract-interaction-utils'
  * @param newAdminAddress - The address to propose as the new admin
  * @returns A promise
  *
- * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+ * @throws If the contract simulation fails after the bounded retry limit.
  */
 export const proposeNewPolicyAdmin = async (
   config: Config,
@@ -45,20 +45,16 @@ export const proposeNewPolicyAdmin = async (
   newAdminAddress: Address,
   confirmationCount: number
 ): Promise<void> => {
-  var proposeAdmin
-  while (true) {
-    try {
-      proposeAdmin = await simulateContract(config, {
+  const proposeAdmin = await simulateWithRetry(
+    () =>
+      simulateContract(config, {
         address: rulesEngineAdminContract.address,
         abi: rulesEngineAdminContract.abi,
         functionName: 'proposeNewPolicyAdmin',
         args: [newAdminAddress, policyId],
-      })
-      break
-    } catch (err) {
-      await sleep(1000)
-    }
-  }
+      }),
+    'proposeNewPolicyAdmin'
+  )
   if (proposeAdmin != null) {
     const returnHash = await writeContract(config, {
       ...proposeAdmin.request,
@@ -80,7 +76,7 @@ export const proposeNewPolicyAdmin = async (
  * @param policyId - The ID of the policy to set the admin for.
  * @returns A promise
  *
- * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+ * @throws If the contract simulation fails after the bounded retry limit.
  */
 export const confirmNewPolicyAdmin = async (
   config: Config,
@@ -88,21 +84,16 @@ export const confirmNewPolicyAdmin = async (
   policyId: number,
   confirmationCount: number
 ): Promise<void> => {
-  var confirmAdmin
-  while (true) {
-    try {
-      confirmAdmin = await simulateContract(config, {
+  const confirmAdmin = await simulateWithRetry(
+    () =>
+      simulateContract(config, {
         address: rulesEngineAdminContract.address,
         abi: rulesEngineAdminContract.abi,
         functionName: 'confirmNewPolicyAdmin',
         args: [policyId],
-      })
-      break
-    } catch (err) {
-      console.log(err)
-      await sleep(1000)
-    }
-  }
+      }),
+    'confirmNewPolicyAdmin'
+  )
   if (confirmAdmin != null) {
     const returnHash = await writeContract(config, {
       ...confirmAdmin.request,
@@ -126,7 +117,7 @@ export const confirmNewPolicyAdmin = async (
  * @param policyId - The ID of the policy to set the admin for.
  * @returns A promise
  *
- * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+ * @throws If the contract simulation fails after the bounded retry limit.
  */
 export const renouncePolicyAdminRole = async (
   config: Config,
@@ -136,21 +127,16 @@ export const renouncePolicyAdminRole = async (
   policyId: number,
   confirmationCount: number
 ): Promise<void> => {
-  let confirmAdmin
-  while (true) {
-    try {
-      confirmAdmin = await simulateContract(config, {
+  const confirmAdmin = await simulateWithRetry(
+    () =>
+      simulateContract(config, {
         address: rulesEngineAdminContract.address,
         abi: rulesEngineAdminContract.abi,
         functionName: 'renouncePolicyAdminRole',
         args: [role, renounceAddress, policyId],
-      })
-      break
-    } catch (err) {
-      console.log(err)
-      await sleep(1000)
-    }
-  }
+      }),
+    'renouncePolicyAdminRole'
+  )
   if (confirmAdmin != null) {
     const returnHash = await writeContract(config, {
       ...confirmAdmin.request,
@@ -173,7 +159,7 @@ export const renouncePolicyAdminRole = async (
  * @param renounceAddress - The address to renounce as the admin
  * @returns A promise
  *
- * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+ * @throws If the contract simulation fails after the bounded retry limit.
  */
 export const renounceCallingContractAdminRole = async (
   config: Config,
@@ -182,21 +168,16 @@ export const renounceCallingContractAdminRole = async (
   renounceAddress: Address,
   confirmationCount: number
 ): Promise<void> => {
-  var confirmAdmin
-  while (true) {
-    try {
-      confirmAdmin = await simulateContract(config, {
+  const confirmAdmin = await simulateWithRetry(
+    () =>
+      simulateContract(config, {
         address: rulesEngineAdminContract.address,
         abi: rulesEngineAdminContract.abi,
         functionName: 'renounceCallingContractAdminRole',
         args: [callingContract, renounceAddress],
-      })
-      break
-    } catch (err) {
-      console.log(err)
-      await sleep(1000)
-    }
-  }
+      }),
+    'renounceCallingContractAdminRole'
+  )
   if (confirmAdmin != null) {
     const returnHash = await writeContract(config, {
       ...confirmAdmin.request,
@@ -220,7 +201,7 @@ export const renounceCallingContractAdminRole = async (
  * @param renounceAddress - The address to renounce as the admin
  * @returns A promise
  *
- * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+ * @throws If the contract simulation fails after the bounded retry limit.
  */
 export const renounceForeignCallAdminRole = async (
   config: Config,
@@ -230,21 +211,16 @@ export const renounceForeignCallAdminRole = async (
   renounceAddress: Address,
   confirmationCount: number
 ): Promise<void> => {
-  var confirmAdmin
-  while (true) {
-    try {
-      confirmAdmin = await simulateContract(config, {
+  const confirmAdmin = await simulateWithRetry(
+    () =>
+      simulateContract(config, {
         address: rulesEngineAdminContract.address,
         abi: rulesEngineAdminContract.abi,
         functionName: 'renounceForeignCallAdminRole',
         args: [foreignCallContract, toFunctionSelector(functionSignature), renounceAddress],
-      })
-      break
-    } catch (err) {
-      console.log(err)
-      await sleep(1000)
-    }
-  }
+      }),
+    'renounceForeignCallAdminRole'
+  )
   if (confirmAdmin != null) {
     const returnHash = await writeContract(config, {
       ...confirmAdmin.request,
@@ -302,7 +278,7 @@ export const isPolicyAdmin = async (
  * @param newAdminAddress - The address to propose as the new admin
  * @returns A promise.
  *
- * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+ * @throws If the contract simulation fails after the bounded retry limit.
  */
 export const proposeNewCallingContractAdmin = async (
   config: Config,
@@ -311,20 +287,16 @@ export const proposeNewCallingContractAdmin = async (
   newAdminAddress: Address,
   confirmationCount: number // = 3
 ): Promise<void> => {
-  var proposeAdmin
-  while (true) {
-    try {
-      proposeAdmin = await simulateContract(config, {
+  const proposeAdmin = await simulateWithRetry(
+    () =>
+      simulateContract(config, {
         address: rulesEngineAdminContract.address,
         abi: rulesEngineAdminContract.abi,
         functionName: 'proposeNewCallingContractAdmin',
         args: [callingContractAddress, newAdminAddress],
-      })
-      break
-    } catch (err) {
-      await sleep(1000)
-    }
-  }
+      }),
+    'proposeNewCallingContractAdmin'
+  )
   if (proposeAdmin != null) {
     const returnHash = await writeContract(config, {
       ...proposeAdmin.request,
@@ -347,7 +319,7 @@ export const proposeNewCallingContractAdmin = async (
  * @param callingContractAddress - The address of the calling contract to set the admin for.
  * @returns A promise.
  *
- * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+ * @throws If the contract simulation fails after the bounded retry limit.
  */
 export const confirmNewCallingContractAdmin = async (
   config: Config,
@@ -355,21 +327,16 @@ export const confirmNewCallingContractAdmin = async (
   callingContractAddress: Address,
   confirmationCount: number
 ) => {
-  var confirmAdmin
-  while (true) {
-    try {
-      confirmAdmin = await simulateContract(config, {
+  const confirmAdmin = await simulateWithRetry(
+    () =>
+      simulateContract(config, {
         address: rulesEngineAdminContract.address,
         abi: rulesEngineAdminContract.abi,
         functionName: 'confirmNewCallingContractAdmin',
         args: [callingContractAddress],
-      })
-      break
-    } catch (err) {
-      console.log(err)
-      await sleep(1000)
-    }
-  }
+      }),
+    'confirmNewCallingContractAdmin'
+  )
   if (confirmAdmin != null) {
     const returnHash = await writeContract(config, {
       ...confirmAdmin.request,
@@ -465,7 +432,7 @@ export const isForeignCallAdmin = async (
  * @param functionSelector - The selector for the specific foreign call
  * @returns A promise.
  *
- * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+ * @throws If the contract simulation fails after the bounded retry limit.
  */
 export const proposeNewForeignCallAdmin = async (
   config: Config,
@@ -475,21 +442,17 @@ export const proposeNewForeignCallAdmin = async (
   functionSelector: string,
   confirmationCount: number
 ): Promise<void> => {
-  var proposeAdmin
-  var selector = toFunctionSelector(functionSelector)
-  while (true) {
-    try {
-      proposeAdmin = await simulateContract(config, {
+  const selector = toFunctionSelector(functionSelector)
+  const proposeAdmin = await simulateWithRetry(
+    () =>
+      simulateContract(config, {
         address: rulesEngineAdminContract.address,
         abi: rulesEngineAdminContract.abi,
         functionName: 'proposeNewForeignCallAdmin',
         args: [foreignCallAddress, newAdminAddress, selector],
-      })
-      break
-    } catch (err) {
-      await sleep(1000)
-    }
-  }
+      }),
+    'proposeNewForeignCallAdmin'
+  )
   if (proposeAdmin != null) {
     const returnHash = await writeContract(config, {
       ...proposeAdmin.request,
@@ -513,7 +476,7 @@ export const proposeNewForeignCallAdmin = async (
  * @param functionSelector - The selector for the specific foreign call
  * @returns A promise.
  *
- * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+ * @throws If the contract simulation fails after the bounded retry limit.
  */
 export const confirmNewForeignCallAdmin = async (
   config: Config,
@@ -522,22 +485,17 @@ export const confirmNewForeignCallAdmin = async (
   functionSelector: string,
   confirmationCount: number
 ) => {
-  var confirmAdmin
-  var selector = toFunctionSelector(functionSelector)
-  while (true) {
-    try {
-      confirmAdmin = await simulateContract(config, {
+  const selector = toFunctionSelector(functionSelector)
+  const confirmAdmin = await simulateWithRetry(
+    () =>
+      simulateContract(config, {
         address: rulesEngineAdminContract.address,
         abi: rulesEngineAdminContract.abi,
         functionName: 'confirmNewForeignCallAdmin',
         args: [foreignCallAddress, selector],
-      })
-      break
-    } catch (err) {
-      console.log(err)
-      await sleep(1000)
-    }
-  }
+      }),
+    'confirmNewForeignCallAdmin'
+  )
   if (confirmAdmin != null) {
     const returnHash = await writeContract(config, {
       ...confirmAdmin.request,

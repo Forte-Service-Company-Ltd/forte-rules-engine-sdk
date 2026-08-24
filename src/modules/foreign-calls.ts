@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: BUSL-1.1
 import { Address, toFunctionSelector } from 'viem'
 import { simulateContract, waitForTransactionReceipt, writeContract, readContract, Config } from '@wagmi/core'
-import { sleep } from './contract-interaction-utils'
+import { simulateWithRetry } from './contract-interaction-utils'
 import { parseCallingFunction, parseForeignCallDefinition } from '../parsing/parser'
 import {
   ForeignCallOnChain,
@@ -63,15 +63,15 @@ const getCFIndexAndEncodedValues = (
  * @param rulesEngineForeignCallContract - The contract instance for interacting with the rules engine component.
  * @param policyId - The ID of the policy to associate with the foreign call.
  * @param fcSyntax - A JSON string representing the foreign call definition.
- * @returns A promise that resolves to the foreign call index. Returns `-1` if the operation fails.
+ * @returns A promise that resolves to the foreign call index, or `-1` when the foreign call is rejected before simulation.
  *
  * @remarks
- * - The function retries the contract interaction in case of failure, with a delay of 1 second between attempts.
+ * - The contract simulation is attempted at most three times with bounded exponential backoff.
  * - The `simulateContract` function is used to simulate the contract interaction before writing to the blockchain.
  * - The `writeContract` function is used to execute the contract interaction on the blockchain.
  * - The function returns the `foreignCallIndex` for an updated foreign call or the result of the newly created foreign call.
  *
- * @throws Will throw an error if the JSON parsing of `fcSyntax` fails.
+ * @throws Will throw an error if JSON parsing fails or the contract simulation fails after the bounded retry limit.
  */
 export const createForeignCall = async (
   config: Config,
@@ -121,8 +121,8 @@ export const createForeignCall = async (
     args: [policyId],
   })
 
-  let policyResult = retrievePolicy as any
-  let callingFunctionIds: string[] = policyResult[0]
+  const policyResult = retrievePolicy as readonly [readonly string[], readonly unknown[]]
+  const callingFunctionIds: string[] = [...policyResult[0]]
   const callingFunctionsMetadataCalls = callingFunctionIds.map((cfId) =>
     getCallingFunctionMetadata(config, rulesEngineComponentContract, policyId, cfId)
   )
@@ -154,27 +154,16 @@ export const createForeignCall = async (
       mappedTrackerKeyIndices: foreignCall.MappedTrackerKeyIndices,
       callingFunctionSelector: callingFunctionIds[cfIndex],
     }
-    var addFC
-    var failureCount = 0
-    while (true) {
-      try {
-        addFC = await simulateContract(config, {
+    const addFC = await simulateWithRetry(
+      () =>
+        simulateContract(config, {
           address: rulesEngineForeignCallContract.address,
           abi: rulesEngineForeignCallContract.abi,
           functionName: 'createForeignCall',
           args: [policyId, fc, foreignCall.Name, foreignCall.Function],
-        })
-        break
-      } catch (err) {
-        if (failureCount < 5) {
-          failureCount += 1
-        } else {
-          return { foreignCallId: -1, transactionHash: '0x0' as `0x${string}` }
-        }
-        await sleep(1000)
-        return { foreignCallId: -1, transactionHash: '0x0' as `0x${string}` }
-      }
-    }
+        }),
+      'createForeignCall'
+    )
 
     if (addFC != null) {
       const returnHash = await writeContract(config, {
@@ -217,15 +206,15 @@ const checkIfForeignCallExists = async (
  * @param policyId - The ID of the policy to associate with the foreign call.
  * @param foreignCallId - The ID of the foreign call to update.
  * @param fcSyntax - A JSON string representing the foreign call definition.
- * @returns A promise that resolves to the foreign call index. Returns `-1` if the operation fails.
+ * @returns A promise that resolves to the foreign call index, or `-1` when the foreign call is rejected before simulation.
  *
  * @remarks
- * - The function retries the contract interaction in case of failure, with a delay of 1 second between attempts.
+ * - The contract simulation is attempted at most three times with bounded exponential backoff.
  * - The `simulateContract` function is used to simulate the contract interaction before writing to the blockchain.
  * - The `writeContract` function is used to execute the contract interaction on the blockchain.
  * - The function returns the `foreignCallIndex` for an updated foreign call or the result of the newly created foreign call.
  *
- * @throws Will throw an error if the JSON parsing of `fcSyntax` fails.
+ * @throws Will throw an error if JSON parsing fails or the contract simulation fails after the bounded retry limit.
  */
 export const updateForeignCall = async (
   config: Config,
@@ -270,8 +259,8 @@ export const updateForeignCall = async (
     args: [policyId],
   })
 
-  let policyResult = retrievePolicy as any
-  let callingFunctionIds: string[] = policyResult[0]
+  const policyResult = retrievePolicy as readonly [readonly string[], readonly unknown[]]
+  const callingFunctionIds: string[] = [...policyResult[0]]
   const callingFunctionsMetadataCalls = callingFunctionIds.map((cfId) =>
     getCallingFunctionMetadata(config, rulesEngineComponentContract, policyId, cfId)
   )
@@ -305,26 +294,16 @@ export const updateForeignCall = async (
       mappedTrackerKeyIndices: foreignCall.MappedTrackerKeyIndices,
       callingFunctionSelector: callingFunctionIds[cfIndex],
     }
-    var addFC
-    var failureCount = 0
-    while (true) {
-      try {
-        addFC = await simulateContract(config, {
+    const addFC = await simulateWithRetry(
+      () =>
+        simulateContract(config, {
           address: rulesEngineForeignCallContract.address,
           abi: rulesEngineForeignCallContract.abi,
           functionName: 'updateForeignCall',
           args: [policyId, foreignCallId, fc],
-        })
-        break
-      } catch (err) {
-        if (failureCount < 5) {
-          failureCount += 1
-        } else {
-          return { foreignCallId: -1, transactionHash: '0x0' as `0x${string}` }
-        }
-        await sleep(1000)
-      }
-    }
+        }),
+      'updateForeignCall'
+    )
     if (addFC != null) {
       const returnHash = await writeContract(config, {
         ...addFC.request,
@@ -334,7 +313,7 @@ export const updateForeignCall = async (
         confirmations: confirmationCount,
         hash: returnHash,
       })
-      let foreignCallResult = addFC.result as any
+      const foreignCallResult = addFC.result
       return { foreignCallId: foreignCallResult.foreignCallIndex, transactionHash: returnHash }
     }
   }

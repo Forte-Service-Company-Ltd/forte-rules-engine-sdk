@@ -1,6 +1,6 @@
 /// SPDX-License-Identifier: BUSL-1.1
 import { simulateContract, waitForTransactionReceipt, writeContract, readContract, Config } from '@wagmi/core'
-import { sleep } from './contract-interaction-utils'
+import { simulateWithRetry } from './contract-interaction-utils'
 import { parseMappedTrackerSyntax, parseTrackerSyntax } from '../parsing/parser'
 import {
   RulesEngineComponentContract,
@@ -64,11 +64,9 @@ export const createMappedTracker = async (
       trackerValue: encodePacked(['uint256'], [BigInt(0)]),
       trackerIndex: 0,
     }
-    var addTR
-    var failureCount = 0
-    while (true) {
-      try {
-        addTR = await simulateContract(config, {
+    const addTR = await simulateWithRetry(
+      () =>
+        simulateContract(config, {
           address: rulesEngineComponentContract.address,
           abi: rulesEngineComponentContract.abi,
           functionName: 'createMappedTracker',
@@ -80,17 +78,9 @@ export const createMappedTracker = async (
             parsedTracker.initialValues,
             parsedTracker.arrayValueType,
           ],
-        })
-        break
-      } catch (err) {
-        if (failureCount < 5) {
-          failureCount += 1
-        } else {
-          return { trackerId: -1, transactionHash: '0x0' as `0x${string}` }
-        }
-        await sleep(1000)
-      }
-    }
+        }),
+      'createMappedTracker'
+    )
     if (addTR != null) {
       const returnHash = await writeContract(config, {
         ...addTR.request,
@@ -118,8 +108,9 @@ export const createMappedTracker = async (
  * @param confirmationCount - The number of confirmations to wait for after writing the contract.
  * @returns A promise that resolves to the new tracker ID
  *
- * @throws Will retry indefinitely with a 1-second delay between attempts if an error occurs during the contract simulation.
- *         Ensure proper error handling or timeout mechanisms are implemented to avoid infinite loops.
+ * @throws If the contract simulation fails after the bounded retry limit.
+ *
+
  */
 export const createTracker = async (
   config: Config,
@@ -143,26 +134,16 @@ export const createTracker = async (
       trackerValue: tracker.initialValue,
       trackerIndex: 0,
     }
-    var addTR
-    var failureCount = 0
-    while (true) {
-      try {
-        addTR = await simulateContract(config, {
+    const addTR = await simulateWithRetry(
+      () =>
+        simulateContract(config, {
           address: rulesEngineComponentContract.address,
           abi: rulesEngineComponentContract.abi,
           functionName: 'createTracker',
           args: [policyId, transactionTracker, tracker.name, tracker.arrayValueType],
-        })
-        break
-      } catch (err) {
-        if (failureCount < 5) {
-          failureCount += 1
-        } else {
-          return { trackerId: -1, transactionHash: '0x0' as `0x${string}` }
-        }
-        await sleep(1000)
-      }
-    }
+        }),
+      'createTracker'
+    )
     if (addTR != null) {
       const returnHash = await writeContract(config, {
         ...addTR.request,
@@ -231,27 +212,16 @@ export const updateMappedTracker = async (
     trackerValue: encodePacked(['uint256'], [BigInt(0)]),
     trackerIndex: 0,
   }
-  var addTR
-  var failureCount = 0
-  while (true) {
-    try {
-      addTR = await simulateContract(config, {
+  const addTR = await simulateWithRetry(
+    () =>
+      simulateContract(config, {
         address: rulesEngineComponentContract.address,
         abi: rulesEngineComponentContract.abi,
         functionName: 'updateTracker',
         args: [policyId, mappedTrackerId, transactionTracker, parsedTracker.initialKeys, parsedTracker.initialValues],
-      })
-      break
-    } catch (err) {
-      console.log(err)
-      if (failureCount < 5) {
-        failureCount += 1
-      } else {
-        return { trackerId: -1, transactionHash: '0x0' as `0x${string}` }
-      }
-      await sleep(1000)
-    }
-  }
+      }),
+    'updateMappedTracker'
+  )
   if (addTR != null) {
     const returnHash = await writeContract(config, {
       ...addTR.request,
@@ -277,8 +247,9 @@ export const updateMappedTracker = async (
  * @param trSyntax - A JSON string representing the tracker syntax.
  * @returns A promise that resolves to the existing tracker ID is returned. Returns -1 if the operation fails.
  *
- * @throws Will retry indefinitely with a 1-second delay between attempts if an error occurs during the contract simulation.
- *         Ensure proper error handling or timeout mechanisms are implemented to avoid infinite loops.
+ * @throws If the contract simulation fails after the bounded retry limit.
+ *
+
  */
 export const updateTracker = async (
   config: Config,
@@ -303,26 +274,16 @@ export const updateTracker = async (
       trackerValue: tracker.initialValue,
       trackerIndex: trackerId,
     }
-    var addTR
-    var failureCount = 0
-    while (true) {
-      try {
-        addTR = await simulateContract(config, {
+    const addTR = await simulateWithRetry(
+      () =>
+        simulateContract(config, {
           address: rulesEngineComponentContract.address,
           abi: rulesEngineComponentContract.abi,
           functionName: 'updateTracker',
           args: [policyId, trackerId, transactionTracker],
-        })
-        break
-      } catch (err) {
-        if (failureCount < 5) {
-          failureCount += 1
-        } else {
-          return { trackerId: -1, transactionHash: '0x0' as `0x${string}` }
-        }
-        await sleep(1000)
-      }
-    }
+        }),
+      'updateTracker'
+    )
     if (addTR != null) {
       const returnHash = await writeContract(config, {
         ...addTR.request,

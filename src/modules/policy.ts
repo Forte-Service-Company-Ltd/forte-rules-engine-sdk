@@ -1,6 +1,6 @@
 /// SPDX-License-Identifier: BUSL-1.1
 
-import { toFunctionSelector, Address, getAddress, toFunctionSignature } from 'viem'
+import { toFunctionSelector, Address, Hex, getAddress, toFunctionSignature } from 'viem'
 
 import { Config, readContract, simulateContract, waitForTransactionReceipt, writeContract } from '@wagmi/core'
 
@@ -32,7 +32,7 @@ import {
 import { createForeignCall, getAllForeignCalls, getForeignCallMetadata, updateForeignCall } from './foreign-calls'
 import { createRule, getRuleMetadata, getAllRules, updateRule, getRule } from './rules'
 import { createMappedTracker, getAllTrackers, getTrackerMetadata, updateMappedTracker, updateTracker } from './trackers'
-import { sleep } from './contract-interaction-utils'
+import { simulateWithRetry } from './contract-interaction-utils'
 import {
   createCallingFunction,
   getCallingFunctionMetadata,
@@ -109,7 +109,7 @@ export const createPolicy = async (
   var trackerIds: NameToID[] = []
 
   let callingFunctions: string[] = []
-  let callingFunctionParamSets: any[] = []
+  let callingFunctionParamSets: string[][] = []
   let allFunctionMappings: hexToFunctionString[] = []
   var nonDuplicatedCallingFunctions: CallingFunctionJSON[] = []
   var policyId = -1
@@ -265,14 +265,14 @@ const buildCallingFunctions = async (
   policyJSON: PolicyJSON,
   policyId: number,
   callingFunctionParamSets: string[][],
-  allFunctionMappings: any[],
+  allFunctionMappings: hexToFunctionString[],
   nonDuplicatedCallingFunctions: CallingFunctionJSON[],
   confirmationCount: number,
   create: boolean
 ): Promise<{ functionId: number; transactionHash: `0x${string}` }[]> => {
-  var fsSelectors = []
-  var fsIds = []
-  var emptyRules = []
+  const fsSelectors: Hex[] = []
+  const fsIds: number[] = []
+  const emptyRules: number[][] = []
   var existingIds = []
   var transactionHashes: { functionId: number; transactionHash: `0x${string}` }[] = []
   var existingCallingFunctions: CallingFunctionOnChain[] = []
@@ -597,7 +597,7 @@ const buildForeignCalls = async (
   callingFunctionParamSets: string[][],
   fcIds: NameToID[],
   trackerIds: NameToID[],
-  resolveFunction: any,
+  resolveFunction: (callingFunctionRef: string) => string,
   confirmationCount: number,
   create: boolean
 ): Promise<{ foreignCallId: number; transactionHash: `0x${string}` }[]> => {
@@ -775,7 +775,7 @@ const buildRules = async (
   policyId: number,
   fcIds: NameToID[],
   trackerIds: NameToID[],
-  resolveFunction: any,
+  resolveFunction: (callingFunctionRef: string) => string,
   confirmationCount: number,
   create: boolean
 ): Promise<{ transactionHashes: { ruleId: number; transactionHash: `0x${string}` }[]; policyId: number }> => {
@@ -1098,7 +1098,7 @@ export const updatePolicy = async (
   var fcIds: NameToID[] = []
   var trackerIds: NameToID[] = []
   let callingFunctions: string[] = []
-  let callingFunctionParamSets: any[] = []
+  let callingFunctionParamSets: string[][] = []
   let allFunctionMappings: hexToFunctionString[] = []
   var nonDuplicatedCallingFunctions: CallingFunctionJSON[] = []
   if (policySyntax !== undefined) {
@@ -1254,27 +1254,22 @@ const updatePolicyInternal = async (
   config: Config,
   rulesEnginePolicyContract: RulesEnginePolicyContract,
   policyId: number,
-  signatures: any[],
-  ruleIds: any[],
+  signatures: Hex[],
+  ruleIds: number[][],
   policyName: string,
   policyDescription: string,
   confirmationCount: number
 ): Promise<number> => {
-  var updatePolicy
-  while (true) {
-    try {
-      updatePolicy = await simulateContract(config, {
+  const updatePolicy = await simulateWithRetry(
+    () =>
+      simulateContract(config, {
         address: rulesEnginePolicyContract.address,
         abi: rulesEnginePolicyContract.abi,
         functionName: 'updatePolicy',
         args: [policyId, signatures, ruleIds, 1, policyName, policyDescription],
-      })
-      break
-    } catch (error) {
-      // TODO: Look into replacing this loop/sleep with setTimeout
-      await sleep(1000)
-    }
-  }
+      }),
+    'updatePolicy'
+  )
   if (updatePolicy != null) {
     const returnHash = await writeContract(config, {
       ...updatePolicy.request,
@@ -1306,21 +1301,16 @@ export const setPolicies = async (
   contractAddressForPolicy: Address,
   confirmationCount: number
 ): Promise<{ transactionHash: `0x${string}` }> => {
-  var applyPolicy
-  while (true) {
-    try {
-      applyPolicy = await simulateContract(config, {
+  const applyPolicy = await simulateWithRetry(
+    () =>
+      simulateContract(config, {
         address: rulesEnginePolicyContract.address,
         abi: rulesEnginePolicyContract.abi,
         functionName: 'applyPolicy',
         args: [contractAddressForPolicy, policyIds],
-      })
-      break
-    } catch (error) {
-      // TODO: Look into replacing this loop/sleep with setTimeout
-      await sleep(1000)
-    }
-  }
+      }),
+    'applyPolicy'
+  )
 
   if (applyPolicy != null) {
     const transactionHash = await writeContract(config, {
@@ -1351,21 +1341,16 @@ export const unsetPolicies = async (
   contractAddressForPolicy: Address,
   confirmationCount: number
 ): Promise<{ transactionHash: `0x${string}` }> => {
-  var applyPolicy
-  while (true) {
-    try {
-      applyPolicy = await simulateContract(config, {
+  const applyPolicy = await simulateWithRetry(
+    () =>
+      simulateContract(config, {
         address: rulesEnginePolicyContract.address,
         abi: rulesEnginePolicyContract.abi,
         functionName: 'unapplyPolicy',
         args: [contractAddressForPolicy, policyIds],
-      })
-      break
-    } catch (error) {
-      // TODO: Look into replacing this loop/sleep with setTimeout
-      await sleep(1000)
-    }
-  }
+      }),
+    'unapplyPolicy'
+  )
 
   if (applyPolicy != null) {
     const returnHash = await writeContract(config, {
@@ -1576,9 +1561,9 @@ export const getPolicy = async (
       throw new Error(`Policy with ID ${policyId} does not exist.`)
     }
 
-    let policyResult = retrievePolicy as any
-    let callingFunctions: any = policyResult[0]
-    let ruleIds2DArray: any = policyResult[1]
+    const policyResult = retrievePolicy as readonly [readonly Hex[], readonly unknown[]]
+    const callingFunctions = policyResult[0]
+    const ruleIds2DArray = policyResult[1]
     const PolicyType = await isClosedPolicy(config, rulesEnginePolicyContract, policyId, blockParams)
 
     var iter = 1
@@ -1795,7 +1780,8 @@ export async function policyExists(
       args: [policyId],
       ...blockParams,
     })
-    if ((policyExists as any)[0] != null && (policyExists as any)[1] != null) {
+    const policyResult = policyExists as readonly [unknown, unknown]
+    if (policyResult[0] != null && policyResult[1] != null) {
       return true
     }
     return false

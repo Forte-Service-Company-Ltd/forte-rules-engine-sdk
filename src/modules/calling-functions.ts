@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: BUSL-1.1
 import { toFunctionSelector } from 'viem'
 import { simulateContract, waitForTransactionReceipt, writeContract, Config, readContract } from '@wagmi/core'
-import { sleep } from './contract-interaction-utils'
+import { simulateWithRetry } from './contract-interaction-utils'
 import { determinePTEnumeration, parseFunctionArguments } from '../parsing/parser'
 import {
   CallingFunctionHashMapping,
@@ -48,7 +48,7 @@ import {
  * @param encodedValues - The encoded values string for the calling function.
  * @returns A promise that resolves to the result of the contract interaction, or -1 if unsuccessful.
  *
- * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+ * @throws If the contract simulation fails after the bounded retry limit.
  */
 export const createCallingFunction = async (
   config: Config,
@@ -60,28 +60,18 @@ export const createCallingFunction = async (
   confirmationCount: number
 ): Promise<{ functionId: number; transactionHash: `0x${string}` }> => {
   const args: number[] = encodedValues.split(',').map((val) => determinePTEnumeration(val.trim().split(' ')[0]))
-  var addRule
-  var duplicate = await checkIfSelectorExists(config, rulesEngineComponentContract, policyId, callingFunction)
+  const duplicate = await checkIfSelectorExists(config, rulesEngineComponentContract, policyId, callingFunction)
   if (!duplicate) {
-    var failureCount = 0
-    while (true) {
-      try {
-        addRule = await simulateContract(config, {
+    const addRule = await simulateWithRetry(
+      () =>
+        simulateContract(config, {
           address: rulesEngineComponentContract.address,
           abi: rulesEngineComponentContract.abi,
           functionName: 'createCallingFunction',
           args: [policyId, toFunctionSelector(callingFunction), args, callingFunction, encodedValues, name],
-        })
-        break
-      } catch (err) {
-        if (failureCount < 5) {
-          failureCount += 1
-        } else {
-          return { functionId: -1, transactionHash: '0x0' as `0x${string}` }
-        }
-        await sleep(1000)
-      }
-    }
+        }),
+      'createCallingFunction'
+    )
     if (addRule != null) {
       const returnHash = await writeContract(config, {
         ...addRule.request,
@@ -110,7 +100,7 @@ export const createCallingFunction = async (
  * @param encodedValues - The encoded values string for the calling function.
  * @returns A promise that resolves to the result of the contract interaction, or -1 if unsuccessful.
  *
- * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+ * @throws If the contract simulation fails after the bounded retry limit.
  */
 export const updateCallingFunction = async (
   config: Config,
@@ -122,26 +112,16 @@ export const updateCallingFunction = async (
   confirmationCount: number
 ): Promise<{ functionId: number; transactionHash: `0x${string}` }> => {
   const args: number[] = encodedValues.split(',').map((val) => determinePTEnumeration(val.trim().split(' ')[0]))
-  var addRule
-  var failureCount = 0
-  while (true) {
-    try {
-      addRule = await simulateContract(config, {
+  const addRule = await simulateWithRetry(
+    () =>
+      simulateContract(config, {
         address: rulesEngineComponentContract.address,
         abi: rulesEngineComponentContract.abi,
         functionName: 'updateCallingFunction',
         args: [policyId, toFunctionSelector(callingFunction), args, callingFunction, encodedValues, name],
-      })
-      break
-    } catch (err) {
-      if (failureCount < 5) {
-        failureCount += 1
-      } else {
-        return { functionId: -1, transactionHash: '0x0' as `0x${string}` }
-      }
-      await sleep(1000)
-    }
-  }
+      }),
+    'updateCallingFunction'
+  )
   if (addRule != null) {
     const returnHash = await writeContract(config, {
       ...addRule.request,
@@ -178,7 +158,7 @@ const checkIfSelectorExists = async (
  * @param callingFunctionId - The calling function ID to be deleted.
  * @returns A promise that resolves to the result of the contract interaction, or -1 if unsuccessful.
  *
- * @throws Will retry indefinitely on contract interaction failure, with a delay between attempts.
+ * @throws If the contract simulation fails after the bounded retry limit.
  */
 export const deleteCallingFunction = async (
   config: Config,
