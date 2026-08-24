@@ -2,7 +2,7 @@
 import { hexToString } from 'viem'
 import { simulateContract, waitForTransactionReceipt, writeContract, readContract, Config } from '@wagmi/core'
 
-import { buildOnChainEffects, buildAnOnChainRule, sleep } from './contract-interaction-utils'
+import { buildOnChainEffects, buildAnOnChainRule, simulateWithRetry } from './contract-interaction-utils'
 import {
   NameToID,
   RuleOnChain,
@@ -120,9 +120,9 @@ export const createRule = async (
     args: [policyId],
   })
 
-  let policyResult = retrievePolicy as any
+  const policyResult = retrievePolicy as readonly [readonly string[], readonly unknown[]]
 
-  let callingFunctionIds: string[] = policyResult[0]
+  const callingFunctionIds: string[] = [...policyResult[0]]
   const callingFunctionsMetadataCalls = callingFunctionIds.map((cfId) =>
     getCallingFunctionMetadata(config, rulesEngineComponentContract, policyId, cfId)
   )
@@ -237,26 +237,16 @@ export const createRule = async (
   if (rule == null) {
     return { ruleId: -1, transactionHash: '0x0' as `0x${string}` }
   }
-  var addRule
-  var failureCount = 0
-  while (true) {
-    try {
-      addRule = await simulateContract(config, {
+  const addRule = await simulateWithRetry(
+    () =>
+      simulateContract(config, {
         address: rulesEngineRulesContract.address,
         abi: rulesEngineRulesContract.abi,
         functionName: 'createRule',
         args: [policyId, rule, ruleSyntax.Name, ruleSyntax.Description],
-      })
-      break
-    } catch (err) {
-      if (failureCount < 5) {
-        failureCount += 1
-      } else {
-        return { ruleId: -1, transactionHash: '0x0' as `0x${string}` }
-      }
-      await sleep(1000)
-    }
-  }
+      }),
+    'createRule'
+  )
   if (addRule != null) {
     const returnHash = await writeContract(config, {
       ...addRule.request,
@@ -283,7 +273,7 @@ export const createRule = async (
  * @param trackerNameToID - A mapping of tracker names to their corresponding IDs.
  * @returns A promise that resolves to the result of the rule update operation. Returns the result ID if successful, or -1 if the operation fails.
  *
- * @throws Will retry indefinitely if the contract simulation fails, with a 1-second delay between retries.
+ * @throws If the contract simulation fails after the bounded retry limit.
  */
 export const updateRule = async (
   config: Config,
@@ -312,8 +302,8 @@ export const updateRule = async (
     args: [policyId],
   })
 
-  let policyResult = retrievePolicy as any
-  let callingFunctionIds: string[] = policyResult[0]
+  const policyResult = retrievePolicy as readonly [readonly string[], readonly unknown[]]
+  const callingFunctionIds: string[] = [...policyResult[0]]
   const callingFunctionsMetadataCalls = callingFunctionIds.map((cfId) =>
     getCallingFunctionMetadata(config, rulesEngineComponentContract, policyId, cfId)
   )
@@ -420,26 +410,16 @@ export const updateRule = async (
   if (rule == null) {
     return { ruleId: -1, transactionHash: '0x0' as `0x${string}` }
   }
-  var addRule
-  var failureCount = 0
-  while (true) {
-    try {
-      addRule = await simulateContract(config, {
+  const addRule = await simulateWithRetry(
+    () =>
+      simulateContract(config, {
         address: rulesEngineRulesContract.address,
         abi: rulesEngineRulesContract.abi,
         functionName: 'updateRule',
         args: [policyId, ruleId, rule, ruleSyntax.Name, ruleSyntax.Description],
-      })
-      break
-    } catch (err) {
-      if (failureCount < 5) {
-        failureCount += 1
-      } else {
-        return { ruleId: -1, transactionHash: '0x0' as `0x${string}` }
-      }
-      await sleep(1000)
-    }
-  }
+      }),
+    'updateRule'
+  )
   if (addRule != null) {
     const returnHash = await writeContract(config, {
       ...addRule.request,
@@ -597,7 +577,7 @@ export const getAllRules = async (
   rulesEngineRulesContract: RulesEngineRulesContract,
   policyId: number,
   blockParams?: ContractBlockParameters
-): Promise<Maybe<any[]>> => {
+): Promise<Maybe<RuleStorageSet[]>> => {
   try {
     const result = await readContract(config, {
       address: rulesEngineRulesContract.address,

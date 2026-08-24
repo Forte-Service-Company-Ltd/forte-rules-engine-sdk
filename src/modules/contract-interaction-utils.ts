@@ -23,6 +23,8 @@ import {
 } from './types'
 import { RuleJSON } from './validation'
 
+type ContractClient = NonNullable<Parameters<typeof getContract>[0]['client']>
+
 /**
  * @file ContractInteractionUtils.ts
  * @description This module provides a set of utility functions to aid in interacting with the Rules Engine smart contracts.
@@ -48,36 +50,35 @@ import { RuleJSON } from './validation'
  * @note This file is a critical component of the Rules Engine SDK, enabling seamless integration with the Rules Engine smart contracts.
  */
 
-//TODO: Make the client usages type specific
-export const getRulesEnginePolicyContract = (address: Address, client: any): RulesEnginePolicyContract =>
+export const getRulesEnginePolicyContract = (address: Address, client: ContractClient): RulesEnginePolicyContract =>
   getContract({
     address,
     abi: RulesEnginePolicyABI,
     client,
   })
 
-export const getRulesEngineRulesContract = (address: Address, client: any): RulesEngineRulesContract =>
+export const getRulesEngineRulesContract = (address: Address, client: ContractClient): RulesEngineRulesContract =>
   getContract({
     address,
     abi: RulesEngineRulesABI,
     client,
   })
 
-export const getRulesEngineComponentContract = (address: Address, client: any): RulesEngineComponentContract =>
+export const getRulesEngineComponentContract = (address: Address, client: ContractClient): RulesEngineComponentContract =>
   getContract({
     address,
     abi: RulesEngineComponentABI,
     client,
   })
 
-export const getRulesEngineAdminContract = (address: Address, client: any): RulesEngineAdminContract =>
+export const getRulesEngineAdminContract = (address: Address, client: ContractClient): RulesEngineAdminContract =>
   getContract({
     address,
     abi: RulesEngineAdminABI,
     client,
   })
 
-export const getRulesEngineForeignCallContract = (address: Address, client: any): RulesEngineForeignCallContract =>
+export const getRulesEngineForeignCallContract = (address: Address, client: ContractClient): RulesEngineForeignCallContract =>
   getContract({
     address,
     abi: RulesEngineForeignCallABI,
@@ -92,6 +93,54 @@ export const getRulesEngineForeignCallContract = (address: Address, client: any)
  */
 export async function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
+ * Runs a contract simulation with bounded exponential-backoff retries.
+ *
+ * Simulation failures can be transient, but retrying indefinitely can hang a caller forever when
+ * the failure is deterministic, such as an authorization or validation revert. This helper keeps
+ * retries bounded, avoids logging raw provider errors, and propagates a descriptive failure when
+ * the final attempt fails.
+ *
+ * @param operation - The contract simulation to execute.
+ * @param operationName - A safe, human-readable name used in the propagated error.
+ * @param maxAttempts - The total number of simulation attempts, including the first attempt.
+ * @param baseDelayMs - The base delay used for exponential backoff before jitter is added.
+ * @returns The successful simulation result.
+ * @throws If all attempts fail or the retry configuration is invalid.
+ */
+export async function simulateWithRetry<T>(
+  operation: () => Promise<T>,
+  operationName: string,
+  maxAttempts = 3,
+  baseDelayMs = 1_000
+): Promise<T> {
+  if (!Number.isInteger(maxAttempts) || maxAttempts < 1) {
+    throw new RangeError('maxAttempts must be a positive integer')
+  }
+  if (!Number.isFinite(baseDelayMs) || baseDelayMs < 0) {
+    throw new RangeError('baseDelayMs must be a non-negative finite number')
+  }
+
+  let lastError: unknown
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await operation()
+    } catch (error) {
+      lastError = error
+      if (attempt === maxAttempts) {
+        break
+      }
+
+      const backoffMs = baseDelayMs * 2 ** (attempt - 1)
+      const jitterMs = baseDelayMs === 0 ? 0 : Math.floor(Math.random() * baseDelayMs)
+      await sleep(backoffMs + jitterMs)
+    }
+  }
+
+  const details = lastError instanceof Error ? lastError.message : String(lastError)
+  throw new Error(`${operationName} simulation failed after ${maxAttempts} attempts: ${details}`)
 }
 
 /**
@@ -156,7 +205,7 @@ export function buildAnOnChainRule(
  * @param dynamicParam - Whether the parameter is dynamic (resolved by contract).
  * @returns The encoded parameter as a hex string or '0x' for dynamic/empty parameters.
  */
-function encodeEffectParameter(pType: number, parameterValue: any, dynamicParam: boolean): string {
+function encodeEffectParameter(pType: number, parameterValue: unknown, dynamicParam: boolean): string {
   // For dynamic parameters, don't encode the parameterValue - let the contract resolve it
   if (dynamicParam) {
     return '0x'
@@ -177,7 +226,7 @@ function encodeEffectParameter(pType: number, parameterValue: any, dynamicParam:
       return encodeAbiParameters(parseAbiParameters('bytes'), [toHex(stringToBytes(String(parameterValue)))])
     } else {
       // uint
-      return encodeAbiParameters(parseAbiParameters('uint256'), [BigInt(parameterValue)])
+      return encodeAbiParameters(parseAbiParameters('uint256'), [BigInt(String(parameterValue))])
     }
   } else {
     // No parameter - use empty bytes
