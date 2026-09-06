@@ -37,7 +37,7 @@ import { cleanString } from '../parsing/parsing-utilities'
  */
 
 function addModifierToFunctionDeclaration(data: string, declaration: string, modifier: string): string {
-  const visibilityKeywordRegex = /\s(public|private|internal|external)\s|$/
+  const visibilityKeywordRegex = /\s(public|private|internal|external)(?=\s|$)/
 
   let newDecl = declaration.replace(visibilityKeywordRegex, ` $1 ${modifier} `)
   newDecl = newDecl.replace(/\s{2,}/g, ' ') // Clean up any extra spaces
