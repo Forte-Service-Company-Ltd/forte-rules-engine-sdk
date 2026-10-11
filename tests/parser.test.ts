@@ -381,6 +381,15 @@ test('Reverse Interpretation for the: "Evaluates a simple effect involving a map
   expect(retVal).toEqual(expectedString)
 })
 
+test('Reverse Interpretation preserves division assignment for a mapped tracker update (TRUM)', () => {
+  let instructionSet = ['PLH', 0n, 'PLHM', 1n, 0n, 'N', 2n, '/', 1n, 2n, 'TRUM', 1n, 3n, 0n, 0n]
+  var expectedString = '[TRU:testOne(to) /= 2]'
+  const cleanedInstructionSet = cleanInstructionSet(instructionSet)
+  var placeholderArray = ['to', 'TR:testOne~1']
+  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
+  expect(retVal).toEqual(expectedString)
+})
+
 test('Evaluates a complex effect involving a mapped tracker update (TRUM))', () => {
   var instructionSet = [
     'PLH',
@@ -434,6 +443,15 @@ test('Evaluates a complex effect involving a mapped tracker update (TRUM))', () 
 test('Reverse Interpretation for the: "Evaluates a simple effect involving a tracker update (TRU))" test', () => {
   let instructionSet = ['PLH', 1n, 'N', 1n, '-', 0n, 1n, 'TRU', 1n, 2n, 0n]
   var expectedString = '[TRU:testOne -= 1]'
+  const cleanedInstructionSet = cleanInstructionSet(instructionSet)
+  var placeholderArray = ['value', 'TR:testOne']
+  var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
+  expect(retVal).toEqual(expectedString)
+})
+
+test('Reverse Interpretation preserves division assignment for a tracker update (TRU)', () => {
+  let instructionSet = ['PLH', 1n, 'N', 2n, '/', 0n, 1n, 'TRU', 1n, 2n, 0n]
+  var expectedString = '[TRU:testOne /= 2]'
   const cleanedInstructionSet = cleanInstructionSet(instructionSet)
   var placeholderArray = ['value', 'TR:testOne']
   var retVal = reverseParseInstructionSet(cleanedInstructionSet as number[], placeholderArray, [], 0)
