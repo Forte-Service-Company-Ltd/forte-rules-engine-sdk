@@ -401,7 +401,7 @@ export function reverseParseInstructionSet(
                 memVal = memVal.replace('+', '+=')
               } else if (memVal.split(' ')[1] == '*') {
                 memVal = memVal.replace('*', '*=')
-              } else if (memVal.split(' ')[1] == '+') {
+              } else if (memVal.split(' ')[1] == '/') {
                 memVal = memVal.replace('/', '/=')
               }
             }
